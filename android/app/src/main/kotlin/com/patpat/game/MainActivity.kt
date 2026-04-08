@@ -1,4 +1,4 @@
-package com.patpat.patpat_game
+package com.patpat.game
 
 import io.flutter.embedding.android.FlutterActivity
 
