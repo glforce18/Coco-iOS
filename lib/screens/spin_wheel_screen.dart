@@ -18,14 +18,14 @@ class _SpinWheelScreenState extends ConsumerState<SpinWheelScreen>
     with TickerProviderStateMixin {
   // Wheel segments: label, emoji, color
   static const _segments = <_WheelSegment>[
-    _WheelSegment('50', '\uD83E\uDE99', Color(0xFFFF4080), 'coins', 50),
-    _WheelSegment('100', '\uD83E\uDE99', Color(0xFF2080FF), 'coins', 100),
-    _WheelSegment('200', '\uD83E\uDE99', Color(0xFF30B050), 'coins', 200),
-    _WheelSegment('300', '\uD83E\uDE99', Color(0xFFFFCC00), 'coins', 300),
-    _WheelSegment('1', '\uD83D\uDD28', Color(0xFFFF6820), 'hammer', 1),
-    _WheelSegment('1', '\uD83C\uDF08', Color(0xFF9040E0), 'colorBlast', 1),
-    _WheelSegment('1', '\u27A1\uFE0F', Color(0xFF00E5FF), 'extraMoves', 1),
-    _WheelSegment('50', '\uD83E\uDE99', Color(0xFFCC80FF), 'coins', 50),
+    _WheelSegment('50', '\uD83E\uDE99', Color(0xFFFF5A9E), 'coins', 50),
+    _WheelSegment('100', '\uD83E\uDE99', Color(0xFF4DA6FF), 'coins', 100),
+    _WheelSegment('200', '\uD83E\uDE99', Color(0xFF5CD87A), 'coins', 200),
+    _WheelSegment('300', '\uD83E\uDE99', Color(0xFFFFD84D), 'coins', 300),
+    _WheelSegment('1', '\uD83D\uDD28', Color(0xFFFF8844), 'hammer', 1),
+    _WheelSegment('1', '\uD83C\uDF08', Color(0xFFB366FF), 'colorBlast', 1),
+    _WheelSegment('1', '\u27A1\uFE0F', Color(0xFF33E5FF), 'extraMoves', 1),
+    _WheelSegment('50', '\uD83E\uDE99', Color(0xFFE08AFF), 'coins', 50),
   ];
 
   late AnimationController _spinController;
@@ -173,7 +173,14 @@ class _SpinWheelScreenState extends ConsumerState<SpinWheelScreen>
             ],
           ),
         ),
-        child: SafeArea(
+        child: Stack(
+          children: [
+            // Colorful bubble decorations
+            CustomPaint(
+              size: MediaQuery.of(context).size,
+              painter: _BubbleDecorationPainter(),
+            ),
+            SafeArea(
           child: Column(
             children: [
               // Header
@@ -182,7 +189,7 @@ class _SpinWheelScreenState extends ConsumerState<SpinWheelScreen>
 
               // Title
               const Text(
-                'SANS CARKI',
+                '\u015eANS \u00c7ARKI',
                 style: TextStyle(
                   fontSize: 28,
                   fontWeight: FontWeight.w900,
@@ -249,10 +256,73 @@ class _SpinWheelScreenState extends ConsumerState<SpinWheelScreen>
               else
                 _buildContinueButton(),
 
-              const SizedBox(height: 24),
+              const SizedBox(height: 12),
+
+              // Prize legend
+              _buildPrizeLegend(),
+
+              const SizedBox(height: 16),
             ],
           ),
         ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildPrizeLegend() {
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 24),
+      child: Wrap(
+        alignment: WrapAlignment.center,
+        spacing: 8,
+        runSpacing: 6,
+        children: _segments.map((seg) {
+          final label = seg.type == 'coins'
+              ? '${seg.label} Coin'
+              : seg.type == 'hammer'
+                  ? '\u00c7eki\u00e7'
+                  : seg.type == 'colorBlast'
+                      ? 'Renk Patlat'
+                      : '+3 Hamle';
+          return Container(
+            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+            decoration: BoxDecoration(
+              color: seg.color.withAlpha(40),
+              borderRadius: BorderRadius.circular(10),
+              border: Border.all(color: seg.color.withAlpha(80)),
+            ),
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Container(
+                  width: 14,
+                  height: 14,
+                  decoration: BoxDecoration(
+                    shape: BoxShape.circle,
+                    color: seg.color,
+                    boxShadow: [
+                      BoxShadow(
+                        color: seg.color.withAlpha(60),
+                        blurRadius: 4,
+                      ),
+                    ],
+                  ),
+                ),
+                const SizedBox(width: 4),
+                Text(
+                  label,
+                  style: TextStyle(
+                    fontSize: 10,
+                    fontWeight: FontWeight.w600,
+                    color: Colors.white.withAlpha(200),
+                  ),
+                ),
+              ],
+            ),
+          );
+        }).toList(),
       ),
     );
   }
@@ -314,7 +384,7 @@ class _SpinWheelScreenState extends ConsumerState<SpinWheelScreen>
     final hours = ms ~/ (60 * 60 * 1000);
     final minutes = (ms % (60 * 60 * 1000)) ~/ (60 * 1000);
     return Text(
-      'Ucretsiz cevirmede: ${hours}s ${minutes}dk',
+      '\u00dccretsiz \u00e7evirmede: ${hours}s ${minutes}dk',
       style: TextStyle(
         fontSize: 13,
         color: Colors.white.withAlpha(160),
@@ -364,8 +434,16 @@ class _SpinWheelScreenState extends ConsumerState<SpinWheelScreen>
       ),
       child: const Center(
         child: Text(
-          '\uD83C\uDFA1',
-          style: TextStyle(fontSize: 20),
+          'PP',
+          style: TextStyle(
+            fontSize: 18,
+            fontWeight: FontWeight.w900,
+            color: Color(0xFF3E2000),
+            letterSpacing: 1,
+            shadows: [
+              Shadow(color: Color(0x40000000), blurRadius: 2),
+            ],
+          ),
         ),
       ),
     );
@@ -406,7 +484,7 @@ class _SpinWheelScreenState extends ConsumerState<SpinWheelScreen>
             Text(segment.emoji, style: const TextStyle(fontSize: 32)),
             const SizedBox(width: 8),
             Text(
-              '+${segment.label} ${segment.type == 'coins' ? 'Coin' : segment.type == 'hammer' ? 'Cekic' : segment.type == 'colorBlast' ? 'Renk Patlatma' : 'Hamle'}',
+              '+${segment.label} ${segment.type == 'coins' ? 'Coin' : segment.type == 'hammer' ? '\u00c7eki\u00e7' : segment.type == 'colorBlast' ? 'Renk Patlat' : 'Hamle'}',
               style: const TextStyle(
                 fontSize: 22,
                 fontWeight: FontWeight.w800,
@@ -428,15 +506,15 @@ class _SpinWheelScreenState extends ConsumerState<SpinWheelScreen>
     if (isFree) {
       bgTop = const Color(0xFF30B050);
       bgBottom = const Color(0xFF1A7030);
-      label = 'UCRETSIZ CEVIR!';
+      label = 'BEDAVA \u00c7EV\u0130R!';
     } else if (canAfford) {
       bgTop = const Color(0xFFFFD700);
       bgBottom = const Color(0xFFB8860B);
-      label = '100 \uD83E\uDE99 CEVIR';
+      label = '100 \uD83E\uDE99 \u00c7EV\u0130R';
     } else {
       bgTop = Colors.grey.shade600;
       bgBottom = Colors.grey.shade800;
-      label = '100 \uD83E\uDE99 CEVIR';
+      label = '100 \uD83E\uDE99 \u00c7EV\u0130R';
     }
 
     final enabled = !_isSpinning && (isFree || canAfford);
@@ -738,4 +816,62 @@ class _PointerPainter extends CustomPainter {
 
   @override
   bool shouldRepaint(covariant CustomPainter oldDelegate) => false;
+}
+
+// ---------------------------------------------------------------------------
+// Bubble decoration painter — colorful circles in the background
+// ---------------------------------------------------------------------------
+class _BubbleDecorationPainter extends CustomPainter {
+  @override
+  void paint(Canvas canvas, Size size) {
+    final rng = Random(123);
+    final bubbles = <(Offset, double, Color)>[
+      (Offset(size.width * 0.1, size.height * 0.08), 40, const Color(0xFFFF5A9E)),
+      (Offset(size.width * 0.85, size.height * 0.12), 30, const Color(0xFF4DA6FF)),
+      (Offset(size.width * 0.15, size.height * 0.35), 25, const Color(0xFF5CD87A)),
+      (Offset(size.width * 0.9, size.height * 0.4), 35, const Color(0xFFFFD84D)),
+      (Offset(size.width * 0.5, size.height * 0.05), 20, const Color(0xFFB366FF)),
+      (Offset(size.width * 0.05, size.height * 0.7), 28, const Color(0xFF33E5FF)),
+      (Offset(size.width * 0.92, size.height * 0.75), 22, const Color(0xFFFF8844)),
+      (Offset(size.width * 0.4, size.height * 0.88), 32, const Color(0xFFE08AFF)),
+      (Offset(size.width * 0.7, size.height * 0.92), 18, const Color(0xFFFF5A9E)),
+      (Offset(size.width * 0.25, size.height * 0.55), 15, const Color(0xFF4DA6FF)),
+    ];
+
+    for (final (center, radius, color) in bubbles) {
+      final paint = Paint()
+        ..shader = RadialGradient(
+          colors: [
+            color.withAlpha(35),
+            color.withAlpha(12),
+            color.withAlpha(0),
+          ],
+          stops: const [0.0, 0.6, 1.0],
+        ).createShader(Rect.fromCircle(center: center, radius: radius));
+      canvas.drawCircle(center, radius, paint);
+
+      // Highlight dot
+      final hlPaint = Paint()
+        ..color = color.withAlpha(50)
+        ..maskFilter = const MaskFilter.blur(BlurStyle.normal, 3);
+      canvas.drawCircle(
+        center + Offset(-radius * 0.25, -radius * 0.25),
+        radius * 0.2,
+        hlPaint,
+      );
+    }
+
+    // Extra small random sparkle dots
+    for (int i = 0; i < 15; i++) {
+      final x = rng.nextDouble() * size.width;
+      final y = rng.nextDouble() * size.height;
+      final r = 2.0 + rng.nextDouble() * 3;
+      final hue = rng.nextDouble() * 360;
+      final c = HSLColor.fromAHSL(1, hue, 0.8, 0.7).toColor().withAlpha(25);
+      canvas.drawCircle(Offset(x, y), r, Paint()..color = c);
+    }
+  }
+
+  @override
+  bool shouldRepaint(covariant _BubbleDecorationPainter old) => false;
 }

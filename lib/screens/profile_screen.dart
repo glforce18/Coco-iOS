@@ -1,4 +1,5 @@
 import 'dart:math';
+import 'dart:ui';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -59,78 +60,123 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen>
     final progress = ref.watch(playerProgressProvider);
 
     return Scaffold(
-      body: Container(
-        decoration: const BoxDecoration(
-          gradient: LinearGradient(
-            colors: [Color(0xFF0D0235), Color(0xFF1A0660), Color(0xFF2D0B80)],
-            begin: Alignment.topCenter,
-            end: Alignment.bottomCenter,
+      body: Stack(
+        fit: StackFit.expand,
+        children: [
+          // Dream world background
+          Image.asset(
+            'assets/backgrounds/map_bg_dream_world.png',
+            fit: BoxFit.cover,
+            width: double.infinity,
+            height: double.infinity,
+            errorBuilder: (_, __, ___) => Container(
+              decoration: const BoxDecoration(
+                gradient: LinearGradient(
+                  colors: [
+                    Color(0xFF0D0235),
+                    Color(0xFF1A0660),
+                    Color(0xFF2D0B80),
+                  ],
+                  begin: Alignment.topCenter,
+                  end: Alignment.bottomCenter,
+                ),
+              ),
+            ),
           ),
-        ),
-        child: Stack(
-          children: [
-            // Animated glow orbs
-            _AnimatedOrbs(animation: _orbCtrl),
 
-            SafeArea(
-              child: Column(
-                children: [
-                  _ProfileHeader(onBack: () {
-                    SoundManager.instance.play(SoundType.buttonClick);
-                    HapticManager.instance.tapLight();
-                    context.go('/map');
-                  }),
-                  Expanded(
-                    child: SingleChildScrollView(
-                      padding: const EdgeInsets.symmetric(horizontal: 16),
-                      child: Column(
-                        children: [
-                          const SizedBox(height: 8),
-                          // Mascot display
-                          _MascotDisplay(
-                            bounceAnimation: _bounceCtrl,
-                            sparkleAnimation: _sparkleCtrl,
-                          ),
-                          const SizedBox(height: 16),
-                          // Stats grid
-                          _StatsGrid(
-                            level: progress.currentLevel,
-                            totalStars: progress.totalStars,
-                            totalScore: progress.totalScore,
-                            coins: progress.coins,
-                            achievementCount: progress.achievements.length,
-                            streak: progress.dailyRewardStreak,
-                            neonAnimation: _neonCtrl,
-                          ),
-                          const SizedBox(height: 16),
-                          // Booster inventory
-                          _BoosterInventory(
-                            hammer: progress.hammerCount,
-                            colorBlast: progress.colorBlastCount,
-                            extraMoves: progress.extraMovesCount,
-                          ),
-                          const SizedBox(height: 16),
-                          // Level progress
-                          _LevelProgressBar(
-                            currentLevel: progress.currentLevel,
-                          ),
-                          const SizedBox(height: 12),
-                          // Mascot Home button
-                          _MascotHomeButton(onTap: () {
-                            SoundManager.instance.play(SoundType.buttonClick);
-                            HapticManager.instance.tapLight();
-                            context.go('/mascot-home');
-                          }),
-                          const SizedBox(height: 24),
-                        ],
-                      ),
-                    ),
-                  ),
+          // Dark overlay for readability
+          Container(
+            decoration: BoxDecoration(
+              gradient: LinearGradient(
+                begin: Alignment.topCenter,
+                end: Alignment.bottomCenter,
+                colors: [
+                  Colors.black.withAlpha(100),
+                  Colors.black.withAlpha(140),
+                  Colors.black.withAlpha(180),
                 ],
               ),
             ),
-          ],
-        ),
+          ),
+
+          // Animated glow orbs
+          _AnimatedOrbs(animation: _orbCtrl),
+
+          SafeArea(
+            child: Column(
+              children: [
+                _ProfileHeader(onBack: () {
+                  SoundManager.instance.play(SoundType.buttonClick);
+                  HapticManager.instance.tapLight();
+                  context.go('/map');
+                }),
+                Expanded(
+                  child: SingleChildScrollView(
+                    padding: const EdgeInsets.symmetric(horizontal: 16),
+                    child: Column(
+                      children: [
+                        const SizedBox(height: 8),
+                        // Mascot display with sprite image
+                        _MascotDisplay(
+                          bounceAnimation: _bounceCtrl,
+                          sparkleAnimation: _sparkleCtrl,
+                        ),
+                        const SizedBox(height: 8),
+                        // Player title
+                        const Text(
+                          'PatPat Oyuncusu',
+                          style: TextStyle(
+                            fontSize: 20,
+                            fontWeight: FontWeight.w800,
+                            color: GameColors.purpleLight,
+                            letterSpacing: 1,
+                            shadows: [
+                              Shadow(
+                                color: GameColors.neonPurple,
+                                blurRadius: 12,
+                              ),
+                            ],
+                          ),
+                        ),
+                        const SizedBox(height: 16),
+                        // Stats grid with glass-morphism
+                        _StatsGrid(
+                          level: progress.currentLevel,
+                          totalStars: progress.totalStars,
+                          totalScore: progress.totalScore,
+                          coins: progress.coins,
+                          achievementCount: progress.achievements.length,
+                          streak: progress.dailyRewardStreak,
+                          neonAnimation: _neonCtrl,
+                        ),
+                        const SizedBox(height: 16),
+                        // Booster inventory
+                        _BoosterInventory(
+                          hammer: progress.hammerCount,
+                          colorBlast: progress.colorBlastCount,
+                          extraMoves: progress.extraMovesCount,
+                        ),
+                        const SizedBox(height: 16),
+                        // Level progress
+                        _LevelProgressBar(
+                          currentLevel: progress.currentLevel,
+                        ),
+                        const SizedBox(height: 12),
+                        // Mascot Home button
+                        _MascotHomeButton(onTap: () {
+                          SoundManager.instance.play(SoundType.buttonClick);
+                          HapticManager.instance.tapLight();
+                          context.go('/mascot-home');
+                        }),
+                        const SizedBox(height: 24),
+                      ],
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ],
       ),
     );
   }
@@ -166,17 +212,20 @@ class _OrbPainter extends CustomPainter {
   void paint(Canvas canvas, Size size) {
     final orbs = [
       (
-        Offset(size.width * 0.2, size.height * (0.15 + 0.05 * sin(t * 2 * pi))),
+        Offset(size.width * 0.2,
+            size.height * (0.15 + 0.05 * sin(t * 2 * pi))),
         50.0,
         GameColors.neonPurple.withAlpha(30),
       ),
       (
-        Offset(size.width * 0.8, size.height * (0.3 + 0.04 * sin(t * 2 * pi + 1))),
+        Offset(size.width * 0.8,
+            size.height * (0.3 + 0.04 * sin(t * 2 * pi + 1))),
         40.0,
         GameColors.neonCyan.withAlpha(25),
       ),
       (
-        Offset(size.width * 0.5, size.height * (0.7 + 0.06 * sin(t * 2 * pi + 2))),
+        Offset(size.width * 0.5,
+            size.height * (0.7 + 0.06 * sin(t * 2 * pi + 2))),
         60.0,
         GameColors.hotPink.withAlpha(20),
       ),
@@ -245,7 +294,7 @@ class _ProfileHeader extends StatelessWidget {
 }
 
 // ---------------------------------------------------------------------------
-// Mascot Display — CustomPainter jelly mascot with sparkles + bounce
+// Mascot Display — sprite image with sparkles + bounce
 // ---------------------------------------------------------------------------
 
 class _MascotDisplay extends StatelessWidget {
@@ -260,20 +309,71 @@ class _MascotDisplay extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return SizedBox(
-      height: 180,
-      width: 180,
+      height: 200,
+      width: 200,
       child: AnimatedBuilder(
         animation: Listenable.merge([bounceAnimation, sparkleAnimation]),
         builder: (context, _) {
           final bounce = -8.0 * sin(bounceAnimation.value * pi);
           return Transform.translate(
             offset: Offset(0, bounce),
-            child: CustomPaint(
-              size: const Size(180, 180),
-              painter: _MascotPainter(
-                sparkleRotation: sparkleAnimation.value * 2 * pi,
-                bouncePhase: bounceAnimation.value,
-              ),
+            child: Stack(
+              alignment: Alignment.center,
+              children: [
+                // Sparkle ring
+                CustomPaint(
+                  size: const Size(200, 200),
+                  painter: _SparkleRingPainter(
+                    rotation: sparkleAnimation.value * 2 * pi,
+                    bouncePhase: bounceAnimation.value,
+                  ),
+                ),
+                // Gold frame circle
+                Container(
+                  width: 130,
+                  height: 130,
+                  decoration: BoxDecoration(
+                    shape: BoxShape.circle,
+                    border: Border.all(
+                      color: GameColors.goldFrame,
+                      width: 3.5,
+                    ),
+                    boxShadow: [
+                      BoxShadow(
+                        color: GameColors.goldFrame.withAlpha(60),
+                        blurRadius: 16,
+                        spreadRadius: 3,
+                      ),
+                      BoxShadow(
+                        color: GameColors.neonPurple.withAlpha(40),
+                        blurRadius: 24,
+                      ),
+                    ],
+                  ),
+                  child: ClipOval(
+                    child: Image.asset(
+                      'assets/sprites/jelly_purple.png',
+                      width: 120,
+                      height: 120,
+                      fit: BoxFit.contain,
+                      errorBuilder: (_, __, ___) => CustomPaint(
+                        size: const Size(120, 120),
+                        painter: _FallbackMascotPainter(
+                          bouncePhase: bounceAnimation.value,
+                        ),
+                      ),
+                    ),
+                  ),
+                ),
+                // Crown on top
+                Positioned(
+                  top: 12,
+                  child: CustomPaint(
+                    size: const Size(36, 24),
+                    painter: _CrownPainter(),
+                  ),
+                ),
+              ],
             ),
           );
         },
@@ -282,47 +382,82 @@ class _MascotDisplay extends StatelessWidget {
   }
 }
 
-class _MascotPainter extends CustomPainter {
-  final double sparkleRotation;
+class _SparkleRingPainter extends CustomPainter {
+  final double rotation;
   final double bouncePhase;
-
-  _MascotPainter({required this.sparkleRotation, required this.bouncePhase});
+  _SparkleRingPainter({required this.rotation, required this.bouncePhase});
 
   @override
   void paint(Canvas canvas, Size size) {
     final cx = size.width / 2;
-    final cy = size.height / 2 + 5;
+    final cy = size.height / 2;
+    const radius = 90.0;
 
-    // Gold circular frame
-    final framePaint = Paint()
-      ..style = PaintingStyle.stroke
-      ..strokeWidth = 3
-      ..shader = const SweepGradient(
-        colors: [
-          GameColors.goldFrame,
-          GameColors.goldLight,
-          GameColors.goldDark,
-          GameColors.goldFrame,
-        ],
-      ).createShader(Rect.fromCircle(center: Offset(cx, cy), radius: 80));
-    canvas.drawCircle(Offset(cx, cy), 80, framePaint);
-
-    // Spinning sparkle ring (12 dots)
+    // 12 sparkle dots
     for (int i = 0; i < 12; i++) {
-      final angle = sparkleRotation + (i * 2 * pi / 12);
-      final sx = cx + cos(angle) * 78;
-      final sy = cy + sin(angle) * 78;
-      final hue = (i * 30.0 + sparkleRotation * 180 / pi) % 360;
+      final angle = rotation + (i * 2 * pi / 12);
+      final sx = cx + cos(angle) * radius;
+      final sy = cy + sin(angle) * radius;
+      final hue = (i * 30.0 + rotation * 180 / pi) % 360;
       final sparkColor = HSLColor.fromAHSL(1, hue, 0.9, 0.7).toColor();
       final dotPaint = Paint()
         ..color = sparkColor.withAlpha(200)
         ..maskFilter = const MaskFilter.blur(BlurStyle.normal, 3);
       canvas.drawCircle(Offset(sx, sy), 3, dotPaint);
     }
+  }
 
-    // Body — purple gradient blob
+  @override
+  bool shouldRepaint(covariant _SparkleRingPainter old) => true;
+}
+
+class _CrownPainter extends CustomPainter {
+  @override
+  void paint(Canvas canvas, Size size) {
+    final cx = size.width / 2;
+    final cy = size.height / 2;
+    final path = Path()
+      ..moveTo(cx - 16, cy + 8)
+      ..lineTo(cx - 18, cy - 4)
+      ..lineTo(cx - 8, cy + 2)
+      ..lineTo(cx, cy - 10)
+      ..lineTo(cx + 8, cy + 2)
+      ..lineTo(cx + 18, cy - 4)
+      ..lineTo(cx + 16, cy + 8)
+      ..close();
+    final crownPaint = Paint()
+      ..shader = LinearGradient(
+        colors: const [
+          GameColors.goldLight,
+          GameColors.goldFrame,
+          GameColors.goldDark,
+        ],
+        begin: Alignment.topCenter,
+        end: Alignment.bottomCenter,
+      ).createShader(Rect.fromLTWH(0, 0, size.width, size.height));
+    canvas.drawPath(path, crownPaint);
+
+    // Gem on top
+    final gemPaint = Paint()
+      ..color = GameColors.goldLight
+      ..maskFilter = const MaskFilter.blur(BlurStyle.normal, 2);
+    canvas.drawCircle(Offset(cx, cy - 12), 3, gemPaint);
+  }
+
+  @override
+  bool shouldRepaint(covariant _CrownPainter old) => false;
+}
+
+class _FallbackMascotPainter extends CustomPainter {
+  final double bouncePhase;
+  _FallbackMascotPainter({required this.bouncePhase});
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    final cx = size.width / 2;
+    final cy = size.height / 2;
     final bodyRect =
-        Rect.fromCenter(center: Offset(cx, cy), width: 100, height: 110);
+        Rect.fromCenter(center: Offset(cx, cy), width: 80, height: 90);
     final bodyPaint = Paint()
       ..shader = const RadialGradient(
         colors: [Color(0xFFCC80FF), Color(0xFF8B24DB), Color(0xFF5820A0)],
@@ -330,84 +465,46 @@ class _MascotPainter extends CustomPainter {
       ).createShader(bodyRect);
     canvas.drawOval(bodyRect, bodyPaint);
 
-    // Body shine
-    final shinePaint = Paint()
-      ..shader = RadialGradient(
-        center: const Alignment(-0.3, -0.4),
-        radius: 0.6,
-        colors: [Colors.white.withAlpha(60), Colors.white.withAlpha(0)],
-      ).createShader(bodyRect);
-    canvas.drawOval(bodyRect, shinePaint);
-
     // Eyes
-    _drawEye(canvas, Offset(cx - 16, cy - 12));
-    _drawEye(canvas, Offset(cx + 16, cy - 12));
+    canvas.drawCircle(Offset(cx - 14, cy - 8), 8, Paint()..color = Colors.white);
+    canvas.drawCircle(
+        Offset(cx - 13, cy - 7), 5, Paint()..color = const Color(0xFF1A0040));
+    canvas.drawCircle(
+        Offset(cx - 15, cy - 10), 2.5, Paint()..color = Colors.white);
+    canvas.drawCircle(Offset(cx + 14, cy - 8), 8, Paint()..color = Colors.white);
+    canvas.drawCircle(
+        Offset(cx + 15, cy - 7), 5, Paint()..color = const Color(0xFF1A0040));
+    canvas.drawCircle(
+        Offset(cx + 13, cy - 10), 2.5, Paint()..color = Colors.white);
 
     // Smile
     final smilePath = Path()
-      ..moveTo(cx - 14, cy + 10)
-      ..quadraticBezierTo(cx, cy + 24, cx + 14, cy + 10);
-    final smilePaint = Paint()
-      ..style = PaintingStyle.stroke
-      ..strokeWidth = 2.5
-      ..strokeCap = StrokeCap.round
-      ..color = const Color(0xFF3D0080);
-    canvas.drawPath(smilePath, smilePaint);
+      ..moveTo(cx - 12, cy + 8)
+      ..quadraticBezierTo(cx, cy + 20, cx + 12, cy + 8);
+    canvas.drawPath(
+      smilePath,
+      Paint()
+        ..style = PaintingStyle.stroke
+        ..strokeWidth = 2
+        ..strokeCap = StrokeCap.round
+        ..color = const Color(0xFF3D0080),
+    );
 
-    // Cheek blush (pulsing)
+    // Blush
     final blushAlpha = (80 + 40 * sin(bouncePhase * 2 * pi)).toInt();
     final blushPaint = Paint()
       ..color = const Color(0xFFFF80A8).withAlpha(blushAlpha)
-      ..maskFilter = const MaskFilter.blur(BlurStyle.normal, 6);
-    canvas.drawCircle(Offset(cx - 30, cy + 6), 8, blushPaint);
-    canvas.drawCircle(Offset(cx + 30, cy + 6), 8, blushPaint);
-
-    // Crown / star on top
-    _drawCrown(canvas, Offset(cx, cy - 58));
-  }
-
-  void _drawEye(Canvas canvas, Offset center) {
-    // White eye
-    canvas.drawCircle(center, 10, Paint()..color = Colors.white);
-    // Pupil
-    canvas.drawCircle(
-        Offset(center.dx + 1, center.dy + 1), 6, Paint()..color = const Color(0xFF1A0040));
-    // Shine dot
-    canvas.drawCircle(
-        Offset(center.dx - 2, center.dy - 3), 3, Paint()..color = Colors.white);
-  }
-
-  void _drawCrown(Canvas canvas, Offset center) {
-    final path = Path()
-      ..moveTo(center.dx - 12, center.dy + 6)
-      ..lineTo(center.dx - 14, center.dy - 4)
-      ..lineTo(center.dx - 6, center.dy + 1)
-      ..lineTo(center.dx, center.dy - 8)
-      ..lineTo(center.dx + 6, center.dy + 1)
-      ..lineTo(center.dx + 14, center.dy - 4)
-      ..lineTo(center.dx + 12, center.dy + 6)
-      ..close();
-    final crownPaint = Paint()
-      ..shader = const LinearGradient(
-        colors: [GameColors.goldLight, GameColors.goldFrame, GameColors.goldDark],
-        begin: Alignment.topCenter,
-        end: Alignment.bottomCenter,
-      ).createShader(Rect.fromCenter(center: center, width: 28, height: 16));
-    canvas.drawPath(path, crownPaint);
-
-    // Small star on top
-    final starPaint = Paint()
-      ..color = GameColors.goldLight
-      ..maskFilter = const MaskFilter.blur(BlurStyle.normal, 2);
-    canvas.drawCircle(Offset(center.dx, center.dy - 10), 3, starPaint);
+      ..maskFilter = const MaskFilter.blur(BlurStyle.normal, 5);
+    canvas.drawCircle(Offset(cx - 24, cy + 4), 6, blushPaint);
+    canvas.drawCircle(Offset(cx + 24, cy + 4), 6, blushPaint);
   }
 
   @override
-  bool shouldRepaint(covariant _MascotPainter old) => true;
+  bool shouldRepaint(covariant _FallbackMascotPainter old) => true;
 }
 
 // ---------------------------------------------------------------------------
-// Stats Grid (2 cols x 3 rows)
+// Stats Grid (2 cols x 3 rows) with glass-morphism
 // ---------------------------------------------------------------------------
 
 class _StatsGrid extends StatelessWidget {
@@ -432,12 +529,18 @@ class _StatsGrid extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final stats = [
-      _StatData(Icons.trending_up_rounded, 'Seviye', '$level', GameColors.neonGreen),
-      _StatData(Icons.star_rounded, 'Toplam Yildiz', '$totalStars', GameColors.goldFrame),
-      _StatData(Icons.score_rounded, 'Toplam Skor', _formatNumber(totalScore), GameColors.hotPink),
-      _StatData(Icons.monetization_on_rounded, 'Toplam Altin', '$coins', GameColors.goldLight),
-      _StatData(Icons.emoji_events_rounded, 'Basarimlar', '$achievementCount', GameColors.orange),
-      _StatData(Icons.local_fire_department_rounded, 'Gunluk Seri', '$streak', const Color(0xFFFF4444)),
+      _StatData(
+          Icons.trending_up_rounded, 'Seviye', '$level', GameColors.neonGreen),
+      _StatData(Icons.star_rounded, 'Toplam Y\u0131ld\u0131z', '$totalStars',
+          GameColors.goldFrame),
+      _StatData(Icons.score_rounded, 'Toplam Skor',
+          _formatNumber(totalScore), GameColors.hotPink),
+      _StatData(Icons.monetization_on_rounded, 'Toplam Coin', '$coins',
+          GameColors.goldLight),
+      _StatData(Icons.emoji_events_rounded, 'Kazan\u0131lan Ba\u015far\u0131m',
+          '$achievementCount', GameColors.orange),
+      _StatData(Icons.local_fire_department_rounded, 'G\u00fcnl\u00fck Seri',
+          '$streak', const Color(0xFFFF4444)),
     ];
 
     return AnimatedBuilder(
@@ -451,7 +554,8 @@ class _StatsGrid extends StatelessWidget {
           mainAxisSpacing: 10,
           childAspectRatio: 1.6,
           children: stats
-              .map((s) => _StatCard(data: s, neonValue: neonAnimation.value))
+              .map((s) =>
+                  _GlassStatCard(data: s, neonValue: neonAnimation.value))
               .toList(),
         );
       },
@@ -473,72 +577,92 @@ class _StatData {
   const _StatData(this.icon, this.label, this.value, this.color);
 }
 
-class _StatCard extends StatelessWidget {
+// Glass-morphism stat card
+class _GlassStatCard extends StatelessWidget {
   final _StatData data;
   final double neonValue;
 
-  const _StatCard({required this.data, required this.neonValue});
+  const _GlassStatCard({required this.data, required this.neonValue});
 
   @override
   Widget build(BuildContext context) {
-    final borderAlpha = (60 + 60 * neonValue).toInt();
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
-      decoration: BoxDecoration(
-        gradient: const LinearGradient(
-          colors: [Color(0xFF1A0660), Color(0xFF0D0235)],
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-        ),
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(
-          color: data.color.withAlpha(borderAlpha),
-          width: 1.5,
-        ),
-        boxShadow: [
-          BoxShadow(
-            color: data.color.withAlpha(20 + (20 * neonValue).toInt()),
-            blurRadius: 12,
-          ),
-        ],
-      ),
-      child: Row(
-        children: [
-          Container(
-            width: 44,
-            height: 44,
-            decoration: BoxDecoration(
-              shape: BoxShape.circle,
-              color: data.color.withAlpha(30),
-            ),
-            child: Icon(data.icon, color: data.color, size: 26),
-          ),
-          const SizedBox(width: 10),
-          Expanded(
-            child: Column(
-              mainAxisAlignment: MainAxisAlignment.center,
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  data.value,
-                  style: const TextStyle(
-                    color: Colors.white,
-                    fontSize: 22,
-                    fontWeight: FontWeight.w900,
-                  ),
-                ),
-                Text(
-                  data.label,
-                  style: TextStyle(
-                    color: Colors.white.withAlpha(128),
-                    fontSize: 12,
-                    fontWeight: FontWeight.w500,
-                  ),
-                ),
+    final borderAlpha = (40 + 80 * neonValue).toInt();
+    return ClipRRect(
+      borderRadius: BorderRadius.circular(16),
+      child: BackdropFilter(
+        filter: ImageFilter.blur(sigmaX: 12, sigmaY: 12),
+        child: Container(
+          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+          decoration: BoxDecoration(
+            gradient: LinearGradient(
+              begin: Alignment.topLeft,
+              end: Alignment.bottomRight,
+              colors: [
+                Colors.white.withAlpha(18),
+                data.color.withAlpha(12),
+                Colors.white.withAlpha(8),
               ],
             ),
+            borderRadius: BorderRadius.circular(16),
+            border: Border.all(
+              color: data.color.withAlpha(borderAlpha),
+              width: 1.5,
+            ),
+            boxShadow: [
+              BoxShadow(
+                color: data.color.withAlpha(15 + (20 * neonValue).toInt()),
+                blurRadius: 16,
+              ),
+            ],
           ),
-        ],
+          child: Row(
+            children: [
+              Container(
+                width: 44,
+                height: 44,
+                decoration: BoxDecoration(
+                  shape: BoxShape.circle,
+                  color: data.color.withAlpha(30),
+                  border: Border.all(
+                    color: data.color.withAlpha(60),
+                  ),
+                  boxShadow: [
+                    BoxShadow(
+                      color: data.color.withAlpha(20),
+                      blurRadius: 8,
+                    ),
+                  ],
+                ),
+                child: Icon(data.icon, color: data.color, size: 26),
+              ),
+              const SizedBox(width: 10),
+              Expanded(
+                child: Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      data.value,
+                      style: const TextStyle(
+                        color: Colors.white,
+                        fontSize: 22,
+                        fontWeight: FontWeight.w900,
+                      ),
+                    ),
+                    Text(
+                      data.label,
+                      style: TextStyle(
+                        color: Colors.white.withAlpha(140),
+                        fontSize: 11,
+                        fontWeight: FontWeight.w500,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+        ),
       ),
     );
   }
@@ -566,7 +690,7 @@ class _BoosterInventory extends StatelessWidget {
         Expanded(
           child: _BoosterCard(
             icon: Icons.gavel_rounded,
-            name: 'Cekic',
+            name: '\u00c7eki\u00e7',
             count: hammer,
             color: GameColors.orange,
           ),
@@ -609,66 +733,72 @@ class _BoosterCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 8),
-      decoration: BoxDecoration(
-        color: const Color(0xFF1A0660),
-        borderRadius: BorderRadius.circular(14),
-        border: Border.all(color: color.withAlpha(60)),
-      ),
-      child: Column(
-        children: [
-          Stack(
-            clipBehavior: Clip.none,
+    return ClipRRect(
+      borderRadius: BorderRadius.circular(14),
+      child: BackdropFilter(
+        filter: ImageFilter.blur(sigmaX: 8, sigmaY: 8),
+        child: Container(
+          padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 8),
+          decoration: BoxDecoration(
+            color: Colors.white.withAlpha(12),
+            borderRadius: BorderRadius.circular(14),
+            border: Border.all(color: color.withAlpha(60)),
+          ),
+          child: Column(
             children: [
-              Container(
-                width: 50,
-                height: 50,
-                decoration: BoxDecoration(
-                  shape: BoxShape.circle,
-                  color: color.withAlpha(30),
-                  border: Border.all(color: color.withAlpha(80)),
-                ),
-                child: Icon(icon, color: color, size: 26),
-              ),
-              Positioned(
-                top: -4,
-                right: -4,
-                child: Container(
-                  padding:
-                      const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-                  decoration: BoxDecoration(
-                    color: GameColors.goldDark,
-                    borderRadius: BorderRadius.circular(10),
-                    boxShadow: [
-                      BoxShadow(
-                        color: GameColors.goldDark.withAlpha(120),
-                        blurRadius: 4,
-                      ),
-                    ],
+              Stack(
+                clipBehavior: Clip.none,
+                children: [
+                  Container(
+                    width: 50,
+                    height: 50,
+                    decoration: BoxDecoration(
+                      shape: BoxShape.circle,
+                      color: color.withAlpha(30),
+                      border: Border.all(color: color.withAlpha(80)),
+                    ),
+                    child: Icon(icon, color: color, size: 26),
                   ),
-                  child: Text(
-                    '$count',
-                    style: const TextStyle(
-                      color: Colors.white,
-                      fontSize: 12,
-                      fontWeight: FontWeight.w800,
+                  Positioned(
+                    top: -4,
+                    right: -4,
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(
+                          horizontal: 6, vertical: 2),
+                      decoration: BoxDecoration(
+                        color: GameColors.goldDark,
+                        borderRadius: BorderRadius.circular(10),
+                        boxShadow: [
+                          BoxShadow(
+                            color: GameColors.goldDark.withAlpha(120),
+                            blurRadius: 4,
+                          ),
+                        ],
+                      ),
+                      child: Text(
+                        '$count',
+                        style: const TextStyle(
+                          color: Colors.white,
+                          fontSize: 12,
+                          fontWeight: FontWeight.w800,
+                        ),
+                      ),
                     ),
                   ),
+                ],
+              ),
+              const SizedBox(height: 8),
+              Text(
+                name,
+                style: TextStyle(
+                  color: Colors.white.withAlpha(180),
+                  fontSize: 11,
+                  fontWeight: FontWeight.w600,
                 ),
               ),
             ],
           ),
-          const SizedBox(height: 8),
-          Text(
-            name,
-            style: TextStyle(
-              color: Colors.white.withAlpha(180),
-              fontSize: 11,
-              fontWeight: FontWeight.w600,
-            ),
-          ),
-        ],
+        ),
       ),
     );
   }
@@ -689,113 +819,117 @@ class _LevelProgressBar extends StatelessWidget {
     final completed = (currentLevel - 1).clamp(0, _maxLevel);
     final pct = completed / _maxLevel;
 
-    return Container(
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: const Color(0xFF1A0660),
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: GameColors.purpleLight.withAlpha(40)),
-      ),
-      child: Column(
-        children: [
-          Row(
+    return ClipRRect(
+      borderRadius: BorderRadius.circular(16),
+      child: BackdropFilter(
+        filter: ImageFilter.blur(sigmaX: 8, sigmaY: 8),
+        child: Container(
+          padding: const EdgeInsets.all(16),
+          decoration: BoxDecoration(
+            color: Colors.white.withAlpha(12),
+            borderRadius: BorderRadius.circular(16),
+            border: Border.all(color: GameColors.purpleLight.withAlpha(40)),
+          ),
+          child: Column(
             children: [
-              Text(
-                '$completed/$_maxLevel seviye tamamlandi',
-                style: TextStyle(
-                  color: Colors.white.withAlpha(200),
-                  fontSize: 13,
-                  fontWeight: FontWeight.w600,
-                ),
-              ),
-              const Spacer(),
-              Text(
-                '${(pct * 100).toStringAsFixed(1)}%',
-                style: const TextStyle(
-                  color: GameColors.goldLight,
-                  fontSize: 13,
-                  fontWeight: FontWeight.w800,
-                ),
-              ),
-            ],
-          ),
-          const SizedBox(height: 10),
-          // Progress bar
-          ClipRRect(
-            borderRadius: BorderRadius.circular(6),
-            child: SizedBox(
-              height: 12,
-              child: Stack(
+              Row(
                 children: [
-                  // Background
-                  Container(color: Colors.white.withAlpha(15)),
-                  // Fill
-                  FractionallySizedBox(
-                    widthFactor: pct,
-                    child: Container(
-                      decoration: const BoxDecoration(
-                        gradient: LinearGradient(
-                          colors: [
-                            GameColors.neonPurple,
-                            GameColors.hotPink,
-                            GameColors.goldFrame,
-                          ],
-                        ),
-                      ),
-                    ),
-                  ),
-                ],
-              ),
-            ),
-          ),
-          const SizedBox(height: 10),
-          // Milestone dots
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [1, 20, 40, 60, 80, 100, 120].map((m) {
-              final reached = currentLevel > m;
-              return Column(
-                children: [
-                  Container(
-                    width: 14,
-                    height: 14,
-                    decoration: BoxDecoration(
-                      shape: BoxShape.circle,
-                      color: reached
-                          ? GameColors.goldFrame
-                          : Colors.white.withAlpha(30),
-                      border: Border.all(
-                        color: reached
-                            ? GameColors.goldLight
-                            : Colors.white.withAlpha(50),
-                        width: 1.5,
-                      ),
-                      boxShadow: reached
-                          ? [
-                              BoxShadow(
-                                color: GameColors.goldDark.withAlpha(80),
-                                blurRadius: 4,
-                              ),
-                            ]
-                          : null,
-                    ),
-                  ),
-                  const SizedBox(height: 2),
                   Text(
-                    '$m',
+                    '$completed/$_maxLevel seviye tamamland\u0131',
                     style: TextStyle(
-                      color: reached
-                          ? GameColors.goldLight
-                          : Colors.white.withAlpha(60),
-                      fontSize: 9,
+                      color: Colors.white.withAlpha(200),
+                      fontSize: 13,
                       fontWeight: FontWeight.w600,
                     ),
                   ),
+                  const Spacer(),
+                  Text(
+                    '${(pct * 100).toStringAsFixed(1)}%',
+                    style: const TextStyle(
+                      color: GameColors.goldLight,
+                      fontSize: 13,
+                      fontWeight: FontWeight.w800,
+                    ),
+                  ),
                 ],
-              );
-            }).toList(),
+              ),
+              const SizedBox(height: 10),
+              // Progress bar
+              ClipRRect(
+                borderRadius: BorderRadius.circular(6),
+                child: SizedBox(
+                  height: 12,
+                  child: Stack(
+                    children: [
+                      Container(color: Colors.white.withAlpha(15)),
+                      FractionallySizedBox(
+                        widthFactor: pct,
+                        child: Container(
+                          decoration: const BoxDecoration(
+                            gradient: LinearGradient(
+                              colors: [
+                                GameColors.neonPurple,
+                                GameColors.hotPink,
+                                GameColors.goldFrame,
+                              ],
+                            ),
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+              const SizedBox(height: 10),
+              // Milestone dots
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [1, 20, 40, 60, 80, 100, 120].map((m) {
+                  final reached = currentLevel > m;
+                  return Column(
+                    children: [
+                      Container(
+                        width: 14,
+                        height: 14,
+                        decoration: BoxDecoration(
+                          shape: BoxShape.circle,
+                          color: reached
+                              ? GameColors.goldFrame
+                              : Colors.white.withAlpha(30),
+                          border: Border.all(
+                            color: reached
+                                ? GameColors.goldLight
+                                : Colors.white.withAlpha(50),
+                            width: 1.5,
+                          ),
+                          boxShadow: reached
+                              ? [
+                                  BoxShadow(
+                                    color: GameColors.goldDark.withAlpha(80),
+                                    blurRadius: 4,
+                                  ),
+                                ]
+                              : null,
+                        ),
+                      ),
+                      const SizedBox(height: 2),
+                      Text(
+                        '$m',
+                        style: TextStyle(
+                          color: reached
+                              ? GameColors.goldLight
+                              : Colors.white.withAlpha(60),
+                          fontSize: 9,
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
+                    ],
+                  );
+                }).toList(),
+              ),
+            ],
           ),
-        ],
+        ),
       ),
     );
   }
