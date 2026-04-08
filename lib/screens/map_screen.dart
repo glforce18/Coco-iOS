@@ -931,6 +931,16 @@ class _BottomNavBar extends StatelessWidget {
                 context.go('/events');
               },
             ),
+            _NavButton(
+              icon: Icons.person_rounded,
+              label: 'Profil',
+              isActive: false,
+              onTap: () {
+                SoundManager.instance.play(SoundType.buttonClick);
+                HapticManager.instance.tapLight();
+                context.go('/profile');
+              },
+            ),
           ],
         ),
       ),

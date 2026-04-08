@@ -5,6 +5,8 @@ import 'package:patpat_game/screens/event_screen.dart';
 import 'package:patpat_game/screens/game_screen.dart';
 import 'package:patpat_game/screens/main_menu_screen.dart';
 import 'package:patpat_game/screens/map_screen.dart';
+import 'package:patpat_game/screens/mascot_home_screen.dart';
+import 'package:patpat_game/screens/profile_screen.dart';
 import 'package:patpat_game/screens/shop_screen.dart';
 import 'package:patpat_game/screens/spin_wheel_screen.dart';
 
@@ -61,6 +63,24 @@ class AppRouter {
         path: '/events',
         pageBuilder: (context, state) => CustomTransitionPage(
           child: const EventScreen(),
+          transitionsBuilder: (context, animation, secondaryAnimation, child) =>
+              FadeTransition(opacity: animation, child: child),
+          transitionDuration: const Duration(milliseconds: 300),
+        ),
+      ),
+      GoRoute(
+        path: '/profile',
+        pageBuilder: (context, state) => CustomTransitionPage(
+          child: const ProfileScreen(),
+          transitionsBuilder: (context, animation, secondaryAnimation, child) =>
+              FadeTransition(opacity: animation, child: child),
+          transitionDuration: const Duration(milliseconds: 300),
+        ),
+      ),
+      GoRoute(
+        path: '/mascot-home',
+        pageBuilder: (context, state) => CustomTransitionPage(
+          child: const MascotHomeScreen(),
           transitionsBuilder: (context, animation, secondaryAnimation, child) =>
               FadeTransition(opacity: animation, child: child),
           transitionDuration: const Duration(milliseconds: 300),

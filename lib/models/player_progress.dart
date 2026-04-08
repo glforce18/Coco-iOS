@@ -19,6 +19,7 @@ class PlayerProgress {
   int lastDailyRewardDay;
   int piggyBankCoins;
   Set<String> achievements;
+  Set<String> decorations;
   bool tutorialCompleted;
 
   // Spin wheel
@@ -58,6 +59,7 @@ class PlayerProgress {
     this.lastDailyRewardDay = 0,
     this.piggyBankCoins = 0,
     Set<String>? achievements,
+    Set<String>? decorations,
     this.tutorialCompleted = false,
     this.lastSpinTime = 0,
     this.lastEventWeek = 0,
@@ -72,6 +74,7 @@ class PlayerProgress {
   })  : stars = stars ?? {},
         highScores = highScores ?? {},
         achievements = achievements ?? {},
+        decorations = decorations ?? {},
         eventProgress = eventProgress ?? {};
 
   int get totalStars => stars.values.fold(0, (a, b) => a + b);

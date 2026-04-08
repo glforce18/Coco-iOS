@@ -37,6 +37,7 @@ class PlayerProgressNotifier extends StateNotifier<PlayerProgress> {
       lastDailyRewardDay: state.lastDailyRewardDay,
       piggyBankCoins: state.piggyBankCoins,
       achievements: Set<String>.from(state.achievements),
+      decorations: Set<String>.from(state.decorations),
       tutorialCompleted: state.tutorialCompleted,
       lastSpinTime: state.lastSpinTime,
       lastEventWeek: state.lastEventWeek,
@@ -352,6 +353,25 @@ class PlayerProgressNotifier extends StateNotifier<PlayerProgress> {
     }
 
     return newlyUnlocked;
+  }
+
+  /// Buy a decoration for the mascot home.
+  Future<bool> buyDecoration(String decorationId, int price) async {
+    if (state.decorations.contains(decorationId)) return false;
+    if (state.coins < price) return false;
+    state.coins -= price;
+    state.decorations.add(decorationId);
+    state = _copyState();
+    await ProgressStorage.save(state);
+    return true;
+  }
+
+  /// Mark tutorial as completed.
+  Future<void> completeTutorial() async {
+    if (state.tutorialCompleted) return;
+    state.tutorialCompleted = true;
+    state = _copyState();
+    await ProgressStorage.save(state);
   }
 
   /// Mark shop as visited (for achievement tracking).

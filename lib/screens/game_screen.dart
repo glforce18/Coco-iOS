@@ -17,6 +17,8 @@ import 'package:patpat_game/widgets/game_hud.dart';
 import 'package:patpat_game/widgets/game_over_overlay.dart';
 import 'package:patpat_game/widgets/level_complete_overlay.dart';
 import 'package:patpat_game/widgets/score_progress_bar.dart';
+import 'package:patpat_game/widgets/tutorial_overlay.dart';
+import 'package:patpat_game/game/tutorial_manager.dart';
 
 /// Main gameplay screen: wires [GameController] to all UI widgets.
 class GameScreen extends ConsumerStatefulWidget {
@@ -30,6 +32,7 @@ class GameScreen extends ConsumerStatefulWidget {
 
 class _GameScreenState extends ConsumerState<GameScreen> {
   late final GameController _controller;
+  late final TutorialManager _tutorial;
 
   // Track previous state/combo so we only fire sounds on transitions.
   GameState _prevState = GameState.idle;
@@ -40,10 +43,14 @@ class _GameScreenState extends ConsumerState<GameScreen> {
     super.initState();
     _controller = GameController();
     _controller.addListener(_onControllerChange);
+
+    // Initialize tutorial + read progress for settings
+    final progress = ref.read(playerProgressProvider);
+    _tutorial = TutorialManager(startCompleted: progress.tutorialCompleted);
+
     _startLevel(widget.level);
 
     // Sync audio toggles from settings.
-    final progress = ref.read(playerProgressProvider);
     SoundManager.instance.enabled = progress.soundEnabled;
     MusicManager.instance.enabled = progress.musicEnabled;
     HapticManager.instance.enabled = progress.vibrationEnabled;
@@ -106,6 +113,23 @@ class _GameScreenState extends ConsumerState<GameScreen> {
 
     _prevState = newState;
     _prevCombo = newCombo;
+
+    // Auto-advance tutorial on relevant game events
+    if (!_tutorial.isCompleted && widget.level <= 3) {
+      final step = _tutorial.currentStep;
+      if (step != null) {
+        // After a swap action, advance from TEACH_SWAP
+        if (step == TutorialStep.teachSwap &&
+            newState == GameState.matching) {
+          _tutorial.advance();
+        }
+        // After a match/destroy, advance from TEACH_MATCH
+        if (step == TutorialStep.teachMatch &&
+            newState == GameState.destroying) {
+          _tutorial.advance();
+        }
+      }
+    }
 
     setState(() {});
   }
@@ -211,6 +235,37 @@ class _GameScreenState extends ConsumerState<GameScreen> {
                   score: _controller.score,
                   onRetry: () => _startLevel(widget.level),
                   onQuit: _onBack,
+                ),
+
+              // ── Tutorial overlay ────────────────────────────────────────
+              if (_tutorial.isVisible &&
+                  _tutorial.currentStep != null &&
+                  widget.level <= 3 &&
+                  _controller.state == GameState.idle)
+                TutorialOverlay(
+                  step: _tutorial.currentStep!,
+                  onContinue: () {
+                    setState(() {
+                      if (_tutorial.isWaitingForAction) {
+                        _tutorial.hideOverlay();
+                      } else {
+                        _tutorial.advance();
+                        if (_tutorial.isCompleted) {
+                          ref
+                              .read(playerProgressProvider.notifier)
+                              .completeTutorial();
+                        }
+                      }
+                    });
+                  },
+                  onSkip: () {
+                    setState(() {
+                      _tutorial.skip();
+                      ref
+                          .read(playerProgressProvider.notifier)
+                          .completeTutorial();
+                    });
+                  },
                 ),
 
               // ── Pause overlay ─────────────────────────────────────────
