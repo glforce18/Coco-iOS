@@ -13,6 +13,7 @@ import 'package:patpat_game/models/game_grid.dart';
 import 'package:patpat_game/models/level_config.dart';
 import 'package:patpat_game/models/position.dart';
 import 'package:patpat_game/models/score.dart';
+import 'package:patpat_game/widgets/special_effects_overlay.dart';
 
 /// Orchestrates the match-3 game loop: selection, swap, cascade,
 /// boosters, hints, goals, and win/lose conditions.
@@ -221,28 +222,56 @@ class GameController extends ChangeNotifier {
     final s2 = c2.specialType;
 
     List<ExplosionEffect>? specialEffects;
+    SpecialEffectType? effectType;
+    Position effectOrigin = pos1;
+
     if (s1 != SpecialType.none && s2 != SpecialType.none) {
+      effectType = _getComboEffectType(s1, s2);
       specialEffects = SpecialEngine.activateSpecialCombo(_grid, pos1, pos2);
       _updateGoalsFromEffects(specialEffects);
     } else if (s1 != SpecialType.none) {
+      effectType = _getSpecialEffectType(s1);
       specialEffects = SpecialEngine.activateSpecial(_grid, pos1, c2.jellyType);
       _updateGoalsFromEffects(specialEffects);
+      effectOrigin = pos1;
     } else if (s2 != SpecialType.none) {
+      effectType = _getSpecialEffectType(s2);
       specialEffects = SpecialEngine.activateSpecial(_grid, pos2, c1.jellyType);
       _updateGoalsFromEffects(specialEffects);
+      effectOrigin = pos2;
     }
 
-    // If a special was activated, animate the flash, add score, then
-    // run gravity + fill so cleared cells don't leave empty holes.
+    // If a special was activated, play the spectacular overlay effect,
+    // then run gravity + fill so cleared cells don't leave empty holes.
     if (specialEffects != null && specialEffects.isNotEmpty) {
       _score += specialEffects.length * 15;
 
-      // Animate flash on affected positions before they disappear
-      final affectedPositions =
+      final targetPositions =
           specialEffects.map((e) => e.position).toList();
+
+      // Determine effect duration based on type
+      final durationMs = switch (effectType) {
+        SpecialEffectType.rainbowWave => 500,
+        SpecialEffectType.boardClear => 550,
+        SpecialEffectType.lightningStrike => 400,
+        SpecialEffectType.multiBeam => 450,
+        _ => 400,
+      };
+
+      // Play the spectacular overlay effect
       notifyListeners();
-      await animator.animateSpecialActivation(affectedPositions,
-          durationMs: 300);
+      if (effectType != null) {
+        await animator.playSpecialEffect(SpecialEffect(
+          type: effectType,
+          origin: effectOrigin,
+          targets: targetPositions,
+          durationMs: durationMs,
+        ));
+      } else {
+        // Fallback to simple flash for unknown types
+        await animator.animateSpecialActivation(targetPositions,
+            durationMs: 300);
+      }
 
       // Gravity: let remaining jellies fall into empty cells
       _state = GameState.falling;
@@ -380,6 +409,53 @@ class GameController extends ChangeNotifier {
         }
       }
     }
+  }
+
+  // ─── Special effect type mapping ────────────────────────────────
+
+  /// Map a single special type to its visual effect type.
+  static SpecialEffectType _getSpecialEffectType(SpecialType s) {
+    return switch (s) {
+      SpecialType.rocketHorizontal => SpecialEffectType.rocketHorizontal,
+      SpecialType.rocketVertical => SpecialEffectType.rocketVertical,
+      SpecialType.bomb => SpecialEffectType.bombBlast,
+      SpecialType.rainbow => SpecialEffectType.rainbowWave,
+      SpecialType.lightning => SpecialEffectType.lightningStrike,
+      SpecialType.none => SpecialEffectType.bombBlast, // should not happen
+    };
+  }
+
+  /// Map a combo of two special types to the visual effect type.
+  static SpecialEffectType _getComboEffectType(
+      SpecialType s1, SpecialType s2) {
+    final isRocket1 =
+        s1 == SpecialType.rocketHorizontal || s1 == SpecialType.rocketVertical;
+    final isRocket2 =
+        s2 == SpecialType.rocketHorizontal || s2 == SpecialType.rocketVertical;
+
+    // rainbow + rainbow
+    if (s1 == SpecialType.rainbow && s2 == SpecialType.rainbow) {
+      return SpecialEffectType.boardClear;
+    }
+    // bomb + bomb
+    if (s1 == SpecialType.bomb && s2 == SpecialType.bomb) {
+      return SpecialEffectType.megaBomb;
+    }
+    // rocket + rocket
+    if (isRocket1 && isRocket2) {
+      return SpecialEffectType.rocketCross;
+    }
+    // rocket + bomb or bomb + rocket
+    if ((isRocket1 && s2 == SpecialType.bomb) ||
+        (s1 == SpecialType.bomb && isRocket2)) {
+      return SpecialEffectType.multiBeam;
+    }
+    // rainbow + any
+    if (s1 == SpecialType.rainbow || s2 == SpecialType.rainbow) {
+      return SpecialEffectType.rainbowWave;
+    }
+    // Fallback: use first special's effect
+    return _getSpecialEffectType(s1);
   }
 
   // ─── 9. _checkGameStatus ───────────────────────────────────────

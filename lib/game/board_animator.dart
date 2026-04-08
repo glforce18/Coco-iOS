@@ -3,6 +3,7 @@ import 'package:flutter/foundation.dart';
 
 import 'package:patpat_game/engine/match_engine.dart';
 import 'package:patpat_game/models/position.dart';
+import 'package:patpat_game/widgets/special_effects_overlay.dart';
 
 /// Type of cell animation currently active.
 enum AnimType {
@@ -130,8 +131,15 @@ class BoardAnimator extends ChangeNotifier {
   /// Active animations keyed by "row,col".
   final Map<String, CellAnimation> _animations = {};
 
+  /// Currently active special effect overlay (laser, shockwave, etc.).
+  SpecialEffect? _activeSpecialEffect;
+
+  /// The active special effect, or null if none is playing.
+  SpecialEffect? get activeSpecialEffect => _activeSpecialEffect;
+
   /// Whether any animations are currently running.
-  bool get hasActiveAnimations => _animations.isNotEmpty;
+  bool get hasActiveAnimations =>
+      _animations.isNotEmpty || _activeSpecialEffect != null;
 
   /// Get the current animation for a cell, or null if none.
   CellAnimation? getAnimation(int row, int col) => _animations['$row,$col'];
@@ -371,9 +379,26 @@ class BoardAnimator extends ChangeNotifier {
     notifyListeners();
   }
 
+  // ──────────────────────────────────────────────────────────────────
+  // Special effect overlay animation
+  // ──────────────────────────────────────────────────────────────────
+
+  /// Play a spectacular special activation effect overlay.
+  ///
+  /// The effect is rendered by [SpecialEffectsOverlay] via CustomPainter
+  /// on top of the game board. Returns when the effect duration has elapsed.
+  Future<void> playSpecialEffect(SpecialEffect effect) async {
+    _activeSpecialEffect = effect;
+    notifyListeners();
+    await Future<void>.delayed(Duration(milliseconds: effect.durationMs));
+    _activeSpecialEffect = null;
+    notifyListeners();
+  }
+
   /// Clear all active animations immediately.
   void clearAll() {
     _animations.clear();
+    _activeSpecialEffect = null;
     notifyListeners();
   }
 }

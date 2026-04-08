@@ -8,6 +8,7 @@ import 'package:patpat_game/models/enums.dart';
 import 'package:patpat_game/models/game_grid.dart';
 import 'package:patpat_game/models/position.dart';
 import 'package:patpat_game/theme/game_colors.dart';
+import 'package:patpat_game/widgets/special_effects_overlay.dart';
 
 /// Sprite asset path for a [JellyType].
 String _jellySpritePath(JellyType type) {
@@ -221,6 +222,17 @@ class _GameBoardState extends State<GameBoard>
                         _buildAnimatedCell(
                           r, c, cellSize, boardOffset, pulseValue,
                         ),
+                    // Special activation effects overlay (laser, shockwave, etc.)
+                    if (widget.animator.activeSpecialEffect != null)
+                      Positioned.fill(
+                        child: SpecialEffectsOverlay(
+                          activeEffect: widget.animator.activeSpecialEffect!,
+                          cellSize: cellSize,
+                          gap: _gap,
+                          gridRows: widget.grid.rows,
+                          gridCols: widget.grid.cols,
+                        ),
+                      ),
                   ],
                 );
               },
