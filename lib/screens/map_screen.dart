@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:patpat_game/audio/haptic_manager.dart';
+import 'package:patpat_game/audio/sound_manager.dart';
 import 'package:patpat_game/models/level_config.dart';
 import 'package:patpat_game/models/player_progress.dart';
 import 'package:patpat_game/providers/game_providers.dart';
@@ -196,7 +198,11 @@ class _MapHeader extends StatelessWidget {
           children: [
             // Back button
             GestureDetector(
-              onTap: onBack,
+              onTap: () {
+                SoundManager.instance.play(SoundType.buttonClick);
+                HapticManager.instance.tapLight();
+                onBack();
+              },
               child: Container(
                 width: 38,
                 height: 38,
@@ -570,6 +576,8 @@ class _LevelCardState extends State<_LevelCard>
 
   void _onTap() {
     if (_state == _LevelState.locked) return;
+    SoundManager.instance.play(SoundType.buttonClick);
+    HapticManager.instance.tapLight();
     context.go('/game/${widget.level}');
   }
 
@@ -846,25 +854,41 @@ class _BottomNavBar extends StatelessWidget {
               icon: Icons.home_rounded,
               label: 'Ana Sayfa',
               isActive: false,
-              onTap: () => context.go('/menu'),
+              onTap: () {
+                SoundManager.instance.play(SoundType.buttonClick);
+                HapticManager.instance.tapLight();
+                context.go('/menu');
+              },
             ),
             _NavButton(
               icon: Icons.shopping_cart_rounded,
               label: 'Market',
               isActive: false,
-              onTap: () => _showComingSoon(context),
+              onTap: () {
+                SoundManager.instance.play(SoundType.buttonClick);
+                HapticManager.instance.tapLight();
+                _showComingSoon(context);
+              },
             ),
             _NavButton(
               icon: Icons.person_rounded,
               label: 'Profil',
               isActive: false,
-              onTap: () => _showComingSoon(context),
+              onTap: () {
+                SoundManager.instance.play(SoundType.buttonClick);
+                HapticManager.instance.tapLight();
+                _showComingSoon(context);
+              },
             ),
             _NavButton(
               icon: Icons.settings_rounded,
               label: 'Ayarlar',
               isActive: false,
-              onTap: () => _showComingSoon(context),
+              onTap: () {
+                SoundManager.instance.play(SoundType.buttonClick);
+                HapticManager.instance.tapLight();
+                _showComingSoon(context);
+              },
             ),
           ],
         ),

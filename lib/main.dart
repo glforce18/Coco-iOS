@@ -1,6 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:patpat_game/audio/haptic_manager.dart';
+import 'package:patpat_game/audio/music_manager.dart';
+import 'package:patpat_game/audio/sound_manager.dart';
 import 'package:patpat_game/router.dart';
 import 'package:patpat_game/providers/game_providers.dart';
 
@@ -23,6 +26,13 @@ class _PatPatAppState extends ConsumerState<PatPatApp> {
   void initState() {
     super.initState();
     ref.read(playerProgressProvider.notifier).load();
+    _initAudio();
+  }
+
+  Future<void> _initAudio() async {
+    await SoundManager.instance.init();
+    await MusicManager.instance.init();
+    await HapticManager.instance.init();
   }
 
   @override
