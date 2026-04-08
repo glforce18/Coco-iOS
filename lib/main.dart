@@ -1,9 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:firebase_core/firebase_core.dart';
 import 'package:patpat_game/audio/haptic_manager.dart';
 import 'package:patpat_game/audio/music_manager.dart';
 import 'package:patpat_game/audio/sound_manager.dart';
+import 'package:patpat_game/auth/auth_manager.dart';
 import 'package:patpat_game/router.dart';
 import 'package:patpat_game/providers/game_providers.dart';
 
@@ -11,6 +13,16 @@ void main() async {
   WidgetsFlutterBinding.ensureInitialized();
   SystemChrome.setPreferredOrientations([DeviceOrientation.portraitUp]);
   SystemChrome.setEnabledSystemUIMode(SystemUiMode.edgeToEdge);
+
+  // Try to initialize Firebase, but don't crash if config is missing
+  try {
+    await Firebase.initializeApp();
+    AuthManager.instance.firebaseReady = true;
+  } catch (_) {
+    // Firebase not configured yet — auth features will be disabled
+    AuthManager.instance.firebaseReady = false;
+  }
+
   runApp(const ProviderScope(child: PatPatApp()));
 }
 

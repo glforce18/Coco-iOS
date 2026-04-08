@@ -1,9 +1,13 @@
+import 'dart:io' show Platform;
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:patpat_game/audio/haptic_manager.dart';
 import 'package:patpat_game/audio/music_manager.dart';
 import 'package:patpat_game/audio/sound_manager.dart';
+import 'package:patpat_game/auth/auth_manager.dart';
+import 'package:patpat_game/data/cloud_sync_manager.dart';
+import 'package:patpat_game/providers/auth_provider.dart';
 import 'package:patpat_game/providers/game_providers.dart';
 import 'package:patpat_game/theme/game_colors.dart';
 
@@ -25,6 +29,162 @@ class _MainMenuScreenState extends ConsumerState<MainMenuScreen> {
     HapticManager.instance.enabled = progress.vibrationEnabled;
     // Start menu music.
     MusicManager.instance.play(MusicTrack.menu);
+    // Check if user is already logged in from a previous session.
+    // Deferred to avoid modifying provider during widget tree build.
+    Future(() {
+      ref.read(authProvider.notifier).checkCurrentUser();
+    });
+  }
+
+  Widget _buildLoginButton(BuildContext context) {
+    final authState = ref.watch(authProvider);
+
+    if (authState.isLoggedIn) {
+      // Show logged-in state: user name + tap to show profile/logout
+      return MenuActionButton(
+        text: authState.userName ?? 'Hesabim',
+        gradientColors: const [
+          GameColors.neonCyan,
+          GameColors.blueLight,
+          GameColors.blueDark,
+        ],
+        onTap: () {
+          SoundManager.instance.play(SoundType.buttonClick);
+          HapticManager.instance.tapLight();
+          _showProfilePopup(context);
+        },
+      );
+    }
+
+    return MenuActionButton(
+      text: 'Giris Yap',
+      gradientColors: const [
+        GameColors.neonCyan,
+        GameColors.blueLight,
+        GameColors.blueDark,
+      ],
+      onTap: () {
+        SoundManager.instance.play(SoundType.buttonClick);
+        HapticManager.instance.tapLight();
+        _showLoginPopup(context);
+      },
+    );
+  }
+
+  void _showLoginPopup(BuildContext context) {
+    showDialog(
+      context: context,
+      barrierColor: Colors.black54,
+      builder: (dialogContext) => Center(
+        child: _LoginDialog(parentRef: ref),
+      ),
+    );
+  }
+
+  void _showProfilePopup(BuildContext context) {
+    final authState = ref.read(authProvider);
+    showDialog(
+      context: context,
+      barrierColor: Colors.black54,
+      builder: (dialogContext) => Center(
+        child: Material(
+          color: Colors.transparent,
+          child: Container(
+            width: 280,
+            padding: const EdgeInsets.all(20),
+            decoration: BoxDecoration(
+              borderRadius: BorderRadius.circular(20),
+              gradient: const LinearGradient(
+                begin: Alignment.topCenter,
+                end: Alignment.bottomCenter,
+                colors: [GameColors.bgLight, GameColors.bgDeep],
+              ),
+              border: Border.all(color: GameColors.goldFrame, width: 2.5),
+              boxShadow: [
+                BoxShadow(
+                  color: GameColors.goldDark.withAlpha(60),
+                  blurRadius: 24,
+                ),
+              ],
+            ),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                // Close button
+                Align(
+                  alignment: Alignment.topRight,
+                  child: GestureDetector(
+                    onTap: () => Navigator.of(dialogContext).pop(),
+                    child: const Icon(Icons.close, color: Colors.white70, size: 20),
+                  ),
+                ),
+                if (authState.photoUrl != null) ...[
+                  CircleAvatar(
+                    radius: 32,
+                    backgroundImage: NetworkImage(authState.photoUrl!),
+                  ),
+                  const SizedBox(height: 12),
+                ] else ...[
+                  CircleAvatar(
+                    radius: 32,
+                    backgroundColor: GameColors.neonCyan.withAlpha(40),
+                    child: const Icon(Icons.person, color: GameColors.neonCyan, size: 32),
+                  ),
+                  const SizedBox(height: 12),
+                ],
+                Text(
+                  authState.userName ?? 'Oyuncu',
+                  style: const TextStyle(
+                    fontSize: 18,
+                    fontWeight: FontWeight.w700,
+                    color: Colors.white,
+                  ),
+                ),
+                if (authState.userEmail != null) ...[
+                  const SizedBox(height: 4),
+                  Text(
+                    authState.userEmail!,
+                    style: TextStyle(
+                      fontSize: 12,
+                      color: Colors.white.withAlpha(140),
+                    ),
+                  ),
+                ],
+                const SizedBox(height: 20),
+                // Sign out button
+                GestureDetector(
+                  onTap: () async {
+                    await ref.read(authProvider.notifier).signOut();
+                    if (dialogContext.mounted) {
+                      Navigator.of(dialogContext).pop();
+                    }
+                  },
+                  child: Container(
+                    width: double.infinity,
+                    padding: const EdgeInsets.symmetric(vertical: 12),
+                    decoration: BoxDecoration(
+                      borderRadius: BorderRadius.circular(12),
+                      color: GameColors.pinkDark.withAlpha(60),
+                      border: Border.all(color: GameColors.pinkLight.withAlpha(80)),
+                    ),
+                    child: const Center(
+                      child: Text(
+                        'Cikis Yap',
+                        style: TextStyle(
+                          fontSize: 14,
+                          fontWeight: FontWeight.w700,
+                          color: GameColors.pinkLight,
+                        ),
+                      ),
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
   }
 
   @override
@@ -119,16 +279,8 @@ class _MainMenuScreenState extends ConsumerState<MainMenuScreen> {
 
                 const SizedBox(height: 12),
 
-                // Login button (disabled for now)
-                MenuActionButton(
-                  text: 'Giris Yap',
-                  gradientColors: const [
-                    GameColors.neonCyan,
-                    GameColors.blueLight,
-                    GameColors.blueDark,
-                  ],
-                  onTap: null,
-                ),
+                // Login / Profile button
+                _buildLoginButton(context),
 
                 const Spacer(flex: 2),
 
@@ -506,6 +658,292 @@ class _StatCapsule extends StatelessWidget {
           ),
         ),
       ],
+    );
+  }
+}
+
+// ---------------------------------------------------------------------------
+// Login Popup Dialog
+// ---------------------------------------------------------------------------
+class _LoginDialog extends ConsumerStatefulWidget {
+  final WidgetRef parentRef;
+  const _LoginDialog({required this.parentRef});
+
+  @override
+  ConsumerState<_LoginDialog> createState() => _LoginDialogState();
+}
+
+class _LoginDialogState extends ConsumerState<_LoginDialog> {
+  bool _isLoading = false;
+  String? _errorMessage;
+
+  Future<void> _handleSignIn(Future<bool> Function() signInMethod) async {
+    if (_isLoading) return;
+    setState(() {
+      _isLoading = true;
+      _errorMessage = null;
+    });
+
+    final success = await signInMethod();
+
+    if (success && mounted) {
+      // Pull cloud progress and merge
+      final cloudProgress = await CloudSyncManager.instance.pull();
+      if (cloudProgress != null) {
+        await widget.parentRef
+            .read(playerProgressProvider.notifier)
+            .mergeWithCloud(cloudProgress);
+      } else {
+        // No cloud data — push local progress to cloud
+        final localProgress = widget.parentRef.read(playerProgressProvider);
+        await CloudSyncManager.instance.push(localProgress);
+      }
+      if (mounted) Navigator.of(context).pop();
+    } else if (mounted) {
+      setState(() {
+        _isLoading = false;
+        _errorMessage = 'Giris basarisiz oldu';
+      });
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final firebaseReady = AuthManager.instance.firebaseReady;
+
+    return Material(
+      color: Colors.transparent,
+      child: Container(
+        width: 300,
+        padding: const EdgeInsets.all(24),
+        decoration: BoxDecoration(
+          borderRadius: BorderRadius.circular(20),
+          gradient: const LinearGradient(
+            begin: Alignment.topCenter,
+            end: Alignment.bottomCenter,
+            colors: [GameColors.bgLight, GameColors.bgDeep],
+          ),
+          border: Border.all(color: GameColors.goldFrame, width: 2.5),
+          boxShadow: [
+            BoxShadow(
+              color: GameColors.goldDark.withAlpha(60),
+              blurRadius: 24,
+            ),
+            BoxShadow(
+              color: GameColors.bgDeep.withAlpha(200),
+              blurRadius: 8,
+            ),
+          ],
+        ),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            // Header
+            Stack(
+              children: [
+                Center(
+                  child: Text(
+                    'Giris Yap',
+                    style: TextStyle(
+                      fontSize: 22,
+                      fontWeight: FontWeight.w800,
+                      color: GameColors.goldLight,
+                      letterSpacing: 1,
+                      shadows: [
+                        Shadow(
+                          color: GameColors.goldDark.withAlpha(140),
+                          blurRadius: 8,
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+                Positioned(
+                  right: -8,
+                  top: -8,
+                  child: IconButton(
+                    onPressed: () => Navigator.of(context).pop(),
+                    icon: const Icon(Icons.close, color: Colors.white70),
+                    iconSize: 20,
+                  ),
+                ),
+              ],
+            ),
+
+            const SizedBox(height: 8),
+
+            // Subtitle
+            Text(
+              'Ilerlemeni kaydet ve\ncihazlar arasi senkronla',
+              textAlign: TextAlign.center,
+              style: TextStyle(
+                fontSize: 13,
+                color: Colors.white.withAlpha(160),
+                height: 1.4,
+              ),
+            ),
+
+            const SizedBox(height: 24),
+
+            if (!firebaseReady) ...[
+              // Firebase not configured message
+              Container(
+                padding: const EdgeInsets.all(16),
+                decoration: BoxDecoration(
+                  borderRadius: BorderRadius.circular(12),
+                  color: GameColors.orangeDark.withAlpha(40),
+                  border: Border.all(color: GameColors.orangeLight.withAlpha(60)),
+                ),
+                child: Column(
+                  children: [
+                    const Icon(Icons.warning_amber_rounded,
+                        color: GameColors.orangeLight, size: 32),
+                    const SizedBox(height: 8),
+                    Text(
+                      'Firebase yapilandirilmadi',
+                      style: TextStyle(
+                        fontSize: 14,
+                        fontWeight: FontWeight.w600,
+                        color: GameColors.orangeLight.withAlpha(220),
+                      ),
+                    ),
+                    const SizedBox(height: 4),
+                    Text(
+                      'Giris ozelligi henuz aktif degil.',
+                      textAlign: TextAlign.center,
+                      style: TextStyle(
+                        fontSize: 12,
+                        color: Colors.white.withAlpha(120),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ] else if (_isLoading) ...[
+              // Loading spinner
+              const SizedBox(height: 20),
+              const CircularProgressIndicator(
+                valueColor:
+                    AlwaysStoppedAnimation<Color>(GameColors.neonCyan),
+              ),
+              const SizedBox(height: 16),
+              Text(
+                'Giris yapiliyor...',
+                style: TextStyle(
+                  fontSize: 14,
+                  color: Colors.white.withAlpha(180),
+                ),
+              ),
+              const SizedBox(height: 20),
+            ] else ...[
+              // Google Sign-In button
+              _SignInButton(
+                label: 'Google ile Giris Yap',
+                icon: Icons.g_mobiledata,
+                iconColor: Colors.white,
+                gradientColors: const [
+                  Color(0xFF4285F4),
+                  Color(0xFF3367D6),
+                ],
+                onTap: () => _handleSignIn(
+                  ref.read(authProvider.notifier).signInWithGoogle,
+                ),
+              ),
+
+              // Apple Sign-In button (iOS only)
+              if (Platform.isIOS) ...[
+                const SizedBox(height: 12),
+                _SignInButton(
+                  label: 'Apple ile Giris Yap',
+                  icon: Icons.apple,
+                  iconColor: Colors.white,
+                  gradientColors: const [
+                    Color(0xFF1A1A1A),
+                    Color(0xFF000000),
+                  ],
+                  onTap: () => _handleSignIn(
+                    ref.read(authProvider.notifier).signInWithApple,
+                  ),
+                ),
+              ],
+
+              // Error message
+              if (_errorMessage != null) ...[
+                const SizedBox(height: 12),
+                Text(
+                  _errorMessage!,
+                  style: const TextStyle(
+                    fontSize: 12,
+                    color: GameColors.pinkLight,
+                  ),
+                ),
+              ],
+            ],
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _SignInButton extends StatelessWidget {
+  final String label;
+  final IconData icon;
+  final Color iconColor;
+  final List<Color> gradientColors;
+  final VoidCallback onTap;
+
+  const _SignInButton({
+    required this.label,
+    required this.icon,
+    required this.iconColor,
+    required this.gradientColors,
+    required this.onTap,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return GestureDetector(
+      onTap: onTap,
+      child: Container(
+        width: double.infinity,
+        padding: const EdgeInsets.symmetric(vertical: 14, horizontal: 16),
+        decoration: BoxDecoration(
+          borderRadius: BorderRadius.circular(14),
+          gradient: LinearGradient(
+            begin: Alignment.centerLeft,
+            end: Alignment.centerRight,
+            colors: gradientColors,
+          ),
+          border: Border.all(
+            color: Colors.white.withAlpha(30),
+            width: 1,
+          ),
+          boxShadow: [
+            BoxShadow(
+              color: gradientColors.last.withAlpha(100),
+              blurRadius: 12,
+              offset: const Offset(0, 4),
+            ),
+          ],
+        ),
+        child: Row(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Icon(icon, color: iconColor, size: 24),
+            const SizedBox(width: 10),
+            Text(
+              label,
+              style: const TextStyle(
+                fontSize: 15,
+                fontWeight: FontWeight.w700,
+                color: Colors.white,
+                letterSpacing: 0.3,
+              ),
+            ),
+          ],
+        ),
+      ),
     );
   }
 }
