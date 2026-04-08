@@ -1,7 +1,9 @@
 import 'dart:math';
 
 import 'package:flutter/material.dart';
+import 'package:flutter/scheduler.dart';
 
+import 'package:patpat_game/game/board_animator.dart';
 import 'package:patpat_game/models/enums.dart';
 import 'package:patpat_game/models/game_grid.dart';
 import 'package:patpat_game/models/position.dart';
@@ -29,7 +31,8 @@ String _jellySpritePath(JellyType type) {
 ///
 /// Handles tap and swipe gestures. Each cell renders jelly sprites from
 /// `assets/sprites/`, with overlays for specials, obstacles, selection,
-/// and hints.
+/// and hints. Supports smooth Candy Crush-style animations via
+/// [BoardAnimator] for swaps, destroys, gravity, and fills.
 class GameBoard extends StatefulWidget {
   final GameGrid grid;
   final Position? selectedCell;
@@ -37,6 +40,8 @@ class GameBoard extends StatefulWidget {
   final ActiveBoosterMode boosterMode;
   final Function(Position) onCellTapped;
   final Function(Position, SwapDirection) onSwipe;
+  final BoardAnimator animator;
+  final Function(double cellSize, double gap)? onCellMetrics;
 
   const GameBoard({
     super.key,
@@ -46,6 +51,8 @@ class GameBoard extends StatefulWidget {
     this.boosterMode = ActiveBoosterMode.none,
     required this.onCellTapped,
     required this.onSwipe,
+    required this.animator,
+    this.onCellMetrics,
   });
 
   @override
@@ -53,12 +60,15 @@ class GameBoard extends StatefulWidget {
 }
 
 class _GameBoardState extends State<GameBoard>
-    with SingleTickerProviderStateMixin {
+    with TickerProviderStateMixin {
   late final AnimationController _pulseController;
+  late final Ticker _animTicker;
+  bool _tickerActive = false;
 
   Offset? _panStart;
   Position? _panStartCell;
   bool _swipeHandled = false;
+  double _lastCellSize = 0;
 
   static const double _gap = 3.0;
 
@@ -69,10 +79,41 @@ class _GameBoardState extends State<GameBoard>
       vsync: this,
       duration: const Duration(milliseconds: 800),
     )..repeat(reverse: true);
+
+    // Ticker for smooth 60fps animation rendering
+    _animTicker = createTicker(_onAnimTick);
+    widget.animator.addListener(_onAnimatorChanged);
+  }
+
+  void _onAnimatorChanged() {
+    if (widget.animator.hasActiveAnimations && !_tickerActive) {
+      _tickerActive = true;
+      _animTicker.start();
+    } else if (!widget.animator.hasActiveAnimations && _tickerActive) {
+      _tickerActive = false;
+      _animTicker.stop();
+      if (mounted) setState(() {});
+    }
+  }
+
+  void _onAnimTick(Duration elapsed) {
+    if (mounted) setState(() {});
+  }
+
+  @override
+  void didUpdateWidget(covariant GameBoard oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (oldWidget.animator != widget.animator) {
+      oldWidget.animator.removeListener(_onAnimatorChanged);
+      widget.animator.addListener(_onAnimatorChanged);
+    }
   }
 
   @override
   void dispose() {
+    widget.animator.removeListener(_onAnimatorChanged);
+    if (_tickerActive) _animTicker.stop();
+    _animTicker.dispose();
     _pulseController.dispose();
     super.dispose();
   }
@@ -124,6 +165,12 @@ class _GameBoardState extends State<GameBoard>
           (constraints.maxHeight - bh) / 2,
         );
 
+        // Report cell metrics to controller for animation calculations
+        if (cellSize != _lastCellSize) {
+          _lastCellSize = cellSize;
+          widget.onCellMetrics?.call(cellSize, _gap);
+        }
+
         return GestureDetector(
           behavior: HitTestBehavior.opaque,
           onPanStart: (details) {
@@ -160,40 +207,79 @@ class _GameBoardState extends State<GameBoard>
             _panStart = null;
             _panStartCell = null;
           },
-          child: AnimatedBuilder(
-            animation: _pulseController,
-            builder: (context, _) {
-              final pulseValue = _pulseController.value;
-              return Stack(
-                children: [
-                  // Position each cell individually for precise layout
-                  for (int r = 0; r < widget.grid.rows; r++)
-                    for (int c = 0; c < widget.grid.cols; c++)
-                      Positioned(
-                        left: boardOffset.dx + c * (cellSize + _gap),
-                        top: boardOffset.dy + r * (cellSize + _gap),
-                        width: cellSize,
-                        height: cellSize,
-                        child: _JellyCell(
-                          cell: widget.grid.get(r, c),
-                          cellSize: cellSize,
-                          isSelected: widget.selectedCell != null &&
-                              widget.selectedCell!.row == r &&
-                              widget.selectedCell!.col == c,
-                          isHint: widget.hintPositions != null &&
-                              ((widget.hintPositions!.$1.row == r &&
-                                      widget.hintPositions!.$1.col == c) ||
-                                  (widget.hintPositions!.$2.row == r &&
-                                      widget.hintPositions!.$2.col == c)),
-                          pulseValue: pulseValue,
+          child: ClipRect(
+            child: AnimatedBuilder(
+              animation: _pulseController,
+              builder: (context, _) {
+                final pulseValue = _pulseController.value;
+                return Stack(
+                  clipBehavior: Clip.none,
+                  children: [
+                    // Position each cell individually for precise layout
+                    for (int r = 0; r < widget.grid.rows; r++)
+                      for (int c = 0; c < widget.grid.cols; c++)
+                        _buildAnimatedCell(
+                          r, c, cellSize, boardOffset, pulseValue,
                         ),
-                      ),
-                ],
-              );
-            },
+                  ],
+                );
+              },
+            ),
           ),
         );
       },
+    );
+  }
+
+  /// Build a single cell with animation offsets, scale, and opacity applied.
+  Widget _buildAnimatedCell(
+    int r,
+    int c,
+    double cellSize,
+    Offset boardOffset,
+    double pulseValue,
+  ) {
+    final anim = widget.animator.getAnimation(r, c);
+    final baseLeft = boardOffset.dx + c * (cellSize + _gap);
+    final baseTop = boardOffset.dy + r * (cellSize + _gap);
+
+    final offset = anim?.currentOffset ?? Offset.zero;
+    final scale = anim?.currentScale ?? 1.0;
+    final opacity = anim?.currentOpacity ?? 1.0;
+
+    Widget cell = _JellyCell(
+      cell: widget.grid.get(r, c),
+      cellSize: cellSize,
+      isSelected: widget.selectedCell != null &&
+          widget.selectedCell!.row == r &&
+          widget.selectedCell!.col == c,
+      isHint: widget.hintPositions != null &&
+          ((widget.hintPositions!.$1.row == r &&
+                  widget.hintPositions!.$1.col == c) ||
+              (widget.hintPositions!.$2.row == r &&
+                  widget.hintPositions!.$2.col == c)),
+      pulseValue: pulseValue,
+    );
+
+    // Apply scale and opacity only when animating (avoid unnecessary wrapping)
+    if (anim != null) {
+      if (scale != 1.0 || opacity != 1.0) {
+        cell = Opacity(
+          opacity: opacity.clamp(0.0, 1.0),
+          child: Transform.scale(
+            scale: scale.clamp(0.0, 1.5),
+            child: cell,
+          ),
+        );
+      }
+    }
+
+    return Positioned(
+      left: baseLeft + offset.dx,
+      top: baseTop + offset.dy,
+      width: cellSize,
+      height: cellSize,
+      child: cell,
     );
   }
 }

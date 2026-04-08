@@ -7,6 +7,7 @@ import 'package:patpat_game/engine/hint_engine.dart';
 import 'package:patpat_game/engine/match_engine.dart';
 import 'package:patpat_game/engine/obstacle_engine.dart';
 import 'package:patpat_game/engine/special_engine.dart';
+import 'package:patpat_game/game/board_animator.dart';
 import 'package:patpat_game/models/enums.dart';
 import 'package:patpat_game/models/game_grid.dart';
 import 'package:patpat_game/models/level_config.dart';
@@ -16,6 +17,17 @@ import 'package:patpat_game/models/score.dart';
 /// Orchestrates the match-3 game loop: selection, swap, cascade,
 /// boosters, hints, goals, and win/lose conditions.
 class GameController extends ChangeNotifier {
+  // ─── Animation layer ────────────────────────────────────────────
+  final BoardAnimator animator = BoardAnimator();
+  double _cellSize = 40;
+  double _cellGap = 3;
+
+  /// Called by the GameBoard once it knows the cell dimensions.
+  void setCellMetrics(double cellSize, double gap) {
+    _cellSize = cellSize;
+    _cellGap = gap;
+  }
+
   // ─── State fields ────────────────────────────────────────────────
   GameGrid _grid = GameGrid(rows: 9, cols: 7);
   LevelConfig _config = LevelConfig(
@@ -104,6 +116,7 @@ class GameController extends ChangeNotifier {
       });
     }
 
+    animator.clearAll();
     _state = GameState.idle;
     _resetHintTimer();
     notifyListeners();
@@ -178,13 +191,10 @@ class GameController extends ChangeNotifier {
     if (hasSpecial || MatchEngine.isValidSwap(_grid, pos1, pos2)) {
       await _performSwapAndProcess(pos1, pos2);
     } else {
-      // Invalid swap — animate swap and swap back
+      // Invalid swap — animate slide to target, then slide back
       _state = GameState.swapping;
-      MatchEngine.swap(_grid, pos1, pos2);
       notifyListeners();
-      await Future<void>.delayed(const Duration(milliseconds: 200));
-
-      MatchEngine.swap(_grid, pos1, pos2);
+      await animator.animateInvalidSwap(pos1, pos2, _cellSize, _cellGap);
       _state = GameState.idle;
       _resetHintTimer();
       notifyListeners();
@@ -199,9 +209,10 @@ class GameController extends ChangeNotifier {
     _movesLeft--;
     notifyListeners();
 
+    // Animate the swap visually BEFORE modifying the grid
+    await animator.animateSwap(pos1, pos2, _cellSize, _cellGap, durationMs: 200);
     MatchEngine.swap(_grid, pos1, pos2);
     notifyListeners();
-    await Future<void>.delayed(const Duration(milliseconds: 200));
 
     // Check for special combos
     final c1 = _grid.get(pos1.row, pos1.col);
@@ -253,16 +264,14 @@ class GameController extends ChangeNotifier {
         }
       }
 
-      // Destroying phase
+      // Destroying phase — animate matched cells with pop + fade
       _state = GameState.destroying;
-      notifyListeners();
-      await Future<void>.delayed(const Duration(milliseconds: 85));
-
-      // Collect explosion positions for obstacle interaction
       final explosionPositions = <Position>[];
       for (final match in matches) {
         explosionPositions.addAll(match.positions);
       }
+      notifyListeners();
+      await animator.animateDestroy(explosionPositions, durationMs: 200);
 
       MatchEngine.removeMatches(_grid, matches, swapPos);
       _updateGoalsFromMatches(matches);
@@ -271,18 +280,23 @@ class GameController extends ChangeNotifier {
       ObstacleEngine.checkBoxes(_grid, explosionPositions);
       ObstacleEngine.damageAdjacentChains(_grid, explosionPositions);
       ObstacleEngine.damageAdjacentChocolates(_grid, explosionPositions);
+      notifyListeners();
 
-      // Falling phase
+      // Falling phase — animate gravity with bounce
       _state = GameState.falling;
-      MatchEngine.applyGravity(_grid);
+      final fallMoves = MatchEngine.applyGravity(_grid);
       notifyListeners();
-      await Future<void>.delayed(const Duration(milliseconds: 120));
+      if (fallMoves.isNotEmpty) {
+        await animator.animateFall(fallMoves, _cellSize, _cellGap, durationMs: 250);
+      }
 
-      // Refilling phase
+      // Refilling phase — animate new jellies sliding in from above
       _state = GameState.refilling;
-      MatchEngine.fillEmpty(_grid, _config.availableTypes);
+      final newPositions = MatchEngine.fillEmpty(_grid, _config.availableTypes);
       notifyListeners();
-      await Future<void>.delayed(const Duration(milliseconds: 100));
+      if (newPositions.isNotEmpty) {
+        await animator.animateAppear(newPositions, _cellSize, _cellGap, durationMs: 250);
+      }
 
       // After first iteration, swapPos is no longer relevant
       swapPos = null;
@@ -500,6 +514,7 @@ class GameController extends ChangeNotifier {
     _hintTimer = null;
     _countdownTimer?.cancel();
     _countdownTimer = null;
+    animator.dispose();
     super.dispose();
   }
 }

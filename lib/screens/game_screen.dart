@@ -194,6 +194,8 @@ class _GameScreenState extends ConsumerState<GameScreen> {
                                 _controller.onCellTapped(pos),
                             onSwipe: (pos, dir) =>
                                 _controller.onSwipeTo(pos, dir),
+                            animator: _controller.animator,
+                            onCellMetrics: _controller.setCellMetrics,
                           ),
                         ),
                       ),
