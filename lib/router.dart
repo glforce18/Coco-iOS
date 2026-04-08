@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:patpat_game/screens/game_screen.dart';
 import 'package:patpat_game/screens/main_menu_screen.dart';
+import 'package:patpat_game/screens/map_screen.dart';
 
 class AppRouter {
   static final router = GoRouter(
@@ -19,7 +20,7 @@ class AppRouter {
       GoRoute(
         path: '/map',
         pageBuilder: (context, state) => CustomTransitionPage(
-          child: const _PlaceholderScreen(title: 'MAP'),
+          child: const MapScreen(),
           transitionsBuilder: (context, animation, secondaryAnimation, child) =>
               FadeTransition(opacity: animation, child: child),
           transitionDuration: const Duration(milliseconds: 300),
@@ -47,21 +48,4 @@ class AppRouter {
       ),
     ],
   );
-}
-
-class _PlaceholderScreen extends StatelessWidget {
-  final String title;
-  const _PlaceholderScreen({required this.title});
-
-  @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-      body: Center(
-        child: Text(
-          title,
-          style: const TextStyle(fontSize: 32, color: Colors.white),
-        ),
-      ),
-    );
-  }
 }
