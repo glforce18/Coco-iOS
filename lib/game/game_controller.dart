@@ -220,21 +220,55 @@ class GameController extends ChangeNotifier {
     final s1 = c1.specialType;
     final s2 = c2.specialType;
 
+    List<ExplosionEffect>? specialEffects;
     if (s1 != SpecialType.none && s2 != SpecialType.none) {
-      final effects = SpecialEngine.activateSpecialCombo(_grid, pos1, pos2);
-      _updateGoalsFromEffects(effects);
+      specialEffects = SpecialEngine.activateSpecialCombo(_grid, pos1, pos2);
+      _updateGoalsFromEffects(specialEffects);
     } else if (s1 != SpecialType.none) {
-      final effects = SpecialEngine.activateSpecial(_grid, pos1, c2.jellyType);
-      _updateGoalsFromEffects(effects);
+      specialEffects = SpecialEngine.activateSpecial(_grid, pos1, c2.jellyType);
+      _updateGoalsFromEffects(specialEffects);
     } else if (s2 != SpecialType.none) {
-      final effects = SpecialEngine.activateSpecial(_grid, pos2, c1.jellyType);
-      _updateGoalsFromEffects(effects);
+      specialEffects = SpecialEngine.activateSpecial(_grid, pos2, c1.jellyType);
+      _updateGoalsFromEffects(specialEffects);
+    }
+
+    // If a special was activated, animate the flash, add score, then
+    // run gravity + fill so cleared cells don't leave empty holes.
+    if (specialEffects != null && specialEffects.isNotEmpty) {
+      _score += specialEffects.length * 15;
+
+      // Animate flash on affected positions before they disappear
+      final affectedPositions =
+          specialEffects.map((e) => e.position).toList();
+      notifyListeners();
+      await animator.animateSpecialActivation(affectedPositions,
+          durationMs: 300);
+
+      // Gravity: let remaining jellies fall into empty cells
+      _state = GameState.falling;
+      final fallMoves = MatchEngine.applyGravity(_grid);
+      notifyListeners();
+      if (fallMoves.isNotEmpty) {
+        await animator.animateFall(fallMoves, _cellSize, _cellGap,
+            durationMs: 250);
+      }
+
+      // Refill: spawn new jellies in the remaining empty cells
+      _state = GameState.refilling;
+      final newPositions =
+          MatchEngine.fillEmpty(_grid, _config.availableTypes);
+      notifyListeners();
+      if (newPositions.isNotEmpty) {
+        await animator.animateAppear(newPositions, _cellSize, _cellGap,
+            durationMs: 250);
+      }
     }
 
     // Spread chocolate (happens once per move, before cascade)
     ObstacleEngine.spreadChocolate(_grid);
 
-    await _processMatchChain(pos1);
+    // Process any chain reactions from the new board configuration
+    await _processMatchChain(specialEffects != null ? null : pos1);
   }
 
   // ─── 6. _processMatchChain ─────────────────────────────────────

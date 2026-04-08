@@ -17,6 +17,9 @@ enum AnimType {
 
   /// Special jelly spawning with dramatic pop-in effect.
   specialSpawn,
+
+  /// Brief bright flash/glow before special activation clears cells.
+  flash,
 }
 
 /// Describes an active animation on a single cell.
@@ -82,6 +85,15 @@ class CellAnimation {
       final settleT = (t - 0.5) / 0.5;
       return (1.25 - settleT * 0.25).clamp(1.0, 1.25);
     }
+    if (type == AnimType.flash) {
+      // Flash: scale up to 1.3 then back to 1.0
+      final t = curvedProgress;
+      if (t < 0.3) {
+        return 1.0 + (t / 0.3) * 0.3;
+      }
+      final shrinkT = (t - 0.3) / 0.7;
+      return (1.3 - shrinkT * 0.3).clamp(1.0, 1.3);
+    }
     return 1.0;
   }
 
@@ -92,6 +104,12 @@ class CellAnimation {
       // Fade out in the last 60% of the animation
       if (t < 0.4) return 1.0;
       return (1.0 - ((t - 0.4) / 0.6)).clamp(0.0, 1.0);
+    }
+    if (type == AnimType.flash) {
+      // Bright flash: full opacity pulse then fade to zero
+      final t = curvedProgress;
+      if (t < 0.3) return 1.0;
+      return (1.0 - ((t - 0.3) / 0.7)).clamp(0.0, 1.0);
     }
     return 1.0;
   }
@@ -317,6 +335,32 @@ class BoardAnimator extends ChangeNotifier {
         type: AnimType.specialSpawn,
         durationMs: durationMs,
         curve: Curves.easeOutBack,
+      );
+    }
+    notifyListeners();
+    await Future<void>.delayed(Duration(milliseconds: durationMs));
+    for (final p in positions) {
+      _animations.remove('${p.row},${p.col}');
+    }
+    notifyListeners();
+  }
+
+  // ──────────────────────────────────────────────────────────────────
+  // Special activation flash animation
+  // ──────────────────────────────────────────────────────────────────
+
+  /// Animate a flash/glow effect on all positions affected by a special
+  /// activation (rocket line, bomb area, rainbow targets, etc.) before
+  /// the cells are visually cleared by gravity.
+  Future<void> animateSpecialActivation(List<Position> positions,
+      {int durationMs = 300}) async {
+    if (positions.isEmpty) return;
+
+    for (final p in positions) {
+      _animations['${p.row},${p.col}'] = CellAnimation(
+        type: AnimType.flash,
+        durationMs: durationMs,
+        curve: Curves.easeOutCubic,
       );
     }
     notifyListeners();
