@@ -6,6 +6,7 @@ import 'package:patpat_game/audio/sound_manager.dart';
 import 'package:patpat_game/models/level_config.dart';
 import 'package:patpat_game/models/player_progress.dart';
 import 'package:patpat_game/providers/game_providers.dart';
+import 'package:patpat_game/screens/daily_reward_screen.dart';
 import 'package:patpat_game/theme/game_colors.dart';
 
 // ---------------------------------------------------------------------------
@@ -38,6 +39,14 @@ class _MapScreenState extends ConsumerState<MapScreen> {
     super.initState();
     final currentLevel = ref.read(playerProgressProvider).currentLevel;
     _selectedRegion = GameRegion.forLevel(currentLevel);
+
+    // Auto-show daily reward popup if not claimed today
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      final notifier = ref.read(playerProgressProvider.notifier);
+      if (notifier.isDailyRewardAvailable) {
+        showDailyRewardPopup(context, ref);
+      }
+    });
   }
 
   void _selectRegion(GameRegion region) {
@@ -239,6 +248,38 @@ class _MapHeader extends StatelessWidget {
                 ),
               ),
             ),
+
+            // Spin wheel button
+            GestureDetector(
+              onTap: () {
+                SoundManager.instance.play(SoundType.buttonClick);
+                HapticManager.instance.tapLight();
+                context.go('/spin');
+              },
+              child: Container(
+                width: 36,
+                height: 36,
+                decoration: BoxDecoration(
+                  shape: BoxShape.circle,
+                  gradient: const LinearGradient(
+                    begin: Alignment.topLeft,
+                    end: Alignment.bottomRight,
+                    colors: [Color(0xFFFFE44D), Color(0xFFB8860B)],
+                  ),
+                  boxShadow: [
+                    BoxShadow(
+                      color: GameColors.goldFrame.withAlpha(80),
+                      blurRadius: 8,
+                    ),
+                  ],
+                ),
+                child: const Center(
+                  child: Text('\uD83C\uDFA1', style: TextStyle(fontSize: 18)),
+                ),
+              ),
+            ),
+
+            const SizedBox(width: 6),
 
             // Coins capsule
             _HeaderCapsule(
@@ -871,23 +912,23 @@ class _BottomNavBar extends StatelessWidget {
               },
             ),
             _NavButton(
-              icon: Icons.person_rounded,
-              label: 'Profil',
+              icon: Icons.emoji_events_rounded,
+              label: 'Basarimlar',
               isActive: false,
               onTap: () {
                 SoundManager.instance.play(SoundType.buttonClick);
                 HapticManager.instance.tapLight();
-                _showComingSoon(context);
+                context.go('/achievements');
               },
             ),
             _NavButton(
-              icon: Icons.settings_rounded,
-              label: 'Ayarlar',
+              icon: Icons.celebration_rounded,
+              label: 'Etkinlik',
               isActive: false,
               onTap: () {
                 SoundManager.instance.play(SoundType.buttonClick);
                 HapticManager.instance.tapLight();
-                _showComingSoon(context);
+                context.go('/events');
               },
             ),
           ],
@@ -896,22 +937,6 @@ class _BottomNavBar extends StatelessWidget {
     );
   }
 
-  void _showComingSoon(BuildContext context) {
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: const Text(
-          'Yakinda!',
-          textAlign: TextAlign.center,
-          style: TextStyle(fontWeight: FontWeight.w600),
-        ),
-        duration: const Duration(seconds: 1),
-        backgroundColor: GameColors.bgLight,
-        behavior: SnackBarBehavior.floating,
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-        margin: const EdgeInsets.symmetric(horizontal: 80, vertical: 16),
-      ),
-    );
-  }
 }
 
 class _NavButton extends StatelessWidget {

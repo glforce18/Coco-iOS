@@ -1,9 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
+import 'package:patpat_game/screens/achievement_screen.dart';
+import 'package:patpat_game/screens/event_screen.dart';
 import 'package:patpat_game/screens/game_screen.dart';
 import 'package:patpat_game/screens/main_menu_screen.dart';
 import 'package:patpat_game/screens/map_screen.dart';
 import 'package:patpat_game/screens/shop_screen.dart';
+import 'package:patpat_game/screens/spin_wheel_screen.dart';
 
 class AppRouter {
   static final router = GoRouter(
@@ -31,6 +34,33 @@ class AppRouter {
         path: '/shop',
         pageBuilder: (context, state) => CustomTransitionPage(
           child: const ShopScreen(),
+          transitionsBuilder: (context, animation, secondaryAnimation, child) =>
+              FadeTransition(opacity: animation, child: child),
+          transitionDuration: const Duration(milliseconds: 300),
+        ),
+      ),
+      GoRoute(
+        path: '/spin',
+        pageBuilder: (context, state) => CustomTransitionPage(
+          child: const SpinWheelScreen(),
+          transitionsBuilder: (context, animation, secondaryAnimation, child) =>
+              FadeTransition(opacity: animation, child: child),
+          transitionDuration: const Duration(milliseconds: 300),
+        ),
+      ),
+      GoRoute(
+        path: '/achievements',
+        pageBuilder: (context, state) => CustomTransitionPage(
+          child: const AchievementScreen(),
+          transitionsBuilder: (context, animation, secondaryAnimation, child) =>
+              FadeTransition(opacity: animation, child: child),
+          transitionDuration: const Duration(milliseconds: 300),
+        ),
+      ),
+      GoRoute(
+        path: '/events',
+        pageBuilder: (context, state) => CustomTransitionPage(
+          child: const EventScreen(),
           transitionsBuilder: (context, animation, secondaryAnimation, child) =>
               FadeTransition(opacity: animation, child: child),
           transitionDuration: const Duration(milliseconds: 300),

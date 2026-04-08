@@ -33,6 +33,16 @@ class ProgressStorage {
         piggyBankCoins: map['piggyBankCoins'] ?? 0,
         achievements: Set<String>.from(map['achievements'] ?? []),
         tutorialCompleted: map['tutorialCompleted'] ?? false,
+        lastSpinTime: map['lastSpinTime'] ?? 0,
+        lastEventWeek: map['lastEventWeek'] ?? 0,
+        eventProgress: _decodeStringIntMap(map['eventProgress']),
+        totalCombos: map['totalCombos'] ?? 0,
+        totalBoostersUsed: map['totalBoostersUsed'] ?? 0,
+        totalIceBroken: map['totalIceBroken'] ?? 0,
+        totalChocolateCleared: map['totalChocolateCleared'] ?? 0,
+        totalSpecialsCreated: map['totalSpecialsCreated'] ?? 0,
+        shopVisited: map['shopVisited'] ?? false,
+        wheelSpun: map['wheelSpun'] ?? false,
       );
       progress.regenerateLives();
       return progress;
@@ -65,6 +75,16 @@ class ProgressStorage {
       'piggyBankCoins': p.piggyBankCoins,
       'achievements': p.achievements.toList(),
       'tutorialCompleted': p.tutorialCompleted,
+      'lastSpinTime': p.lastSpinTime,
+      'lastEventWeek': p.lastEventWeek,
+      'eventProgress': p.eventProgress,
+      'totalCombos': p.totalCombos,
+      'totalBoostersUsed': p.totalBoostersUsed,
+      'totalIceBroken': p.totalIceBroken,
+      'totalChocolateCleared': p.totalChocolateCleared,
+      'totalSpecialsCreated': p.totalSpecialsCreated,
+      'shopVisited': p.shopVisited,
+      'wheelSpun': p.wheelSpun,
     };
     await prefs.setString(_prefsKey, jsonEncode(map));
   }
@@ -77,5 +97,11 @@ class ProgressStorage {
 
   static Map<String, int> _encodeIntMap(Map<int, int> map) {
     return map.map((k, v) => MapEntry(k.toString(), v));
+  }
+
+  static Map<String, int> _decodeStringIntMap(dynamic raw) {
+    if (raw == null) return {};
+    final map = raw as Map<String, dynamic>;
+    return map.map((k, v) => MapEntry(k, v as int));
   }
 }

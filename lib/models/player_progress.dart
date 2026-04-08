@@ -21,6 +21,22 @@ class PlayerProgress {
   Set<String> achievements;
   bool tutorialCompleted;
 
+  // Spin wheel
+  int lastSpinTime; // milliseconds epoch (0 = never spun)
+
+  // Weekly events
+  int lastEventWeek; // ISO week number (0 = never)
+  Map<String, int> eventProgress; // taskId -> current progress
+
+  // Stats (for achievement tracking)
+  int totalCombos;
+  int totalBoostersUsed;
+  int totalIceBroken;
+  int totalChocolateCleared;
+  int totalSpecialsCreated;
+  bool shopVisited;
+  bool wheelSpun;
+
   PlayerProgress({
     this.currentLevel = 1,
     Map<int, int>? stars,
@@ -43,11 +59,24 @@ class PlayerProgress {
     this.piggyBankCoins = 0,
     Set<String>? achievements,
     this.tutorialCompleted = false,
+    this.lastSpinTime = 0,
+    this.lastEventWeek = 0,
+    Map<String, int>? eventProgress,
+    this.totalCombos = 0,
+    this.totalBoostersUsed = 0,
+    this.totalIceBroken = 0,
+    this.totalChocolateCleared = 0,
+    this.totalSpecialsCreated = 0,
+    this.shopVisited = false,
+    this.wheelSpun = false,
   })  : stars = stars ?? {},
         highScores = highScores ?? {},
-        achievements = achievements ?? {};
+        achievements = achievements ?? {},
+        eventProgress = eventProgress ?? {};
 
   int get totalStars => stars.values.fold(0, (a, b) => a + b);
+
+  int get perfectLevelCount => stars.values.where((s) => s >= 3).length;
 
   int starsForLevel(int level) => stars[level] ?? 0;
 
