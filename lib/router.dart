@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:patpat_game/screens/game_screen.dart';
-// MainMenuScreen and MapScreen will be added in next tasks — for now use placeholder
+import 'package:patpat_game/screens/main_menu_screen.dart';
 
 class AppRouter {
   static final router = GoRouter(
@@ -10,7 +10,7 @@ class AppRouter {
       GoRoute(
         path: '/menu',
         pageBuilder: (context, state) => CustomTransitionPage(
-          child: const _PlaceholderScreen(title: 'MENU'),
+          child: const MainMenuScreen(),
           transitionsBuilder: (context, animation, secondaryAnimation, child) =>
               FadeTransition(opacity: animation, child: child),
           transitionDuration: const Duration(milliseconds: 300),
