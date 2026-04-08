@@ -25,3 +25,4 @@ flutter:
   assets:
     - assets/sprites/
     - assets/backgrounds/
+    - assets/ui/

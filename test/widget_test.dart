@@ -4,10 +4,11 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:patpat_game/main.dart';
 
 void main() {
-  testWidgets('PatPatApp renders GameScreen with level text',
+  testWidgets('PatPatApp renders with router and shows MENU placeholder',
       (WidgetTester tester) async {
     await tester.pumpWidget(const ProviderScope(child: PatPatApp()));
-    // GameScreen shows "Seviye 1" in the HUD
-    expect(find.text('Seviye 1'), findsOneWidget);
+    await tester.pumpAndSettle();
+    // Initial route is /menu which shows placeholder text
+    expect(find.text('MENU'), findsOneWidget);
   });
 }
