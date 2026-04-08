@@ -6,13 +6,30 @@ import 'package:patpat_game/models/enums.dart';
 import 'package:patpat_game/models/game_grid.dart';
 import 'package:patpat_game/models/position.dart';
 import 'package:patpat_game/theme/game_colors.dart';
-import 'package:patpat_game/utils/extensions.dart';
 
-/// Interactive game board rendered via [CustomPainter].
+/// Sprite asset path for a [JellyType].
+String _jellySpritePath(JellyType type) {
+  switch (type) {
+    case JellyType.purple:
+      return 'assets/sprites/jelly_purple.png';
+    case JellyType.yellow:
+      return 'assets/sprites/jelly_yellow.png';
+    case JellyType.blue:
+      return 'assets/sprites/jelly_blue.png';
+    case JellyType.green:
+      return 'assets/sprites/jelly_green.png';
+    case JellyType.pink:
+      return 'assets/sprites/jelly_pink.png';
+    case JellyType.orange:
+      return 'assets/sprites/jelly_orange.png';
+  }
+}
+
+/// Interactive game board rendered as a grid of sprite-based widgets.
 ///
-/// Handles tap and swipe gestures, then delegates rendering of cells,
-/// jellies, specials, obstacles, selection highlight, and hint highlight
-/// to [_BoardPainter].
+/// Handles tap and swipe gestures. Each cell renders jelly sprites from
+/// `assets/sprites/`, with overlays for specials, obstacles, selection,
+/// and hints.
 class GameBoard extends StatefulWidget {
   final GameGrid grid;
   final Position? selectedCell;
@@ -43,7 +60,7 @@ class _GameBoardState extends State<GameBoard>
   Position? _panStartCell;
   bool _swipeHandled = false;
 
-  static const double _gap = 2.0;
+  static const double _gap = 3.0;
 
   @override
   void initState() {
@@ -78,8 +95,7 @@ class _GameBoardState extends State<GameBoard>
   double _boardHeight(double cellSize) =>
       cellSize * widget.grid.rows + _gap * (widget.grid.rows - 1);
 
-  /// Hit-test: find the cell under [local] coordinates given [cellSize]
-  /// and the board offset.
+  /// Hit-test: find the cell under [local] coordinates.
   Position? _hitTest(Offset local, double cellSize, Offset boardOffset) {
     final dx = local.dx - boardOffset.dx;
     final dy = local.dy - boardOffset.dy;
@@ -144,21 +160,35 @@ class _GameBoardState extends State<GameBoard>
             _panStart = null;
             _panStartCell = null;
           },
-          child: ListenableBuilder(
-            listenable: _pulseController,
+          child: AnimatedBuilder(
+            animation: _pulseController,
             builder: (context, _) {
-              return CustomPaint(
-                size: Size(constraints.maxWidth, constraints.maxHeight),
-                painter: _BoardPainter(
-                  grid: widget.grid,
-                  cellSize: cellSize,
-                  gap: _gap,
-                  boardOffset: boardOffset,
-                  selectedCell: widget.selectedCell,
-                  hintPositions: widget.hintPositions,
-                  boosterMode: widget.boosterMode,
-                  pulseValue: _pulseController.value,
-                ),
+              final pulseValue = _pulseController.value;
+              return Stack(
+                children: [
+                  // Position each cell individually for precise layout
+                  for (int r = 0; r < widget.grid.rows; r++)
+                    for (int c = 0; c < widget.grid.cols; c++)
+                      Positioned(
+                        left: boardOffset.dx + c * (cellSize + _gap),
+                        top: boardOffset.dy + r * (cellSize + _gap),
+                        width: cellSize,
+                        height: cellSize,
+                        child: _JellyCell(
+                          cell: widget.grid.get(r, c),
+                          cellSize: cellSize,
+                          isSelected: widget.selectedCell != null &&
+                              widget.selectedCell!.row == r &&
+                              widget.selectedCell!.col == c,
+                          isHint: widget.hintPositions != null &&
+                              ((widget.hintPositions!.$1.row == r &&
+                                      widget.hintPositions!.$1.col == c) ||
+                                  (widget.hintPositions!.$2.row == r &&
+                                      widget.hintPositions!.$2.col == c)),
+                          pulseValue: pulseValue,
+                        ),
+                      ),
+                ],
               );
             },
           ),
@@ -169,383 +199,509 @@ class _GameBoardState extends State<GameBoard>
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
-// _BoardPainter
+// _JellyCell — individual cell widget with sprite rendering
 // ─────────────────────────────────────────────────────────────────────────────
 
-class _BoardPainter extends CustomPainter {
-  final GameGrid grid;
+class _JellyCell extends StatelessWidget {
+  final dynamic cell; // Cell type
   final double cellSize;
-  final double gap;
-  final Offset boardOffset;
-  final Position? selectedCell;
-  final (Position, Position)? hintPositions;
-  final ActiveBoosterMode boosterMode;
-  final double pulseValue; // 0..1
+  final bool isSelected;
+  final bool isHint;
+  final double pulseValue;
 
-  _BoardPainter({
-    required this.grid,
+  const _JellyCell({
+    required this.cell,
     required this.cellSize,
-    required this.gap,
-    required this.boardOffset,
-    this.selectedCell,
-    this.hintPositions,
-    this.boosterMode = ActiveBoosterMode.none,
+    required this.isSelected,
+    required this.isHint,
     required this.pulseValue,
   });
 
   @override
-  void paint(Canvas canvas, Size size) {
-    for (int r = 0; r < grid.rows; r++) {
-      for (int c = 0; c < grid.cols; c++) {
-        final cell = grid.get(r, c);
-        final rect = _cellRect(r, c);
+  Widget build(BuildContext context) {
+    final obstacleType = cell.obstacle as ObstacleType;
+    final jellyType = cell.jellyType as JellyType?;
+    final specialType = cell.specialType as SpecialType;
+    final hasJelly = cell.hasJelly as bool;
 
-        // 1. Background
-        _drawBackground(canvas, rect);
+    return Stack(
+      clipBehavior: Clip.none,
+      children: [
+        // 1. Cell background tile
+        Positioned.fill(
+          child: Container(
+            decoration: BoxDecoration(
+              color: const Color(0xFF1A0550),
+              borderRadius: BorderRadius.circular(8),
+              border: Border.all(
+                color: const Color(0xFF2A1570).withAlpha(120),
+                width: 0.5,
+              ),
+            ),
+          ),
+        ),
 
-        // 2. Obstacle overlay (drawn behind jelly for ice-style overlays)
-        if (cell.obstacle != ObstacleType.none) {
-          _drawObstacle(canvas, rect, cell.obstacle);
-        }
+        // 2. Obstacle overlay (behind jelly for ice-style overlays)
+        if (obstacleType != ObstacleType.none)
+          Positioned.fill(
+            child: _ObstacleOverlay(
+              obstacle: obstacleType,
+              cellSize: cellSize,
+            ),
+          ),
 
-        // 3. Jelly
-        if (cell.hasJelly) {
-          _drawJelly(canvas, rect, cell.jellyType!);
-        }
+        // 3. Jelly sprite
+        if (hasJelly && jellyType != null)
+          Positioned.fill(
+            child: Padding(
+              padding: EdgeInsets.all(cellSize * 0.06),
+              child: _buildJellySprite(jellyType, specialType),
+            ),
+          ),
 
-        // 4. Special indicator
-        if (cell.specialType != SpecialType.none) {
-          _drawSpecial(canvas, rect, cell.specialType);
-        }
+        // 4. Special indicator overlay on top of sprite
+        if (specialType != SpecialType.none)
+          Positioned.fill(
+            child: _SpecialOverlay(
+              special: specialType,
+              cellSize: cellSize,
+            ),
+          ),
 
         // 5. Selection highlight
-        if (selectedCell != null &&
-            selectedCell!.row == r &&
-            selectedCell!.col == c) {
-          _drawSelection(canvas, rect);
-        }
+        if (isSelected)
+          Positioned.fill(
+            child: _SelectionHighlight(
+              pulseValue: pulseValue,
+              cellSize: cellSize,
+            ),
+          ),
 
         // 6. Hint highlight
-        if (hintPositions != null) {
-          final (h1, h2) = hintPositions!;
-          if ((h1.row == r && h1.col == c) ||
-              (h2.row == r && h2.col == c)) {
-            _drawHint(canvas, rect);
-          }
-        }
-      }
+        if (isHint)
+          Positioned.fill(
+            child: _HintHighlight(
+              pulseValue: pulseValue,
+            ),
+          ),
+      ],
+    );
+  }
+
+  Widget _buildJellySprite(JellyType type, SpecialType special) {
+    // Rainbow special uses dedicated rainbow sprite
+    if (special == SpecialType.rainbow) {
+      return Image.asset(
+        'assets/sprites/jelly_rainbow.png',
+        fit: BoxFit.contain,
+        filterQuality: FilterQuality.medium,
+        errorBuilder: (_, __, ___) => _FallbackJelly(type: type),
+      );
     }
-  }
 
-  Rect _cellRect(int row, int col) {
-    final x = boardOffset.dx + col * (cellSize + gap);
-    final y = boardOffset.dy + row * (cellSize + gap);
-    return Rect.fromLTWH(x, y, cellSize, cellSize);
-  }
-
-  // ── Background ──────────────────────────────────────────────────────────
-
-  void _drawBackground(Canvas canvas, Rect rect) {
-    final paint = Paint()
-      ..color = const Color(0xFF1A0550)
-      ..style = PaintingStyle.fill;
-    canvas.drawRRect(
-      RRect.fromRectAndRadius(rect, const Radius.circular(6)),
-      paint,
+    return Image.asset(
+      _jellySpritePath(type),
+      fit: BoxFit.contain,
+      filterQuality: FilterQuality.medium,
+      errorBuilder: (_, __, ___) => _FallbackJelly(type: type),
     );
   }
+}
 
-  // ── Jelly ───────────────────────────────────────────────────────────────
+// ─────────────────────────────────────────────────────────────────────────────
+// _FallbackJelly — colored circle fallback if sprite fails to load
+// ─────────────────────────────────────────────────────────────────────────────
 
-  void _drawJelly(Canvas canvas, Rect rect, JellyType type) {
-    final inset = rect.deflate(cellSize * 0.08);
-    final radius = inset.width / 2;
-    final center = inset.center;
+class _FallbackJelly extends StatelessWidget {
+  final JellyType type;
+  const _FallbackJelly({required this.type});
 
-    // Radial gradient body
-    final gradient = RadialGradient(
-      center: const Alignment(-0.3, -0.35),
-      radius: 0.9,
-      colors: [type.lightColor, type.color, type.darkColor],
-      stops: const [0.0, 0.55, 1.0],
-    );
-
-    final paint = Paint()
-      ..shader = gradient.createShader(inset)
-      ..style = PaintingStyle.fill;
-    canvas.drawRRect(
-      RRect.fromRectAndRadius(inset, Radius.circular(radius * 0.55)),
-      paint,
-    );
-
-    // Shine highlight
-    final shinePaint = Paint()
-      ..color = Colors.white.withAlpha(80)
-      ..style = PaintingStyle.fill;
-    canvas.drawOval(
-      Rect.fromCenter(
-        center: Offset(center.dx - radius * 0.2, center.dy - radius * 0.25),
-        width: radius * 0.55,
-        height: radius * 0.35,
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      decoration: BoxDecoration(
+        shape: BoxShape.circle,
+        gradient: RadialGradient(
+          center: const Alignment(-0.3, -0.35),
+          radius: 0.9,
+          colors: [
+            Color.lerp(type.color, Colors.white, 0.3)!,
+            type.color,
+            Color.lerp(type.color, Colors.black, 0.3)!,
+          ],
+          stops: const [0.0, 0.55, 1.0],
+        ),
+        boxShadow: [
+          BoxShadow(
+            color: type.color.withAlpha(80),
+            blurRadius: 4,
+            offset: const Offset(0, 2),
+          ),
+        ],
       ),
-      shinePaint,
-    );
-
-    // Border stroke
-    final borderPaint = Paint()
-      ..color = type.darkColor.withAlpha(120)
-      ..style = PaintingStyle.stroke
-      ..strokeWidth = 1.2;
-    canvas.drawRRect(
-      RRect.fromRectAndRadius(inset, Radius.circular(radius * 0.55)),
-      borderPaint,
     );
   }
+}
 
-  // ── Special indicators ──────────────────────────────────────────────────
+// ─────────────────────────────────────────────────────────────────────────────
+// _SpecialOverlay — icon indicator for special types
+// ─────────────────────────────────────────────────────────────────────────────
 
-  void _drawSpecial(Canvas canvas, Rect rect, SpecialType special) {
-    final center = rect.center;
-    final s = cellSize * 0.18;
-    final paint = Paint()
-      ..color = Colors.white
-      ..style = PaintingStyle.fill;
-    final strokePaint = Paint()
-      ..color = Colors.white
-      ..style = PaintingStyle.stroke
-      ..strokeWidth = 2.0
-      ..strokeCap = StrokeCap.round;
+class _SpecialOverlay extends StatelessWidget {
+  final SpecialType special;
+  final double cellSize;
 
+  const _SpecialOverlay({
+    required this.special,
+    required this.cellSize,
+  });
+
+  @override
+  Widget build(BuildContext context) {
     switch (special) {
       case SpecialType.rocketHorizontal:
-        // Left arrow
-        canvas.drawLine(
-          Offset(center.dx - s * 1.5, center.dy),
-          Offset(center.dx - s * 0.5, center.dy - s * 0.6),
-          strokePaint,
-        );
-        canvas.drawLine(
-          Offset(center.dx - s * 1.5, center.dy),
-          Offset(center.dx - s * 0.5, center.dy + s * 0.6),
-          strokePaint,
-        );
-        // Right arrow
-        canvas.drawLine(
-          Offset(center.dx + s * 1.5, center.dy),
-          Offset(center.dx + s * 0.5, center.dy - s * 0.6),
-          strokePaint,
-        );
-        canvas.drawLine(
-          Offset(center.dx + s * 1.5, center.dy),
-          Offset(center.dx + s * 0.5, center.dy + s * 0.6),
-          strokePaint,
+        return _buildCornerBadge(
+          icon: Icons.arrow_right_alt,
+          color: Colors.white,
+          bgColor: const Color(0xCC2196F3),
         );
       case SpecialType.rocketVertical:
-        // Up arrow
-        canvas.drawLine(
-          Offset(center.dx, center.dy - s * 1.5),
-          Offset(center.dx - s * 0.6, center.dy - s * 0.5),
-          strokePaint,
-        );
-        canvas.drawLine(
-          Offset(center.dx, center.dy - s * 1.5),
-          Offset(center.dx + s * 0.6, center.dy - s * 0.5),
-          strokePaint,
-        );
-        // Down arrow
-        canvas.drawLine(
-          Offset(center.dx, center.dy + s * 1.5),
-          Offset(center.dx - s * 0.6, center.dy + s * 0.5),
-          strokePaint,
-        );
-        canvas.drawLine(
-          Offset(center.dx, center.dy + s * 1.5),
-          Offset(center.dx + s * 0.6, center.dy + s * 0.5),
-          strokePaint,
+        return _buildCornerBadge(
+          icon: Icons.arrow_upward,
+          color: Colors.white,
+          bgColor: const Color(0xCC2196F3),
         );
       case SpecialType.bomb:
-        canvas.drawCircle(center, s * 1.1, strokePaint..strokeWidth = 2.5);
+        return _buildCornerBadge(
+          icon: Icons.blur_circular,
+          color: Colors.white,
+          bgColor: const Color(0xCCFF5722),
+        );
       case SpecialType.rainbow:
-        // Four colored dots in a diamond
-        const dotColors = [
-          Color(0xFFFF4080),
-          Color(0xFF33D973),
-          Color(0xFF338CFF),
-          Color(0xFFFFD91A),
-        ];
-        final offsets = [
-          Offset(center.dx, center.dy - s),
-          Offset(center.dx + s, center.dy),
-          Offset(center.dx, center.dy + s),
-          Offset(center.dx - s, center.dy),
-        ];
-        for (int i = 0; i < 4; i++) {
-          canvas.drawCircle(
-            offsets[i],
-            s * 0.32,
-            Paint()..color = dotColors[i],
-          );
-        }
+        // Rainbow is shown via sprite — no corner badge needed
+        return const SizedBox.shrink();
       case SpecialType.lightning:
-        final path = Path()
-          ..moveTo(center.dx - s * 0.3, center.dy - s * 1.3)
-          ..lineTo(center.dx + s * 0.4, center.dy - s * 0.2)
-          ..lineTo(center.dx - s * 0.1, center.dy - s * 0.1)
-          ..lineTo(center.dx + s * 0.3, center.dy + s * 1.3)
-          ..lineTo(center.dx - s * 0.4, center.dy + s * 0.2)
-          ..lineTo(center.dx + s * 0.1, center.dy + s * 0.1)
-          ..close();
-        canvas.drawPath(
-          path,
-          paint..color = GameColors.goldFrame,
+        return _buildCornerBadge(
+          icon: Icons.flash_on,
+          color: GameColors.goldFrame,
+          bgColor: const Color(0xCC6A1B9A),
         );
       case SpecialType.none:
-        break;
+        return const SizedBox.shrink();
     }
   }
 
-  // ── Obstacles ───────────────────────────────────────────────────────────
+  Widget _buildCornerBadge({
+    required IconData icon,
+    required Color color,
+    required Color bgColor,
+  }) {
+    final badgeSize = cellSize * 0.38;
+    return Positioned(
+      right: -1,
+      bottom: -1,
+      child: Container(
+        width: badgeSize,
+        height: badgeSize,
+        decoration: BoxDecoration(
+          color: bgColor,
+          borderRadius: BorderRadius.circular(badgeSize * 0.3),
+          border: Border.all(color: Colors.white.withAlpha(180), width: 1),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withAlpha(100),
+              blurRadius: 3,
+              offset: const Offset(0, 1),
+            ),
+          ],
+        ),
+        child: Icon(icon, color: color, size: badgeSize * 0.7),
+      ),
+    );
+  }
+}
 
-  void _drawObstacle(Canvas canvas, Rect rect, ObstacleType obstacle) {
-    final rr = RRect.fromRectAndRadius(rect, const Radius.circular(6));
+// ─────────────────────────────────────────────────────────────────────────────
+// _ObstacleOverlay — visual overlay for obstacles
+// ─────────────────────────────────────────────────────────────────────────────
 
+class _ObstacleOverlay extends StatelessWidget {
+  final ObstacleType obstacle;
+  final double cellSize;
+
+  const _ObstacleOverlay({
+    required this.obstacle,
+    required this.cellSize,
+  });
+
+  @override
+  Widget build(BuildContext context) {
     switch (obstacle) {
       case ObstacleType.ice1:
-        canvas.drawRRect(
-          rr,
-          Paint()..color = const Color(0x4000E5FF), // cyan overlay
+        return Container(
+          decoration: BoxDecoration(
+            borderRadius: BorderRadius.circular(8),
+            color: const Color(0x4000E5FF),
+            border: Border.all(
+              color: const Color(0x6600E5FF),
+              width: 1,
+            ),
+          ),
         );
       case ObstacleType.ice2:
-        canvas.drawRRect(
-          rr,
-          Paint()..color = const Color(0x6600E5FF),
+        return Container(
+          decoration: BoxDecoration(
+            borderRadius: BorderRadius.circular(8),
+            color: const Color(0x6600E5FF),
+            border: Border.all(
+              color: const Color(0x9900E5FF),
+              width: 1.5,
+            ),
+          ),
+          child: Center(
+            child: Icon(
+              Icons.ac_unit,
+              size: cellSize * 0.3,
+              color: Colors.white.withAlpha(80),
+            ),
+          ),
         );
       case ObstacleType.box:
-        canvas.drawRRect(
-          rr,
-          Paint()..color = const Color(0xFF8B6914),
+        return Container(
+          decoration: BoxDecoration(
+            borderRadius: BorderRadius.circular(8),
+            gradient: const LinearGradient(
+              begin: Alignment.topLeft,
+              end: Alignment.bottomRight,
+              colors: [Color(0xFF9B7520), Color(0xFF8B6914), Color(0xFF6B4E10)],
+            ),
+            border: Border.all(color: const Color(0xFFA07820), width: 1.5),
+          ),
+          child: CustomPaint(
+            painter: _CrossPainter(),
+          ),
         );
-        // Cross lines
-        final crossPaint = Paint()
-          ..color = const Color(0xFFA07820)
-          ..style = PaintingStyle.stroke
-          ..strokeWidth = 2;
-        canvas.drawLine(rect.topLeft, rect.bottomRight, crossPaint);
-        canvas.drawLine(rect.topRight, rect.bottomLeft, crossPaint);
       case ObstacleType.fog:
-        canvas.drawRRect(
-          rr,
-          Paint()..color = const Color(0x88888888),
+        return Container(
+          decoration: BoxDecoration(
+            borderRadius: BorderRadius.circular(8),
+            color: const Color(0x88888888),
+          ),
+          child: Center(
+            child: Icon(
+              Icons.cloud,
+              size: cellSize * 0.4,
+              color: Colors.white.withAlpha(60),
+            ),
+          ),
         );
       case ObstacleType.chain1:
-        _drawChainX(canvas, rect, 1);
+        return Container(
+          decoration: BoxDecoration(
+            borderRadius: BorderRadius.circular(8),
+          ),
+          child: CustomPaint(
+            painter: _ChainPainter(level: 1),
+          ),
+        );
       case ObstacleType.chain2:
-        _drawChainX(canvas, rect, 2);
+        return Container(
+          decoration: BoxDecoration(
+            borderRadius: BorderRadius.circular(8),
+          ),
+          child: CustomPaint(
+            painter: _ChainPainter(level: 2),
+          ),
+        );
       case ObstacleType.chocolate:
-        canvas.drawRRect(
-          rr,
-          Paint()..color = const Color(0xFF5C3317),
+        return Container(
+          decoration: BoxDecoration(
+            borderRadius: BorderRadius.circular(8),
+            gradient: const LinearGradient(
+              begin: Alignment.topLeft,
+              end: Alignment.bottomRight,
+              colors: [Color(0xFF7B4320), Color(0xFF5C3317), Color(0xFF3D200E)],
+            ),
+          ),
         );
       case ObstacleType.honey:
-        canvas.drawRRect(
-          rr,
-          Paint()..color = const Color(0x66FFB300),
+        return Container(
+          decoration: BoxDecoration(
+            borderRadius: BorderRadius.circular(8),
+            color: const Color(0x66FFB300),
+            border: Border.all(
+              color: const Color(0x88FFB300),
+              width: 1,
+            ),
+          ),
         );
       case ObstacleType.portal:
-        canvas.drawCircle(
-          rect.center,
-          cellSize * 0.35,
-          Paint()
-            ..color = const Color(0x889040E0)
-            ..style = PaintingStyle.fill,
-        );
-        canvas.drawCircle(
-          rect.center,
-          cellSize * 0.35,
-          Paint()
-            ..color = GameColors.neonPurple
-            ..style = PaintingStyle.stroke
-            ..strokeWidth = 2,
+        return Center(
+          child: Container(
+            width: cellSize * 0.7,
+            height: cellSize * 0.7,
+            decoration: BoxDecoration(
+              shape: BoxShape.circle,
+              color: const Color(0x889040E0),
+              border: Border.all(
+                color: GameColors.neonPurple,
+                width: 2,
+              ),
+              boxShadow: [
+                BoxShadow(
+                  color: GameColors.neonPurple.withAlpha(60),
+                  blurRadius: 8,
+                ),
+              ],
+            ),
+          ),
         );
       case ObstacleType.iceWall:
-        canvas.drawRRect(
-          rr,
-          Paint()..color = const Color(0xAAB0E0FF),
+        return Container(
+          decoration: BoxDecoration(
+            borderRadius: BorderRadius.circular(8),
+            color: const Color(0xAAB0E0FF),
+            border: Border.all(
+              color: const Color(0xBBB0E0FF),
+              width: 1.5,
+            ),
+          ),
         );
       case ObstacleType.bubble:
-        canvas.drawCircle(
-          rect.center,
-          cellSize * 0.38,
-          Paint()
-            ..color = Colors.white.withAlpha(40)
-            ..style = PaintingStyle.fill,
-        );
-        canvas.drawCircle(
-          rect.center,
-          cellSize * 0.38,
-          Paint()
-            ..color = Colors.white.withAlpha(120)
-            ..style = PaintingStyle.stroke
-            ..strokeWidth = 1.5,
+        return Center(
+          child: Container(
+            width: cellSize * 0.76,
+            height: cellSize * 0.76,
+            decoration: BoxDecoration(
+              shape: BoxShape.circle,
+              color: Colors.white.withAlpha(30),
+              border: Border.all(
+                color: Colors.white.withAlpha(120),
+                width: 1.5,
+              ),
+              boxShadow: [
+                BoxShadow(
+                  color: Colors.white.withAlpha(20),
+                  blurRadius: 6,
+                ),
+              ],
+            ),
+          ),
         );
       case ObstacleType.none:
-        break;
+        return const SizedBox.shrink();
     }
   }
+}
 
-  void _drawChainX(Canvas canvas, Rect rect, int level) {
+// ─────────────────────────────────────────────────────────────────────────────
+// _SelectionHighlight — golden glow pulsing border
+// ─────────────────────────────────────────────────────────────────────────────
+
+class _SelectionHighlight extends StatelessWidget {
+  final double pulseValue;
+  final double cellSize;
+
+  const _SelectionHighlight({
+    required this.pulseValue,
+    required this.cellSize,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final alpha = (150 + (105 * pulseValue)).toInt();
+    final borderWidth = 2.5 + pulseValue;
+    final scale = 1.0 + pulseValue * 0.06;
+
+    return Transform.scale(
+      scale: scale,
+      child: Container(
+        decoration: BoxDecoration(
+          borderRadius: BorderRadius.circular(10),
+          border: Border.all(
+            color: GameColors.goldFrame.withAlpha(alpha),
+            width: borderWidth,
+          ),
+          boxShadow: [
+            BoxShadow(
+              color: GameColors.goldFrame.withAlpha((60 + 40 * pulseValue).toInt()),
+              blurRadius: 8 + pulseValue * 4,
+              spreadRadius: 1,
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// _HintHighlight — pulsing white glow border
+// ─────────────────────────────────────────────────────────────────────────────
+
+class _HintHighlight extends StatelessWidget {
+  final double pulseValue;
+
+  const _HintHighlight({required this.pulseValue});
+
+  @override
+  Widget build(BuildContext context) {
+    final alpha = (80 + (120 * pulseValue)).toInt();
+    return Container(
+      decoration: BoxDecoration(
+        borderRadius: BorderRadius.circular(10),
+        border: Border.all(
+          color: Colors.white.withAlpha(alpha),
+          width: 2.0 + pulseValue * 0.5,
+        ),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.white.withAlpha((30 + 40 * pulseValue).toInt()),
+            blurRadius: 6 + pulseValue * 3,
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// CustomPainters for obstacles (kept lightweight)
+// ─────────────────────────────────────────────────────────────────────────────
+
+class _CrossPainter extends CustomPainter {
+  @override
+  void paint(Canvas canvas, Size size) {
+    final paint = Paint()
+      ..color = const Color(0xFFA07820)
+      ..style = PaintingStyle.stroke
+      ..strokeWidth = 2
+      ..strokeCap = StrokeCap.round;
+    final m = size.width * 0.15;
+    canvas.drawLine(Offset(m, m), Offset(size.width - m, size.height - m), paint);
+    canvas.drawLine(Offset(size.width - m, m), Offset(m, size.height - m), paint);
+  }
+
+  @override
+  bool shouldRepaint(covariant CustomPainter oldDelegate) => false;
+}
+
+class _ChainPainter extends CustomPainter {
+  final int level;
+  _ChainPainter({required this.level});
+
+  @override
+  void paint(Canvas canvas, Size size) {
     final paint = Paint()
       ..color = const Color(0xFFA0A0A0)
       ..style = PaintingStyle.stroke
       ..strokeWidth = level == 2 ? 3.0 : 2.0
       ..strokeCap = StrokeCap.round;
-    final m = cellSize * 0.15;
-    canvas.drawLine(
-      Offset(rect.left + m, rect.top + m),
-      Offset(rect.right - m, rect.bottom - m),
-      paint,
-    );
-    canvas.drawLine(
-      Offset(rect.right - m, rect.top + m),
-      Offset(rect.left + m, rect.bottom - m),
-      paint,
-    );
-  }
-
-  // ── Selection ───────────────────────────────────────────────────────────
-
-  void _drawSelection(Canvas canvas, Rect rect) {
-    final alpha = (150 + (105 * pulseValue)).toInt();
-    final paint = Paint()
-      ..color = GameColors.goldFrame.withAlpha(alpha)
-      ..style = PaintingStyle.stroke
-      ..strokeWidth = 2.5 + pulseValue;
-    canvas.drawRRect(
-      RRect.fromRectAndRadius(
-        rect.deflate(-1.0),
-        const Radius.circular(7),
-      ),
-      paint,
-    );
-  }
-
-  // ── Hint ────────────────────────────────────────────────────────────────
-
-  void _drawHint(Canvas canvas, Rect rect) {
-    final alpha = (80 + (120 * pulseValue)).toInt();
-    final paint = Paint()
-      ..color = Colors.white.withAlpha(alpha)
-      ..style = PaintingStyle.stroke
-      ..strokeWidth = 2.0 + pulseValue * 0.5;
-    canvas.drawRRect(
-      RRect.fromRectAndRadius(
-        rect.deflate(-0.5),
-        const Radius.circular(7),
-      ),
-      paint,
-    );
+    final m = size.width * 0.15;
+    canvas.drawLine(Offset(m, m), Offset(size.width - m, size.height - m), paint);
+    canvas.drawLine(Offset(size.width - m, m), Offset(m, size.height - m), paint);
   }
 
   @override
-  bool shouldRepaint(covariant _BoardPainter oldDelegate) => true;
+  bool shouldRepaint(covariant CustomPainter oldDelegate) => false;
 }

@@ -72,7 +72,7 @@ class _GameScreenState extends ConsumerState<GameScreen> {
     final newState = _controller.state;
     final newCombo = _controller.comboCount;
 
-    // ── Sound effects based on state transitions ──
+    // Sound effects based on state transitions
     if (newState != _prevState) {
       switch (newState) {
         case GameState.swapping:
@@ -100,13 +100,13 @@ class _GameScreenState extends ConsumerState<GameScreen> {
       }
     }
 
-    // ── Combo sound when combo count increases ──
+    // Combo sound when combo count increases
     if (newCombo > _prevCombo && newCombo >= 2) {
       SoundManager.instance.play(SoundType.combo);
       HapticManager.instance.tapCombo();
     }
 
-    // ── Match sound when entering matching-related destruction ──
+    // Match sound when entering matching-related destruction
     if (newCombo > _prevCombo && newCombo >= 1 && _prevCombo == 0) {
       SoundManager.instance.play(SoundType.match);
       HapticManager.instance.tapMatch();
@@ -119,12 +119,10 @@ class _GameScreenState extends ConsumerState<GameScreen> {
     if (!_tutorial.isCompleted && widget.level <= 3) {
       final step = _tutorial.currentStep;
       if (step != null) {
-        // After a swap action, advance from TEACH_SWAP
         if (step == TutorialStep.teachSwap &&
             newState == GameState.matching) {
           _tutorial.advance();
         }
-        // After a match/destroy, advance from TEACH_MATCH
         if (step == TutorialStep.teachMatch &&
             newState == GameState.destroying) {
           _tutorial.advance();
@@ -152,154 +150,263 @@ class _GameScreenState extends ConsumerState<GameScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      body: Container(
-        decoration: const BoxDecoration(
-          gradient: LinearGradient(
-            colors: [GameColors.bgDeep, GameColors.bgMid, GameColors.bgLight],
-            begin: Alignment.topCenter,
-            end: Alignment.bottomCenter,
-          ),
-        ),
-        child: SafeArea(
-          child: Stack(
-            children: [
-              // ── Main layout ───────────────────────────────────────────
-              Column(
-                children: [
-                  GameHud(
-                    level: _controller.config.levelNumber,
-                    movesLeft: _controller.movesLeft,
-                    score: _controller.score,
-                    timeLeft: _controller.timeLeft,
-                    goals: _controller.goals,
-                    onPause: _controller.togglePause,
-                    onBack: _onBack,
-                  ),
-                  ScoreProgressBar(
-                    score: _controller.score,
-                    targetScore: _controller.config.targetScore,
-                    stars: _controller.stars,
-                  ),
-                  Expanded(
-                    child: GameBoard(
-                      grid: _controller.grid,
-                      selectedCell: _controller.selectedCell,
-                      hintPositions: _controller.hintPositions,
+      body: Stack(
+        fit: StackFit.expand,
+        children: [
+          // Background image with overlay
+          _GameBackground(),
+
+          // Main game content
+          SafeArea(
+            child: Stack(
+              children: [
+                // Main layout
+                Column(
+                  children: [
+                    GameHud(
+                      level: _controller.config.levelNumber,
+                      movesLeft: _controller.movesLeft,
+                      score: _controller.score,
+                      timeLeft: _controller.timeLeft,
+                      goals: _controller.goals,
+                      onPause: _controller.togglePause,
+                      onBack: _onBack,
+                    ),
+                    ScoreProgressBar(
+                      score: _controller.score,
+                      targetScore: _controller.config.targetScore,
+                      stars: _controller.stars,
+                    ),
+                    // Board with golden frame
+                    Expanded(
+                      child: Padding(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 6,
+                          vertical: 4,
+                        ),
+                        child: _GoldFrameBoard(
+                          child: GameBoard(
+                            grid: _controller.grid,
+                            selectedCell: _controller.selectedCell,
+                            hintPositions: _controller.hintPositions,
+                            boosterMode: _controller.boosterMode,
+                            onCellTapped: (pos) =>
+                                _controller.onCellTapped(pos),
+                            onSwipe: (pos, dir) =>
+                                _controller.onSwipeTo(pos, dir),
+                          ),
+                        ),
+                      ),
+                    ),
+                    BoosterBar(
                       boosterMode: _controller.boosterMode,
-                      onCellTapped: (pos) => _controller.onCellTapped(pos),
-                      onSwipe: (pos, dir) => _controller.onSwipeTo(pos, dir),
+                      onActivate: (type) => _controller.activateBooster(type),
+                      onCancel: _controller.cancelBooster,
+                    ),
+                    const SizedBox(height: 4),
+                  ],
+                ),
+
+                // Combo text overlay
+                if (_controller.comboCount >= 2)
+                  Positioned(
+                    top: MediaQuery.of(context).size.height * 0.35,
+                    left: 0,
+                    right: 0,
+                    child: Center(
+                      child: ComboText(comboCount: _controller.comboCount),
                     ),
                   ),
-                  BoosterBar(
-                    boosterMode: _controller.boosterMode,
-                    onActivate: (type) => _controller.activateBooster(type),
-                    onCancel: _controller.cancelBooster,
-                  ),
-                  const SizedBox(height: 4),
-                ],
-              ),
 
-              // ── Combo text overlay ────────────────────────────────────
-              if (_controller.comboCount >= 2)
-                Positioned(
-                  top: MediaQuery.of(context).size.height * 0.35,
-                  left: 0,
-                  right: 0,
-                  child: Center(
-                    child: ComboText(comboCount: _controller.comboCount),
+                // Level complete overlay
+                if (_controller.state == GameState.levelComplete)
+                  LevelCompleteOverlay(
+                    score: _controller.score,
+                    stars: _controller.stars,
+                    coinsEarned: _controller.coinsEarned,
+                    maxCombo: _controller.maxComboThisLevel,
+                    onContinue: () {
+                      ref.read(playerProgressProvider.notifier).completeLevel(
+                        widget.level,
+                        _controller.stars,
+                        _controller.score,
+                        _controller.coinsEarned,
+                      );
+                      final progress = ref.read(playerProgressProvider);
+                      final adsDisabled =
+                          progress.removeAdsPurchased || progress.vipActive;
+                      if (!adsDisabled &&
+                          AdManager.instance.shouldShowInterstitial()) {
+                        AdManager.instance.showInterstitialAd(
+                          onDismissed: () {
+                            if (mounted) context.go('/map');
+                          },
+                        );
+                      } else {
+                        context.go('/map');
+                      }
+                    },
                   ),
-                ),
 
-              // ── Level complete overlay ────────────────────────────────
-              if (_controller.state == GameState.levelComplete)
-                LevelCompleteOverlay(
-                  score: _controller.score,
-                  stars: _controller.stars,
-                  coinsEarned: _controller.coinsEarned,
-                  maxCombo: _controller.maxComboThisLevel,
-                  onContinue: () {
-                    // Save progress
-                    ref.read(playerProgressProvider.notifier).completeLevel(
-                      widget.level,
-                      _controller.stars,
-                      _controller.score,
-                      _controller.coinsEarned,
-                    );
-                    // Show interstitial ad between levels (if applicable)
-                    final progress = ref.read(playerProgressProvider);
-                    final adsDisabled =
-                        progress.removeAdsPurchased || progress.vipActive;
-                    if (!adsDisabled &&
-                        AdManager.instance.shouldShowInterstitial()) {
-                      AdManager.instance.showInterstitialAd(
-                        onDismissed: () {
-                          if (mounted) context.go('/map');
+                // Game over overlay
+                if (_controller.state == GameState.gameOver)
+                  GameOverOverlay(
+                    score: _controller.score,
+                    onRetry: () => _startLevel(widget.level),
+                    onQuit: _onBack,
+                    showAdButton: AdManager.instance.isRewardedAdReady &&
+                        !ref.read(playerProgressProvider).removeAdsPurchased,
+                    onWatchAd: () {
+                      AdManager.instance.showRewardedAd(
+                        onRewarded: () {
+                          _controller.addExtraMoves(3);
                         },
                       );
-                    } else {
-                      context.go('/map');
-                    }
-                  },
-                ),
+                    },
+                  ),
 
-              // ── Game over overlay ─────────────────────────────────────
-              if (_controller.state == GameState.gameOver)
-                GameOverOverlay(
-                  score: _controller.score,
-                  onRetry: () => _startLevel(widget.level),
-                  onQuit: _onBack,
-                  showAdButton: AdManager.instance.isRewardedAdReady &&
-                      !ref.read(playerProgressProvider).removeAdsPurchased,
-                  onWatchAd: () {
-                    AdManager.instance.showRewardedAd(
-                      onRewarded: () {
-                        _controller.addExtraMoves(3);
-                      },
-                    );
-                  },
-                ),
-
-              // ── Tutorial overlay ────────────────────────────────────────
-              if (_tutorial.isVisible &&
-                  _tutorial.currentStep != null &&
-                  widget.level <= 3 &&
-                  _controller.state == GameState.idle)
-                TutorialOverlay(
-                  step: _tutorial.currentStep!,
-                  onContinue: () {
-                    setState(() {
-                      if (_tutorial.isWaitingForAction) {
-                        _tutorial.hideOverlay();
-                      } else {
-                        _tutorial.advance();
-                        if (_tutorial.isCompleted) {
-                          ref
-                              .read(playerProgressProvider.notifier)
-                              .completeTutorial();
+                // Tutorial overlay
+                if (_tutorial.isVisible &&
+                    _tutorial.currentStep != null &&
+                    widget.level <= 3 &&
+                    _controller.state == GameState.idle)
+                  TutorialOverlay(
+                    step: _tutorial.currentStep!,
+                    onContinue: () {
+                      setState(() {
+                        if (_tutorial.isWaitingForAction) {
+                          _tutorial.hideOverlay();
+                        } else {
+                          _tutorial.advance();
+                          if (_tutorial.isCompleted) {
+                            ref
+                                .read(playerProgressProvider.notifier)
+                                .completeTutorial();
+                          }
                         }
-                      }
-                    });
-                  },
-                  onSkip: () {
-                    setState(() {
-                      _tutorial.skip();
-                      ref
-                          .read(playerProgressProvider.notifier)
-                          .completeTutorial();
-                    });
-                  },
-                ),
+                      });
+                    },
+                    onSkip: () {
+                      setState(() {
+                        _tutorial.skip();
+                        ref
+                            .read(playerProgressProvider.notifier)
+                            .completeTutorial();
+                      });
+                    },
+                  ),
 
-              // ── Pause overlay ─────────────────────────────────────────
-              if (_controller.state == GameState.paused)
-                _PauseOverlay(
-                  onResume: _controller.togglePause,
-                  onRestart: () => _startLevel(widget.level),
-                  onQuit: _onBack,
-                ),
-            ],
+                // Pause overlay
+                if (_controller.state == GameState.paused)
+                  _PauseOverlay(
+                    onResume: _controller.togglePause,
+                    onRestart: () => _startLevel(widget.level),
+                    onQuit: _onBack,
+                  ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Game Background — uses actual background image with overlay
+// ─────────────────────────────────────────────────────────────────────────────
+
+class _GameBackground extends StatelessWidget {
+  @override
+  Widget build(BuildContext context) {
+    return Stack(
+      fit: StackFit.expand,
+      children: [
+        // Background image
+        Image.asset(
+          'assets/backgrounds/game_bg_leonardo.jpg',
+          fit: BoxFit.cover,
+          filterQuality: FilterQuality.medium,
+          errorBuilder: (_, __, ___) => Container(
+            decoration: const BoxDecoration(
+              gradient: LinearGradient(
+                colors: [GameColors.bgDeep, GameColors.bgMid, GameColors.bgLight],
+                begin: Alignment.topCenter,
+                end: Alignment.bottomCenter,
+              ),
+            ),
           ),
         ),
+        // Semi-transparent overlay for readability
+        Container(
+          decoration: BoxDecoration(
+            gradient: LinearGradient(
+              begin: Alignment.topCenter,
+              end: Alignment.bottomCenter,
+              colors: [
+                GameColors.bgDeep.withAlpha(140),
+                GameColors.bgDeep.withAlpha(100),
+                GameColors.bgDeep.withAlpha(160),
+              ],
+              stops: const [0.0, 0.5, 1.0],
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Gold Frame Board — ornate golden border around the game board
+// ─────────────────────────────────────────────────────────────────────────────
+
+class _GoldFrameBoard extends StatelessWidget {
+  final Widget child;
+  const _GoldFrameBoard({required this.child});
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      decoration: BoxDecoration(
+        borderRadius: BorderRadius.circular(18),
+        border: Border.all(
+          color: Colors.transparent,
+          width: 3,
+        ),
+        gradient: const LinearGradient(
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+          colors: [
+            Color(0xFFFFE44D), // goldLight
+            Color(0xFFFFD700), // goldFrame
+            Color(0xFFB8860B), // goldDark
+            Color(0xFFFFD700), // goldFrame
+            Color(0xFFFFE44D), // goldLight
+          ],
+          stops: [0.0, 0.25, 0.5, 0.75, 1.0],
+        ),
+        boxShadow: [
+          BoxShadow(
+            color: GameColors.goldFrame.withAlpha(50),
+            blurRadius: 16,
+            spreadRadius: 2,
+          ),
+          BoxShadow(
+            color: GameColors.goldDark.withAlpha(40),
+            blurRadius: 8,
+            offset: const Offset(0, 4),
+          ),
+        ],
+      ),
+      child: Container(
+        margin: const EdgeInsets.all(3),
+        decoration: BoxDecoration(
+          color: const Color(0xFF0D0235).withAlpha(200),
+          borderRadius: BorderRadius.circular(15),
+        ),
+        padding: const EdgeInsets.all(4),
+        child: child,
       ),
     );
   }
@@ -336,9 +443,16 @@ class _PauseOverlay extends StatelessWidget {
             ),
             borderRadius: BorderRadius.circular(24),
             border: Border.all(
-              color: GameColors.neonCyan.withAlpha(120),
-              width: 1.5,
+              color: GameColors.goldFrame.withAlpha(140),
+              width: 2,
             ),
+            boxShadow: [
+              BoxShadow(
+                color: GameColors.goldFrame.withAlpha(30),
+                blurRadius: 20,
+                spreadRadius: 2,
+              ),
+            ],
           ),
           child: Column(
             mainAxisSize: MainAxisSize.min,
@@ -346,10 +460,13 @@ class _PauseOverlay extends StatelessWidget {
               const Text(
                 'DURAKLADI',
                 style: TextStyle(
-                  color: GameColors.neonCyan,
+                  color: GameColors.goldLight,
                   fontSize: 24,
                   fontWeight: FontWeight.w900,
                   letterSpacing: 2,
+                  shadows: [
+                    Shadow(color: GameColors.goldDark, blurRadius: 8),
+                  ],
                 ),
               ),
               const SizedBox(height: 28),
@@ -400,6 +517,12 @@ class _PauseButton extends StatelessWidget {
           color: color.withAlpha(40),
           borderRadius: BorderRadius.circular(14),
           border: Border.all(color: color.withAlpha(120)),
+          boxShadow: [
+            BoxShadow(
+              color: color.withAlpha(20),
+              blurRadius: 8,
+            ),
+          ],
         ),
         child: Text(
           label,

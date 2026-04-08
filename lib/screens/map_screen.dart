@@ -8,6 +8,7 @@ import 'package:patpat_game/models/player_progress.dart';
 import 'package:patpat_game/providers/game_providers.dart';
 import 'package:patpat_game/screens/daily_reward_screen.dart';
 import 'package:patpat_game/theme/game_colors.dart';
+import 'package:patpat_game/widgets/level_start_popup.dart';
 import 'package:patpat_game/widgets/no_lives_popup.dart';
 
 // ---------------------------------------------------------------------------
@@ -35,6 +36,7 @@ class MapScreen extends ConsumerStatefulWidget {
 class _MapScreenState extends ConsumerState<MapScreen> {
   late GameRegion _selectedRegion;
   bool _showNoLivesPopup = false;
+  int? _showLevelStartPopupFor;
 
   @override
   void initState() {
@@ -110,14 +112,8 @@ class _MapScreenState extends ConsumerState<MapScreen> {
                     region: _selectedRegion,
                     progress: progress,
                     onLevelTap: (level) {
-                      // Regenerate lives before checking
-                      progress.regenerateLives();
-                      if (progress.lives <= 0) {
-                        setState(() => _showNoLivesPopup = true);
-                      } else {
-                        ref.read(playerProgressProvider.notifier).useLife();
-                        context.go('/game/$level');
-                      }
+                      // Show level start popup instead of navigating directly
+                      setState(() => _showLevelStartPopupFor = level);
                     },
                   ),
                 ),
@@ -127,6 +123,29 @@ class _MapScreenState extends ConsumerState<MapScreen> {
               ],
             ),
           ),
+
+          // Level start popup overlay
+          if (_showLevelStartPopupFor != null)
+            LevelStartPopup(
+              level: _showLevelStartPopupFor!,
+              earnedStars: progress.starsForLevel(_showLevelStartPopupFor!),
+              highScore: progress.highScores[_showLevelStartPopupFor!] ?? 0,
+              onPlay: () {
+                final level = _showLevelStartPopupFor!;
+                setState(() => _showLevelStartPopupFor = null);
+                // Regenerate lives before checking
+                progress.regenerateLives();
+                if (progress.lives <= 0) {
+                  setState(() => _showNoLivesPopup = true);
+                } else {
+                  ref.read(playerProgressProvider.notifier).useLife();
+                  context.go('/game/$level');
+                }
+              },
+              onClose: () {
+                setState(() => _showLevelStartPopupFor = null);
+              },
+            ),
 
           // No lives popup overlay
           if (_showNoLivesPopup)
