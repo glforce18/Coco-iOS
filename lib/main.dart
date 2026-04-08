@@ -3,6 +3,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import 'package:patpat_game/screens/game_screen.dart';
+
 void main() {
   WidgetsFlutterBinding.ensureInitialized();
   SystemChrome.setPreferredOrientations([DeviceOrientation.portraitUp]);
@@ -21,9 +23,7 @@ class PatPatApp extends StatelessWidget {
       theme: ThemeData.dark().copyWith(
         scaffoldBackgroundColor: const Color(0xFF0D0235),
       ),
-      home: const Scaffold(
-        body: Center(child: Text('PatPat - Loading...')),
-      ),
+      home: const GameScreen(level: 1),
     );
   }
 }
