@@ -2,8 +2,6 @@ import 'dart:math';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
-import 'package:patpat_game/audio/haptic_manager.dart';
-import 'package:patpat_game/audio/sound_manager.dart';
 import 'package:patpat_game/providers/game_providers.dart';
 import 'package:patpat_game/theme/game_colors.dart';
 
@@ -84,8 +82,6 @@ class _SpinWheelScreenState extends ConsumerState<SpinWheelScreen>
       _wonPrizeIndex = null;
     });
 
-    SoundManager.instance.play(SoundType.swap);
-    HapticManager.instance.tapLight();
 
     // Decide which prize to land on
     final targetIndex = _random.nextInt(_segments.length);
@@ -117,8 +113,6 @@ class _SpinWheelScreenState extends ConsumerState<SpinWheelScreen>
     // Award prize
     final success = await notifier.spinWheel(targetIndex, free: free);
     if (success) {
-      SoundManager.instance.play(SoundType.levelComplete);
-      HapticManager.instance.tapHeavy();
 
       setState(() {
         _wonPrizeIndex = targetIndex;
@@ -334,8 +328,6 @@ class _SpinWheelScreenState extends ConsumerState<SpinWheelScreen>
         children: [
           GestureDetector(
             onTap: () {
-              SoundManager.instance.play(SoundType.buttonClick);
-              HapticManager.instance.tapLight();
               context.go('/map');
             },
             child: Container(
@@ -578,8 +570,6 @@ class _SpinWheelScreenState extends ConsumerState<SpinWheelScreen>
       padding: const EdgeInsets.symmetric(horizontal: 48),
       child: GestureDetector(
         onTap: () {
-          SoundManager.instance.play(SoundType.buttonClick);
-          HapticManager.instance.tapLight();
           setState(() {
             _wonPrizeIndex = null;
           });

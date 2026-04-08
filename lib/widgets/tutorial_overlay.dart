@@ -2,8 +2,6 @@ import 'dart:math';
 
 import 'package:flutter/material.dart';
 
-import 'package:patpat_game/audio/haptic_manager.dart';
-import 'package:patpat_game/audio/sound_manager.dart';
 import 'package:patpat_game/game/tutorial_manager.dart';
 import 'package:patpat_game/theme/game_colors.dart';
 
@@ -104,12 +102,9 @@ class _TutorialOverlayState extends State<TutorialOverlay>
             child: _MessageBox(
               step: widget.step,
               onContinue: () {
-                SoundManager.instance.play(SoundType.buttonClick);
-                HapticManager.instance.tapLight();
                 widget.onContinue();
               },
               onSkip: () {
-                SoundManager.instance.play(SoundType.buttonClick);
                 widget.onSkip();
               },
             ),

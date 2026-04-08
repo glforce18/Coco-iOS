@@ -1,8 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
-import 'package:patpat_game/audio/haptic_manager.dart';
-import 'package:patpat_game/audio/sound_manager.dart';
 import 'package:patpat_game/providers/game_providers.dart';
 import 'package:patpat_game/theme/game_colors.dart';
 
@@ -193,8 +191,6 @@ class _EventScreenState extends ConsumerState<EventScreen> {
           children: [
             GestureDetector(
               onTap: () {
-                SoundManager.instance.play(SoundType.buttonClick);
-                HapticManager.instance.tapLight();
                 context.go('/map');
               },
               child: Container(

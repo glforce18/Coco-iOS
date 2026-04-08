@@ -4,8 +4,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
-import 'package:patpat_game/audio/haptic_manager.dart';
-import 'package:patpat_game/audio/sound_manager.dart';
 import 'package:patpat_game/billing/billing_manager.dart';
 import 'package:patpat_game/models/enums.dart';
 import 'package:patpat_game/providers/game_providers.dart';
@@ -62,8 +60,6 @@ class _ShopScreenState extends ConsumerState<ShopScreen>
       _showSnackBar('Yeterli altinin yok!', GameColors.hotPink);
       return;
     }
-    SoundManager.instance.play(SoundType.match);
-    HapticManager.instance.tapMatch();
     await ref.read(playerProgressProvider.notifier).buyBooster(type);
     if (mounted) {
       _showSnackBar('${type.displayName} satin alindi!', GameColors.neonGreen);
@@ -74,15 +70,11 @@ class _ShopScreenState extends ConsumerState<ShopScreen>
   Future<void> _buyIAP(String productId) async {
     final product = _billing.productById(productId);
     if (product == null) return;
-    SoundManager.instance.play(SoundType.buttonClick);
-    HapticManager.instance.tapMatch();
     await _billing.buyProduct(product);
   }
 
   // ── Restore purchases ────────────────────────────────────────────────
   Future<void> _restore() async {
-    SoundManager.instance.play(SoundType.buttonClick);
-    HapticManager.instance.tapLight();
     await _billing.restorePurchases();
     if (mounted) {
       _showSnackBar('Satin alimlar geri yuklendi', GameColors.neonCyan);
@@ -148,8 +140,6 @@ class _ShopScreenState extends ConsumerState<ShopScreen>
                 _ShopHeader(
                   coins: progress.coins,
                   onBack: () {
-                    SoundManager.instance.play(SoundType.buttonClick);
-                    HapticManager.instance.tapLight();
                     context.go('/map');
                   },
                 ),

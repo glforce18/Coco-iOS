@@ -549,6 +549,34 @@ class MatchEngine {
   }
 
   // ──────────────────────────────────────────────
+  // 7b. getSpawnPositions
+  // ──────────────────────────────────────────────
+
+  /// Returns the set of positions where specials will be spawned for the
+  /// given matches, WITHOUT modifying the grid. Used by the game controller
+  /// to exclude these positions from the destroy animation so the spawned
+  /// special remains visible.
+  static Set<Position> getSpawnPositions(
+    List<Match> matches, [
+    Position? swapPosition,
+  ]) {
+    final spawns = <Position>{};
+    for (final match in matches) {
+      final special = determineSpecialType(match, swapPosition);
+      if (special == SpecialType.none) continue;
+
+      Position spawnPos = match.positions.first;
+      if (swapPosition != null && match.positions.contains(swapPosition)) {
+        spawnPos = swapPosition;
+      }
+
+      // Only count if the spawn position won't be blocked by an obstacle
+      spawns.add(spawnPos);
+    }
+    return spawns;
+  }
+
+  // ──────────────────────────────────────────────
   // 8. ensureNoInitialMatches
   // ──────────────────────────────────────────────
 

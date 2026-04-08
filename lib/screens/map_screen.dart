@@ -3,8 +3,6 @@ import 'dart:math';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
-import 'package:patpat_game/audio/haptic_manager.dart';
-import 'package:patpat_game/audio/sound_manager.dart';
 import 'package:patpat_game/models/level_config.dart';
 import 'package:patpat_game/models/player_progress.dart';
 import 'package:patpat_game/providers/game_providers.dart';
@@ -196,8 +194,6 @@ class _MapScreenState extends ConsumerState<MapScreen>
               alignment: Alignment.centerLeft,
               child: _DailyChallengeButton(
                 onTap: () {
-                  SoundManager.instance.play(SoundType.buttonClick);
-                  HapticManager.instance.tapLight();
                   final notifier = ref.read(playerProgressProvider.notifier);
                   if (notifier.isDailyRewardAvailable) {
                     showDailyRewardPopup(context, ref);
@@ -396,8 +392,6 @@ class _MapHeader extends StatelessWidget {
             // Mascot icon / back button
             GestureDetector(
               onTap: () {
-                SoundManager.instance.play(SoundType.buttonClick);
-                HapticManager.instance.tapLight();
                 onBack();
               },
               child: Container(
@@ -468,8 +462,6 @@ class _MapHeader extends StatelessWidget {
             // Spin wheel
             GestureDetector(
               onTap: () {
-                SoundManager.instance.play(SoundType.buttonClick);
-                HapticManager.instance.tapLight();
                 onSpin();
               },
               child: Container(
@@ -498,8 +490,6 @@ class _MapHeader extends StatelessWidget {
             // Settings gear
             GestureDetector(
               onTap: () {
-                SoundManager.instance.play(SoundType.buttonClick);
-                HapticManager.instance.tapLight();
                 onProfile();
               },
               child: Container(
@@ -856,8 +846,6 @@ class _PathRowWidget extends StatelessWidget {
                 sparkleAnimation: sparkleAnimation,
                 onTap: () {
                   if (progress.isLevelUnlocked(level)) {
-                    SoundManager.instance.play(SoundType.buttonClick);
-                    HapticManager.instance.tapLight();
                     onLevelTap(level);
                   }
                 },
@@ -1370,8 +1358,6 @@ class _BottomBar extends StatelessWidget {
                   label: 'Ana Sayfa',
                   isActive: false,
                   onTap: () {
-                    SoundManager.instance.play(SoundType.buttonClick);
-                    HapticManager.instance.tapLight();
                     context.go('/menu');
                   },
                 ),
@@ -1380,8 +1366,6 @@ class _BottomBar extends StatelessWidget {
                   label: 'Market',
                   isActive: false,
                   onTap: () {
-                    SoundManager.instance.play(SoundType.buttonClick);
-                    HapticManager.instance.tapLight();
                     context.go('/shop');
                   },
                 ),
@@ -1396,8 +1380,6 @@ class _BottomBar extends StatelessWidget {
                   label: 'Basarimlar',
                   isActive: false,
                   onTap: () {
-                    SoundManager.instance.play(SoundType.buttonClick);
-                    HapticManager.instance.tapLight();
                     context.go('/achievements');
                   },
                 ),
@@ -1406,8 +1388,6 @@ class _BottomBar extends StatelessWidget {
                   label: 'Profil',
                   isActive: false,
                   onTap: () {
-                    SoundManager.instance.play(SoundType.buttonClick);
-                    HapticManager.instance.tapLight();
                     context.go('/profile');
                   },
                 ),

@@ -336,21 +336,39 @@ class _JellyCell extends StatelessWidget {
             ),
           ),
 
-        // 3. Jelly sprite
+        // 2b. Special glow background (behind jelly)
+        if (specialType != SpecialType.none && hasJelly)
+          Positioned.fill(
+            child: _SpecialGlowBackground(
+              special: specialType,
+              jellyType: jellyType,
+              cellSize: cellSize,
+              pulseValue: pulseValue,
+            ),
+          ),
+
+        // 3. Jelly sprite (with pulsing scale for specials)
         if (hasJelly && jellyType != null)
           Positioned.fill(
             child: Padding(
               padding: EdgeInsets.all(cellSize * 0.06),
-              child: _buildJellySprite(jellyType, specialType),
+              child: specialType == SpecialType.bomb
+                  ? Transform.scale(
+                      scale: 1.0 + pulseValue * 0.08,
+                      child: _buildJellySprite(jellyType, specialType),
+                    )
+                  : _buildJellySprite(jellyType, specialType),
             ),
           ),
 
-        // 4. Special indicator overlay on top of sprite
-        if (specialType != SpecialType.none)
+        // 4. Special effect overlay on top of sprite
+        if (specialType != SpecialType.none && hasJelly)
           Positioned.fill(
             child: _SpecialOverlay(
               special: specialType,
+              jellyType: jellyType,
               cellSize: cellSize,
+              pulseValue: pulseValue,
             ),
           ),
 
@@ -379,6 +397,16 @@ class _JellyCell extends StatelessWidget {
     if (special == SpecialType.rainbow) {
       return Image.asset(
         'assets/sprites/jelly_rainbow.png',
+        fit: BoxFit.contain,
+        filterQuality: FilterQuality.medium,
+        errorBuilder: (_, __, ___) => _FallbackJelly(type: type),
+      );
+    }
+
+    // Bomb special uses dedicated bomb sprite
+    if (special == SpecialType.bomb) {
+      return Image.asset(
+        'assets/sprites/jelly_bomb.png',
         fit: BoxFit.contain,
         filterQuality: FilterQuality.medium,
         errorBuilder: (_, __, ___) => _FallbackJelly(type: type),
@@ -430,81 +458,449 @@ class _FallbackJelly extends StatelessWidget {
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
-// _SpecialOverlay — icon indicator for special types
+// _SpecialGlowBackground — glowing background effect behind special jellies
+// ─────────────────────────────────────────────────────────────────────────────
+
+class _SpecialGlowBackground extends StatelessWidget {
+  final SpecialType special;
+  final JellyType? jellyType;
+  final double cellSize;
+  final double pulseValue;
+
+  const _SpecialGlowBackground({
+    required this.special,
+    required this.jellyType,
+    required this.cellSize,
+    required this.pulseValue,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final Color glowColor;
+    final double glowBlur;
+    final double glowAlphaBase;
+
+    switch (special) {
+      case SpecialType.rocketHorizontal:
+      case SpecialType.rocketVertical:
+        glowColor = const Color(0xFF2196F3);
+        glowBlur = 10 + pulseValue * 6;
+        glowAlphaBase = 0.25;
+      case SpecialType.bomb:
+        glowColor = const Color(0xFFFF5722);
+        glowBlur = 12 + pulseValue * 8;
+        glowAlphaBase = 0.3;
+      case SpecialType.rainbow:
+        // Rainbow gets a shifting hue glow
+        final hue = pulseValue * 360;
+        glowColor = HSLColor.fromAHSL(1, hue, 0.9, 0.6).toColor();
+        glowBlur = 14 + pulseValue * 6;
+        glowAlphaBase = 0.35;
+      case SpecialType.lightning:
+        glowColor = const Color(0xFFFFD700);
+        glowBlur = 10 + pulseValue * 10;
+        glowAlphaBase = 0.3;
+      case SpecialType.none:
+        return const SizedBox.shrink();
+    }
+
+    final alpha = ((glowAlphaBase + pulseValue * 0.15) * 255).toInt().clamp(0, 255);
+
+    return Container(
+      decoration: BoxDecoration(
+        borderRadius: BorderRadius.circular(8),
+        boxShadow: [
+          BoxShadow(
+            color: glowColor.withAlpha(alpha),
+            blurRadius: glowBlur,
+            spreadRadius: 1 + pulseValue * 2,
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// _SpecialOverlay — impressive visual effects for special types
 // ─────────────────────────────────────────────────────────────────────────────
 
 class _SpecialOverlay extends StatelessWidget {
   final SpecialType special;
+  final JellyType? jellyType;
   final double cellSize;
+  final double pulseValue;
 
   const _SpecialOverlay({
     required this.special,
+    required this.jellyType,
     required this.cellSize,
+    required this.pulseValue,
   });
 
   @override
   Widget build(BuildContext context) {
     switch (special) {
       case SpecialType.rocketHorizontal:
-        return _buildCornerBadge(
-          icon: Icons.arrow_right_alt,
-          color: Colors.white,
-          bgColor: const Color(0xCC2196F3),
-        );
+        return _buildRocketOverlay(horizontal: true);
       case SpecialType.rocketVertical:
-        return _buildCornerBadge(
-          icon: Icons.arrow_upward,
-          color: Colors.white,
-          bgColor: const Color(0xCC2196F3),
-        );
+        return _buildRocketOverlay(horizontal: false);
       case SpecialType.bomb:
-        return _buildCornerBadge(
-          icon: Icons.blur_circular,
-          color: Colors.white,
-          bgColor: const Color(0xCCFF5722),
-        );
+        return _buildBombOverlay();
       case SpecialType.rainbow:
-        // Rainbow is shown via sprite — no corner badge needed
-        return const SizedBox.shrink();
+        return _buildRainbowOverlay();
       case SpecialType.lightning:
-        return _buildCornerBadge(
-          icon: Icons.flash_on,
-          color: GameColors.goldFrame,
-          bgColor: const Color(0xCC6A1B9A),
-        );
+        return _buildLightningOverlay();
       case SpecialType.none:
         return const SizedBox.shrink();
     }
   }
 
-  Widget _buildCornerBadge({
-    required IconData icon,
-    required Color color,
-    required Color bgColor,
-  }) {
-    final badgeSize = cellSize * 0.38;
-    return Positioned(
-      right: -1,
-      bottom: -1,
-      child: Container(
-        width: badgeSize,
-        height: badgeSize,
-        decoration: BoxDecoration(
-          color: bgColor,
-          borderRadius: BorderRadius.circular(badgeSize * 0.3),
-          border: Border.all(color: Colors.white.withAlpha(180), width: 1),
-          boxShadow: [
-            BoxShadow(
-              color: Colors.black.withAlpha(100),
-              blurRadius: 3,
-              offset: const Offset(0, 1),
+  /// Rocket: glowing directional arrow + pulsing trail lines
+  Widget _buildRocketOverlay({required bool horizontal}) {
+    final arrowAngle = horizontal ? 0.0 : -pi / 2;
+    final trailAlpha = (120 + pulseValue * 100).toInt().clamp(0, 255);
+    final glowAlpha = (60 + pulseValue * 80).toInt().clamp(0, 255);
+
+    return Stack(
+      clipBehavior: Clip.none,
+      children: [
+        // Directional glow streaks
+        Positioned.fill(
+          child: CustomPaint(
+            painter: _RocketStreakPainter(
+              horizontal: horizontal,
+              pulseValue: pulseValue,
+              color: const Color(0xFF64B5F6),
             ),
-          ],
+          ),
         ),
-        child: Icon(icon, color: color, size: badgeSize * 0.7),
-      ),
+        // Arrow icon centered
+        Center(
+          child: Transform.rotate(
+            angle: arrowAngle,
+            child: Icon(
+              Icons.double_arrow_rounded,
+              size: cellSize * 0.45,
+              color: Colors.white.withAlpha(trailAlpha),
+              shadows: [
+                Shadow(
+                  color: const Color(0xFF2196F3).withAlpha(glowAlpha),
+                  blurRadius: 8,
+                ),
+              ],
+            ),
+          ),
+        ),
+      ],
     );
   }
+
+  /// Bomb: rotating glow ring + pulsing scale
+  Widget _buildBombOverlay() {
+    final ringAlpha = (100 + pulseValue * 80).toInt().clamp(0, 255);
+    final rotationAngle = pulseValue * 2 * pi;
+
+    return Stack(
+      clipBehavior: Clip.none,
+      children: [
+        // Rotating glow ring
+        Positioned.fill(
+          child: Transform.rotate(
+            angle: rotationAngle,
+            child: Container(
+              margin: EdgeInsets.all(cellSize * 0.04),
+              decoration: BoxDecoration(
+                shape: BoxShape.circle,
+                border: Border.all(
+                  color: const Color(0xFFFF5722).withAlpha(ringAlpha),
+                  width: 1.5,
+                ),
+                boxShadow: [
+                  BoxShadow(
+                    color: const Color(0xFFFF5722).withAlpha((ringAlpha * 0.5).toInt()),
+                    blurRadius: 6 + pulseValue * 4,
+                    spreadRadius: pulseValue * 2,
+                  ),
+                ],
+              ),
+            ),
+          ),
+        ),
+        // Pulsing spark dots at cardinal positions
+        ...List.generate(4, (i) {
+          final angle = rotationAngle + i * pi / 2;
+          final radius = cellSize * 0.42;
+          final cx = cellSize / 2 + cos(angle) * radius;
+          final cy = cellSize / 2 + sin(angle) * radius;
+          final sparkAlpha = (180 + pulseValue * 75).toInt().clamp(0, 255);
+          return Positioned(
+            left: cx - 2.5,
+            top: cy - 2.5,
+            child: Container(
+              width: 5,
+              height: 5,
+              decoration: BoxDecoration(
+                shape: BoxShape.circle,
+                color: const Color(0xFFFFAB40).withAlpha(sparkAlpha),
+                boxShadow: [
+                  BoxShadow(
+                    color: const Color(0xFFFF6D00).withAlpha((sparkAlpha * 0.6).toInt()),
+                    blurRadius: 4,
+                  ),
+                ],
+              ),
+            ),
+          );
+        }),
+      ],
+    );
+  }
+
+  /// Rainbow: orbiting colored dots + shimmer effect
+  Widget _buildRainbowOverlay() {
+    final orbitAngle = pulseValue * 2 * pi;
+    final radius = cellSize * 0.40;
+    final center = cellSize / 2;
+    final rainbowColors = [
+      const Color(0xFFFF4D80), // pink
+      const Color(0xFFFF801A), // orange
+      const Color(0xFFFFD91A), // yellow
+      const Color(0xFF33D973), // green
+      const Color(0xFF338CFF), // blue
+      const Color(0xFF8B24DB), // purple
+    ];
+
+    return Stack(
+      clipBehavior: Clip.none,
+      children: [
+        // Orbiting colored dots
+        ...List.generate(6, (i) {
+          final angle = orbitAngle + i * (pi / 3);
+          final dx = center + cos(angle) * radius;
+          final dy = center + sin(angle) * radius;
+          final dotAlpha = (200 + pulseValue * 55).toInt().clamp(0, 255);
+          return Positioned(
+            left: dx - 3,
+            top: dy - 3,
+            child: Container(
+              width: 6,
+              height: 6,
+              decoration: BoxDecoration(
+                shape: BoxShape.circle,
+                color: rainbowColors[i].withAlpha(dotAlpha),
+                boxShadow: [
+                  BoxShadow(
+                    color: rainbowColors[i].withAlpha((dotAlpha * 0.5).toInt()),
+                    blurRadius: 4,
+                  ),
+                ],
+              ),
+            ),
+          );
+        }),
+        // Shimmer flash (traveling highlight)
+        Positioned.fill(
+          child: ClipRRect(
+            borderRadius: BorderRadius.circular(8),
+            child: CustomPaint(
+              painter: _ShimmerPainter(pulseValue: pulseValue),
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+
+  /// Lightning: electric crackling glow + spark particles
+  Widget _buildLightningOverlay() {
+    final boltAlpha = (160 + pulseValue * 95).toInt().clamp(0, 255);
+    final sparkAlpha = (100 + pulseValue * 100).toInt().clamp(0, 255);
+
+    return Stack(
+      clipBehavior: Clip.none,
+      children: [
+        // Electric crackling edge glow
+        Positioned.fill(
+          child: Container(
+            margin: EdgeInsets.all(cellSize * 0.06),
+            decoration: BoxDecoration(
+              borderRadius: BorderRadius.circular(6),
+              border: Border.all(
+                color: const Color(0xFFFFD700).withAlpha((sparkAlpha * 0.5).toInt()),
+                width: 1 + pulseValue * 0.5,
+              ),
+              boxShadow: [
+                BoxShadow(
+                  color: const Color(0xFFFFD700).withAlpha((sparkAlpha * 0.4).toInt()),
+                  blurRadius: 4 + pulseValue * 4,
+                ),
+              ],
+            ),
+          ),
+        ),
+        // Lightning bolt icon
+        Center(
+          child: Icon(
+            Icons.flash_on,
+            size: cellSize * 0.4,
+            color: GameColors.goldFrame.withAlpha(boltAlpha),
+            shadows: [
+              Shadow(
+                color: const Color(0xFFFFD700).withAlpha(boltAlpha),
+                blurRadius: 10,
+              ),
+              Shadow(
+                color: Colors.white.withAlpha((boltAlpha * 0.5).toInt()),
+                blurRadius: 4,
+              ),
+            ],
+          ),
+        ),
+        // Random spark dots
+        ...List.generate(3, (i) {
+          // Pseudo-random positions based on pulseValue and index
+          final seed = (pulseValue * 5 + i * 1.7) % 1.0;
+          final sx = cellSize * (0.15 + seed * 0.7);
+          final sy = cellSize * (0.15 + ((seed * 3.7) % 1.0) * 0.7);
+          final dotAlpha = (sparkAlpha * (0.5 + seed * 0.5)).toInt().clamp(0, 255);
+          return Positioned(
+            left: sx - 1.5,
+            top: sy - 1.5,
+            child: Container(
+              width: 3,
+              height: 3,
+              decoration: BoxDecoration(
+                shape: BoxShape.circle,
+                color: Colors.white.withAlpha(dotAlpha),
+                boxShadow: [
+                  BoxShadow(
+                    color: const Color(0xFFFFD700).withAlpha(dotAlpha),
+                    blurRadius: 3,
+                  ),
+                ],
+              ),
+            ),
+          );
+        }),
+      ],
+    );
+  }
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// _RocketStreakPainter — directional glow streaks for rocket specials
+// ─────────────────────────────────────────────────────────────────────────────
+
+class _RocketStreakPainter extends CustomPainter {
+  final bool horizontal;
+  final double pulseValue;
+  final Color color;
+
+  _RocketStreakPainter({
+    required this.horizontal,
+    required this.pulseValue,
+    required this.color,
+  });
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    final alpha = (60 + pulseValue * 80).toInt().clamp(0, 255);
+    final paint = Paint()
+      ..color = color.withAlpha(alpha)
+      ..maskFilter = const MaskFilter.blur(BlurStyle.normal, 3);
+
+    final center = Offset(size.width / 2, size.height / 2);
+    final lineLength = (horizontal ? size.width : size.height) * 0.42;
+    final lineWidth = 2.0 + pulseValue;
+
+    if (horizontal) {
+      // Left streak
+      canvas.drawRRect(
+        RRect.fromRectAndRadius(
+          Rect.fromCenter(
+            center: Offset(center.dx - lineLength * 0.3, center.dy),
+            width: lineLength,
+            height: lineWidth,
+          ),
+          const Radius.circular(2),
+        ),
+        paint,
+      );
+      // Right streak
+      canvas.drawRRect(
+        RRect.fromRectAndRadius(
+          Rect.fromCenter(
+            center: Offset(center.dx + lineLength * 0.3, center.dy),
+            width: lineLength,
+            height: lineWidth,
+          ),
+          const Radius.circular(2),
+        ),
+        paint,
+      );
+    } else {
+      // Top streak
+      canvas.drawRRect(
+        RRect.fromRectAndRadius(
+          Rect.fromCenter(
+            center: Offset(center.dx, center.dy - lineLength * 0.3),
+            width: lineWidth,
+            height: lineLength,
+          ),
+          const Radius.circular(2),
+        ),
+        paint,
+      );
+      // Bottom streak
+      canvas.drawRRect(
+        RRect.fromRectAndRadius(
+          Rect.fromCenter(
+            center: Offset(center.dx, center.dy + lineLength * 0.3),
+            width: lineWidth,
+            height: lineLength,
+          ),
+          const Radius.circular(2),
+        ),
+        paint,
+      );
+    }
+  }
+
+  @override
+  bool shouldRepaint(covariant _RocketStreakPainter old) =>
+      old.pulseValue != pulseValue;
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// _ShimmerPainter — traveling highlight shimmer for rainbow specials
+// ─────────────────────────────────────────────────────────────────────────────
+
+class _ShimmerPainter extends CustomPainter {
+  final double pulseValue;
+  _ShimmerPainter({required this.pulseValue});
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    final shimmerX = -size.width * 0.3 + pulseValue * size.width * 1.6;
+    final shimmerWidth = size.width * 0.3;
+    final rect = Rect.fromLTWH(shimmerX, 0, shimmerWidth, size.height);
+
+    final paint = Paint()
+      ..shader = LinearGradient(
+        colors: [
+          Colors.white.withAlpha(0),
+          Colors.white.withAlpha(40),
+          Colors.white.withAlpha(0),
+        ],
+      ).createShader(rect);
+
+    canvas.drawRect(rect, paint);
+  }
+
+  @override
+  bool shouldRepaint(covariant _ShimmerPainter old) =>
+      old.pulseValue != pulseValue;
 }
 
 // ─────────────────────────────────────────────────────────────────────────────

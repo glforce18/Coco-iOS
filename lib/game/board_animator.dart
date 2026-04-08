@@ -14,6 +14,9 @@ enum AnimType {
 
   /// New cell appearing from above the board.
   appear,
+
+  /// Special jelly spawning with dramatic pop-in effect.
+  specialSpawn,
 }
 
 /// Describes an active animation on a single cell.
@@ -67,6 +70,17 @@ class CellAnimation {
       final t = curvedProgress;
       if (t < 0.4) return (t / 0.4).clamp(0.0, 1.0);
       return 1.0;
+    }
+    if (type == AnimType.specialSpawn) {
+      // Dramatic pop-in: scale from 0 -> 1.25 -> 1.0
+      final t = curvedProgress;
+      if (t < 0.5) {
+        // Scale up to 1.25
+        return (t / 0.5 * 1.25).clamp(0.0, 1.25);
+      }
+      // Settle back to 1.0
+      final settleT = (t - 0.5) / 0.5;
+      return (1.25 - settleT * 0.25).clamp(1.0, 1.25);
     }
     return 1.0;
   }
@@ -277,6 +291,30 @@ class BoardAnimator extends ChangeNotifier {
         type: AnimType.appear,
         offsetStart: Offset(0, startDy.toDouble()),
         offsetEnd: Offset.zero,
+        durationMs: durationMs,
+        curve: Curves.easeOutBack,
+      );
+    }
+    notifyListeners();
+    await Future<void>.delayed(Duration(milliseconds: durationMs));
+    for (final p in positions) {
+      _animations.remove('${p.row},${p.col}');
+    }
+    notifyListeners();
+  }
+
+  // ──────────────────────────────────────────────────────────────────
+  // Special spawn animation
+  // ──────────────────────────────────────────────────────────────────
+
+  /// Animate newly spawned special jellies with a dramatic pop-in effect.
+  Future<void> animateSpecialSpawn(List<Position> positions,
+      {int durationMs = 300}) async {
+    if (positions.isEmpty) return;
+
+    for (final p in positions) {
+      _animations['${p.row},${p.col}'] = CellAnimation(
+        type: AnimType.specialSpawn,
         durationMs: durationMs,
         curve: Curves.easeOutBack,
       );

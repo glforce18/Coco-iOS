@@ -1,8 +1,6 @@
 import 'dart:math';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:patpat_game/audio/haptic_manager.dart';
-import 'package:patpat_game/audio/sound_manager.dart';
 import 'package:patpat_game/providers/game_providers.dart';
 import 'package:patpat_game/theme/game_colors.dart';
 
@@ -73,8 +71,6 @@ class _DailyRewardDialogState extends ConsumerState<_DailyRewardDialog>
     final notifier = ref.read(playerProgressProvider.notifier);
     final reward = await notifier.claimDailyReward();
     if (reward != null) {
-      SoundManager.instance.play(SoundType.levelComplete);
-      HapticManager.instance.tapHeavy();
       setState(() {
         _claimed = true;
       });
@@ -313,8 +309,6 @@ class _DailyRewardDialogState extends ConsumerState<_DailyRewardDialog>
             label: 'TAMAM',
             colors: const [Color(0xFF6040A0), Color(0xFF4020A0)],
             onTap: () {
-              SoundManager.instance.play(SoundType.buttonClick);
-              HapticManager.instance.tapLight();
               Navigator.of(context).pop();
             },
           ),

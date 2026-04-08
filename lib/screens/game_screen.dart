@@ -2,9 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
-import 'package:patpat_game/audio/haptic_manager.dart';
-import 'package:patpat_game/audio/music_manager.dart';
-import 'package:patpat_game/audio/sound_manager.dart';
 import 'package:patpat_game/game/game_controller.dart';
 import 'package:patpat_game/game/level_generator.dart';
 import 'package:patpat_game/models/enums.dart';
@@ -35,10 +32,6 @@ class _GameScreenState extends ConsumerState<GameScreen> {
   late final GameController _controller;
   late final TutorialManager _tutorial;
 
-  // Track previous state/combo so we only fire sounds on transitions.
-  GameState _prevState = GameState.idle;
-  int _prevCombo = 0;
-
   @override
   void initState() {
     super.initState();
@@ -50,15 +43,6 @@ class _GameScreenState extends ConsumerState<GameScreen> {
     _tutorial = TutorialManager(startCompleted: progress.tutorialCompleted);
 
     _startLevel(widget.level);
-
-    // Sync audio toggles from settings.
-    SoundManager.instance.enabled = progress.soundEnabled;
-    MusicManager.instance.enabled = progress.musicEnabled;
-    HapticManager.instance.enabled = progress.vibrationEnabled;
-
-    // Start game music (boss track for levels divisible by 10).
-    final track = widget.level % 10 == 0 ? MusicTrack.boss : MusicTrack.game;
-    MusicManager.instance.play(track);
   }
 
   void _startLevel(int level) {
@@ -69,62 +53,16 @@ class _GameScreenState extends ConsumerState<GameScreen> {
   void _onControllerChange() {
     if (!mounted) return;
 
-    final newState = _controller.state;
-    final newCombo = _controller.comboCount;
-
-    // Sound effects based on state transitions
-    if (newState != _prevState) {
-      switch (newState) {
-        case GameState.swapping:
-          SoundManager.instance.play(SoundType.swap);
-          HapticManager.instance.tapLight();
-        case GameState.destroying:
-          SoundManager.instance.play(SoundType.destroy);
-          HapticManager.instance.tapMatch();
-        case GameState.levelComplete:
-          SoundManager.instance.play(SoundType.levelComplete);
-          HapticManager.instance.tapHeavy();
-          MusicManager.instance.stop();
-        case GameState.gameOver:
-          SoundManager.instance.play(SoundType.gameOver);
-          HapticManager.instance.tapHeavy();
-          MusicManager.instance.stop();
-        case GameState.paused:
-          MusicManager.instance.pause();
-        case GameState.idle:
-          if (_prevState == GameState.paused) {
-            MusicManager.instance.resume();
-          }
-        default:
-          break;
-      }
-    }
-
-    // Combo sound when combo count increases
-    if (newCombo > _prevCombo && newCombo >= 2) {
-      SoundManager.instance.play(SoundType.combo);
-      HapticManager.instance.tapCombo();
-    }
-
-    // Match sound when entering matching-related destruction
-    if (newCombo > _prevCombo && newCombo >= 1 && _prevCombo == 0) {
-      SoundManager.instance.play(SoundType.match);
-      HapticManager.instance.tapMatch();
-    }
-
-    _prevState = newState;
-    _prevCombo = newCombo;
-
     // Auto-advance tutorial on relevant game events
     if (!_tutorial.isCompleted && widget.level <= 3) {
       final step = _tutorial.currentStep;
       if (step != null) {
         if (step == TutorialStep.teachSwap &&
-            newState == GameState.matching) {
+            _controller.state == GameState.matching) {
           _tutorial.advance();
         }
         if (step == TutorialStep.teachMatch &&
-            newState == GameState.destroying) {
+            _controller.state == GameState.destroying) {
           _tutorial.advance();
         }
       }
@@ -137,13 +75,10 @@ class _GameScreenState extends ConsumerState<GameScreen> {
   void dispose() {
     _controller.removeListener(_onControllerChange);
     _controller.dispose();
-    MusicManager.instance.stop();
     super.dispose();
   }
 
   void _onBack() {
-    SoundManager.instance.play(SoundType.buttonClick);
-    HapticManager.instance.tapLight();
     context.go('/map');
   }
 

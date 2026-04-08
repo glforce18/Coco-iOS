@@ -5,8 +5,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
-import 'package:patpat_game/audio/haptic_manager.dart';
-import 'package:patpat_game/audio/sound_manager.dart';
 import 'package:patpat_game/providers/game_providers.dart';
 import 'package:patpat_game/theme/game_colors.dart';
 
@@ -106,8 +104,6 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen>
             child: Column(
               children: [
                 _ProfileHeader(onBack: () {
-                  SoundManager.instance.play(SoundType.buttonClick);
-                  HapticManager.instance.tapLight();
                   context.go('/map');
                 }),
                 Expanded(
@@ -164,8 +160,6 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen>
                         const SizedBox(height: 12),
                         // Mascot Home button
                         _MascotHomeButton(onTap: () {
-                          SoundManager.instance.play(SoundType.buttonClick);
-                          HapticManager.instance.tapLight();
                           context.go('/mascot-home');
                         }),
                         const SizedBox(height: 24),

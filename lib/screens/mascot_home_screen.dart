@@ -4,8 +4,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
-import 'package:patpat_game/audio/haptic_manager.dart';
-import 'package:patpat_game/audio/sound_manager.dart';
 import 'package:patpat_game/providers/game_providers.dart';
 import 'package:patpat_game/theme/game_colors.dart';
 
@@ -138,8 +136,6 @@ class _MascotHomeScreenState extends ConsumerState<MascotHomeScreen>
         item: item,
         onConfirm: () {
           ref.read(playerProgressProvider.notifier).buyDecoration(item.id, item.price);
-          SoundManager.instance.play(SoundType.levelComplete);
-          HapticManager.instance.tapMatch();
           Navigator.of(ctx).pop();
         },
       ),
@@ -170,8 +166,6 @@ class _MascotHomeScreenState extends ConsumerState<MascotHomeScreen>
                 totalCount: _allDecorations.length,
                 coins: progress.coins,
                 onBack: () {
-                  SoundManager.instance.play(SoundType.buttonClick);
-                  HapticManager.instance.tapLight();
                   context.go('/profile');
                 },
               ),
@@ -505,8 +499,6 @@ class _CategoryTabs extends StatelessWidget {
           return Expanded(
             child: GestureDetector(
               onTap: () {
-                SoundManager.instance.play(SoundType.buttonClick);
-                HapticManager.instance.tapLight();
                 onSelected(cat);
               },
               child: Container(

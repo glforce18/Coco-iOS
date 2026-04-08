@@ -2,9 +2,6 @@ import 'dart:io' show Platform;
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
-import 'package:patpat_game/audio/haptic_manager.dart';
-import 'package:patpat_game/audio/music_manager.dart';
-import 'package:patpat_game/audio/sound_manager.dart';
 import 'package:patpat_game/auth/auth_manager.dart';
 import 'package:patpat_game/data/cloud_sync_manager.dart';
 import 'package:patpat_game/providers/auth_provider.dart';
@@ -22,13 +19,6 @@ class _MainMenuScreenState extends ConsumerState<MainMenuScreen> {
   @override
   void initState() {
     super.initState();
-    // Sync audio toggles from persisted settings.
-    final progress = ref.read(playerProgressProvider);
-    SoundManager.instance.enabled = progress.soundEnabled;
-    MusicManager.instance.enabled = progress.musicEnabled;
-    HapticManager.instance.enabled = progress.vibrationEnabled;
-    // Start menu music.
-    MusicManager.instance.play(MusicTrack.menu);
     // Check if user is already logged in from a previous session.
     // Deferred to avoid modifying provider during widget tree build.
     Future(() {
@@ -49,8 +39,6 @@ class _MainMenuScreenState extends ConsumerState<MainMenuScreen> {
           GameColors.blueDark,
         ],
         onTap: () {
-          SoundManager.instance.play(SoundType.buttonClick);
-          HapticManager.instance.tapLight();
           _showProfilePopup(context);
         },
       );
@@ -64,8 +52,6 @@ class _MainMenuScreenState extends ConsumerState<MainMenuScreen> {
         GameColors.blueDark,
       ],
       onTap: () {
-        SoundManager.instance.play(SoundType.buttonClick);
-        HapticManager.instance.tapLight();
         _showLoginPopup(context);
       },
     );
@@ -189,7 +175,6 @@ class _MainMenuScreenState extends ConsumerState<MainMenuScreen> {
 
   @override
   void dispose() {
-    MusicManager.instance.stop();
     super.dispose();
   }
 
@@ -271,8 +256,6 @@ class _MainMenuScreenState extends ConsumerState<MainMenuScreen> {
                     GameColors.greenDark,
                   ],
                   onTap: () {
-                    SoundManager.instance.play(SoundType.buttonClick);
-                    HapticManager.instance.tapLight();
                     context.go('/map');
                   },
                 ),
@@ -361,8 +344,6 @@ class _SettingsButton extends StatelessWidget {
   Widget build(BuildContext context) {
     return GestureDetector(
       onTap: () {
-        SoundManager.instance.play(SoundType.buttonClick);
-        HapticManager.instance.tapLight();
         _showSettingsPopup(context, ref);
       },
       child: Container(
@@ -1041,7 +1022,6 @@ class _SettingsDialog extends ConsumerWidget {
               emoji: '\uD83D\uDD0A', // speaker
               value: progress.soundEnabled,
               onChanged: (v) {
-                SoundManager.instance.enabled = v;
                 consumerRef
                     .read(playerProgressProvider.notifier)
                     .updateSettings(sound: v);
@@ -1056,8 +1036,6 @@ class _SettingsDialog extends ConsumerWidget {
               emoji: '\uD83C\uDFB5', // music note
               value: progress.musicEnabled,
               onChanged: (v) {
-                MusicManager.instance.enabled = v;
-                if (v) MusicManager.instance.play(MusicTrack.menu);
                 consumerRef
                     .read(playerProgressProvider.notifier)
                     .updateSettings(music: v);
@@ -1072,7 +1050,6 @@ class _SettingsDialog extends ConsumerWidget {
               emoji: '\uD83D\uDCF3', // vibration
               value: progress.vibrationEnabled,
               onChanged: (v) {
-                HapticManager.instance.enabled = v;
                 consumerRef
                     .read(playerProgressProvider.notifier)
                     .updateSettings(vibration: v);

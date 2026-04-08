@@ -264,17 +264,32 @@ class GameController extends ChangeNotifier {
         }
       }
 
-      // Destroying phase — animate matched cells with pop + fade
+      // Determine which positions will get a special spawned —
+      // these must NOT be destroyed visually.
+      final spawnPositions = MatchEngine.getSpawnPositions(matches, swapPos);
+
+      // Destroying phase — animate matched cells with pop + fade,
+      // but exclude spawn positions so the new special stays visible.
       _state = GameState.destroying;
       final explosionPositions = <Position>[];
       for (final match in matches) {
-        explosionPositions.addAll(match.positions);
+        for (final pos in match.positions) {
+          if (!spawnPositions.contains(pos)) {
+            explosionPositions.add(pos);
+          }
+        }
       }
       notifyListeners();
       await animator.animateDestroy(explosionPositions, durationMs: 200);
 
       MatchEngine.removeMatches(_grid, matches, swapPos);
       _updateGoalsFromMatches(matches);
+
+      // Animate the newly spawned specials with a pop-in effect
+      if (spawnPositions.isNotEmpty) {
+        notifyListeners();
+        await animator.animateSpecialSpawn(spawnPositions.toList(), durationMs: 300);
+      }
 
       // Obstacle interactions
       ObstacleEngine.checkBoxes(_grid, explosionPositions);
