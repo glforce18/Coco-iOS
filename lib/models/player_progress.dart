@@ -98,12 +98,12 @@ class PlayerProgress {
     coins += coinsEarned;
   }
 
-  // Life regeneration: 1 life every 30 minutes, max 5
+  // Life regeneration: 1 life every 30 minutes (20 for VIP), max 5
   void regenerateLives() {
     if (lives >= 5 || lastLifeLostTime == 0) return;
     final now = DateTime.now().millisecondsSinceEpoch;
     final elapsed = now - lastLifeLostTime;
-    const regenInterval = 30 * 60 * 1000; // 30 minutes
+    final regenInterval = vipActive ? 20 * 60 * 1000 : 30 * 60 * 1000;
     final regenerated = elapsed ~/ regenInterval;
     if (regenerated > 0) {
       lives = (lives + regenerated).clamp(0, 5);

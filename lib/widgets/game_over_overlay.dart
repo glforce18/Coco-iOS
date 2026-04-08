@@ -7,12 +7,16 @@ class GameOverOverlay extends StatelessWidget {
   final int score;
   final VoidCallback onRetry;
   final VoidCallback onQuit;
+  final VoidCallback? onWatchAd;
+  final bool showAdButton;
 
   const GameOverOverlay({
     super.key,
     required this.score,
     required this.onRetry,
     required this.onQuit,
+    this.onWatchAd,
+    this.showAdButton = false,
   });
 
   @override
@@ -101,6 +105,47 @@ class GameOverOverlay extends StatelessWidget {
                     ),
                   ),
                 ),
+                // Watch ad for extra moves button
+                if (showAdButton) ...[
+                  const SizedBox(height: 12),
+                  GestureDetector(
+                    onTap: onWatchAd,
+                    child: Container(
+                      width: double.infinity,
+                      padding: const EdgeInsets.symmetric(vertical: 14),
+                      decoration: BoxDecoration(
+                        gradient: const LinearGradient(
+                          colors: [Color(0xFF00C853), Color(0xFF009624)],
+                        ),
+                        borderRadius: BorderRadius.circular(16),
+                        boxShadow: [
+                          BoxShadow(
+                            color: const Color(0xFF00C853).withAlpha(80),
+                            blurRadius: 12,
+                          ),
+                        ],
+                      ),
+                      child: const Row(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          Text(
+                            '\uD83D\uDCFA',
+                            style: TextStyle(fontSize: 18),
+                          ),
+                          SizedBox(width: 8),
+                          Text(
+                            'Reklam Izle +3 Hamle',
+                            style: TextStyle(
+                              color: Colors.white,
+                              fontSize: 16,
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+                ],
                 const SizedBox(height: 12),
                 // Quit button
                 GestureDetector(

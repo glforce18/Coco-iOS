@@ -19,6 +19,7 @@ import 'package:patpat_game/widgets/level_complete_overlay.dart';
 import 'package:patpat_game/widgets/score_progress_bar.dart';
 import 'package:patpat_game/widgets/tutorial_overlay.dart';
 import 'package:patpat_game/game/tutorial_manager.dart';
+import 'package:patpat_game/ads/ad_manager.dart';
 
 /// Main gameplay screen: wires [GameController] to all UI widgets.
 class GameScreen extends ConsumerStatefulWidget {
@@ -224,8 +225,20 @@ class _GameScreenState extends ConsumerState<GameScreen> {
                       _controller.score,
                       _controller.coinsEarned,
                     );
-                    // Navigate back to map
-                    context.go('/map');
+                    // Show interstitial ad between levels (if applicable)
+                    final progress = ref.read(playerProgressProvider);
+                    final adsDisabled =
+                        progress.removeAdsPurchased || progress.vipActive;
+                    if (!adsDisabled &&
+                        AdManager.instance.shouldShowInterstitial()) {
+                      AdManager.instance.showInterstitialAd(
+                        onDismissed: () {
+                          if (mounted) context.go('/map');
+                        },
+                      );
+                    } else {
+                      context.go('/map');
+                    }
                   },
                 ),
 
@@ -235,6 +248,15 @@ class _GameScreenState extends ConsumerState<GameScreen> {
                   score: _controller.score,
                   onRetry: () => _startLevel(widget.level),
                   onQuit: _onBack,
+                  showAdButton: AdManager.instance.isRewardedAdReady &&
+                      !ref.read(playerProgressProvider).removeAdsPurchased,
+                  onWatchAd: () {
+                    AdManager.instance.showRewardedAd(
+                      onRewarded: () {
+                        _controller.addExtraMoves(3);
+                      },
+                    );
+                  },
                 ),
 
               // ── Tutorial overlay ────────────────────────────────────────

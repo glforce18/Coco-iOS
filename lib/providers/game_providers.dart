@@ -228,8 +228,9 @@ class PlayerProgressNotifier extends StateNotifier<PlayerProgress> {
     final dayIndex = (state.dailyRewardStreak - 1) % 7;
     final reward = dailyRewards[dayIndex];
 
-    // Award the reward
-    state.coins += reward['coins'] ?? 0;
+    // Award the reward (VIP gets 2x coins)
+    final coinReward = reward['coins'] ?? 0;
+    state.coins += state.vipActive ? coinReward * 2 : coinReward;
     state.hammerCount += reward['hammer'] ?? 0;
     state.colorBlastCount += reward['colorBlast'] ?? 0;
     state.extraMovesCount += reward['extraMoves'] ?? 0;
@@ -247,8 +248,9 @@ class PlayerProgressNotifier extends StateNotifier<PlayerProgress> {
   // Spin Wheel
   // ---------------------------------------------------------------------------
 
-  /// Free spin available every 4 hours.
+  /// Free spin available every 4 hours (VIP: always free).
   bool get isFreeSpinAvailable {
+    if (state.vipActive) return true;
     if (state.lastSpinTime == 0) return true;
     final elapsed =
         DateTime.now().millisecondsSinceEpoch - state.lastSpinTime;

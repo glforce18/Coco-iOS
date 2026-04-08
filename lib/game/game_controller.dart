@@ -339,6 +339,18 @@ class GameController extends ChangeNotifier {
     _state = GameState.idle;
   }
 
+  // ─── 9b. addExtraMoves (from rewarded ad) ──────────────────────
+
+  /// Add extra moves when the player watches a rewarded ad after game over.
+  void addExtraMoves(int count) {
+    if (_state == GameState.gameOver) {
+      _movesLeft += count;
+      _state = GameState.idle;
+      _resetHintTimer();
+      notifyListeners();
+    }
+  }
+
   // ─── 10. togglePause ───────────────────────────────────────────
 
   void togglePause() {

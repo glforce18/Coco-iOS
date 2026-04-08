@@ -8,6 +8,7 @@ import 'package:patpat_game/models/player_progress.dart';
 import 'package:patpat_game/providers/game_providers.dart';
 import 'package:patpat_game/screens/daily_reward_screen.dart';
 import 'package:patpat_game/theme/game_colors.dart';
+import 'package:patpat_game/widgets/no_lives_popup.dart';
 
 // ---------------------------------------------------------------------------
 // Region enum -> background asset mapping
@@ -33,6 +34,7 @@ class MapScreen extends ConsumerStatefulWidget {
 
 class _MapScreenState extends ConsumerState<MapScreen> {
   late GameRegion _selectedRegion;
+  bool _showNoLivesPopup = false;
 
   @override
   void initState() {
@@ -107,6 +109,16 @@ class _MapScreenState extends ConsumerState<MapScreen> {
                   child: _LevelGrid(
                     region: _selectedRegion,
                     progress: progress,
+                    onLevelTap: (level) {
+                      // Regenerate lives before checking
+                      progress.regenerateLives();
+                      if (progress.lives <= 0) {
+                        setState(() => _showNoLivesPopup = true);
+                      } else {
+                        ref.read(playerProgressProvider.notifier).useLife();
+                        context.go('/game/$level');
+                      }
+                    },
                   ),
                 ),
 
@@ -115,6 +127,23 @@ class _MapScreenState extends ConsumerState<MapScreen> {
               ],
             ),
           ),
+
+          // No lives popup overlay
+          if (_showNoLivesPopup)
+            NoLivesPopup(
+              lastLifeLostTime: progress.lastLifeLostTime,
+              vipActive: progress.vipActive,
+              removeAdsPurchased: progress.removeAdsPurchased,
+              onLifeGranted: () {
+                // Grant 1 life from rewarded ad
+                final p = ref.read(playerProgressProvider);
+                p.lives = (p.lives + 1).clamp(0, 5);
+                setState(() => _showNoLivesPopup = false);
+              },
+              onClose: () {
+                setState(() => _showNoLivesPopup = false);
+              },
+            ),
         ],
       ),
     );
@@ -519,10 +548,12 @@ class _RegionChip extends StatelessWidget {
 class _LevelGrid extends StatelessWidget {
   final GameRegion region;
   final PlayerProgress progress;
+  final ValueChanged<int> onLevelTap;
 
   const _LevelGrid({
     required this.region,
     required this.progress,
+    required this.onLevelTap,
   });
 
   @override
@@ -543,6 +574,7 @@ class _LevelGrid extends StatelessWidget {
         return _LevelCard(
           level: level,
           progress: progress,
+          onLevelTap: onLevelTap,
         );
       },
     );
@@ -557,10 +589,12 @@ enum _LevelState { locked, current, unlocked, completed }
 class _LevelCard extends StatefulWidget {
   final int level;
   final PlayerProgress progress;
+  final ValueChanged<int> onLevelTap;
 
   const _LevelCard({
     required this.level,
     required this.progress,
+    required this.onLevelTap,
   });
 
   @override
@@ -619,7 +653,7 @@ class _LevelCardState extends State<_LevelCard>
     if (_state == _LevelState.locked) return;
     SoundManager.instance.play(SoundType.buttonClick);
     HapticManager.instance.tapLight();
-    context.go('/game/${widget.level}');
+    widget.onLevelTap(widget.level);
   }
 
   @override

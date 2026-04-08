@@ -7,6 +7,7 @@ import 'package:patpat_game/audio/music_manager.dart';
 import 'package:patpat_game/audio/sound_manager.dart';
 import 'package:patpat_game/auth/auth_manager.dart';
 import 'package:patpat_game/billing/billing_manager.dart';
+import 'package:patpat_game/ads/ad_manager.dart';
 import 'package:patpat_game/router.dart';
 import 'package:patpat_game/providers/game_providers.dart';
 
@@ -41,12 +42,20 @@ class _PatPatAppState extends ConsumerState<PatPatApp> {
     ref.read(playerProgressProvider.notifier).load();
     _initAudio();
     _initBilling();
+    _initAds();
   }
 
   Future<void> _initAudio() async {
     await SoundManager.instance.init();
     await MusicManager.instance.init();
     await HapticManager.instance.init();
+  }
+
+  Future<void> _initAds() async {
+    final progress = ref.read(playerProgressProvider);
+    AdManager.instance.adsDisabled =
+        progress.removeAdsPurchased || progress.vipActive;
+    await AdManager.instance.init();
   }
 
   Future<void> _initBilling() async {
