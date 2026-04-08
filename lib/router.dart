@@ -3,6 +3,7 @@ import 'package:go_router/go_router.dart';
 import 'package:patpat_game/screens/game_screen.dart';
 import 'package:patpat_game/screens/main_menu_screen.dart';
 import 'package:patpat_game/screens/map_screen.dart';
+import 'package:patpat_game/screens/shop_screen.dart';
 
 class AppRouter {
   static final router = GoRouter(
@@ -21,6 +22,15 @@ class AppRouter {
         path: '/map',
         pageBuilder: (context, state) => CustomTransitionPage(
           child: const MapScreen(),
+          transitionsBuilder: (context, animation, secondaryAnimation, child) =>
+              FadeTransition(opacity: animation, child: child),
+          transitionDuration: const Duration(milliseconds: 300),
+        ),
+      ),
+      GoRoute(
+        path: '/shop',
+        pageBuilder: (context, state) => CustomTransitionPage(
+          child: const ShopScreen(),
           transitionsBuilder: (context, animation, secondaryAnimation, child) =>
               FadeTransition(opacity: animation, child: child),
           transitionDuration: const Duration(milliseconds: 300),

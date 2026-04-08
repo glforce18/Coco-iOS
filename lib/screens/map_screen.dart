@@ -867,7 +867,7 @@ class _BottomNavBar extends StatelessWidget {
               onTap: () {
                 SoundManager.instance.play(SoundType.buttonClick);
                 HapticManager.instance.tapLight();
-                _showComingSoon(context);
+                context.go('/shop');
               },
             ),
             _NavButton(

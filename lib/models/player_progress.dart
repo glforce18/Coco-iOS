@@ -9,6 +9,9 @@ class PlayerProgress {
   int hammerCount;
   int colorBlastCount;
   int extraMovesCount;
+  bool removeAdsPurchased;
+  bool vipActive;
+  bool starterBundleClaimed;
   bool soundEnabled;
   bool musicEnabled;
   bool vibrationEnabled;
@@ -29,6 +32,9 @@ class PlayerProgress {
     this.hammerCount = 3,
     this.colorBlastCount = 2,
     this.extraMovesCount = 3,
+    this.removeAdsPurchased = false,
+    this.vipActive = false,
+    this.starterBundleClaimed = false,
     this.soundEnabled = true,
     this.musicEnabled = true,
     this.vibrationEnabled = true,
