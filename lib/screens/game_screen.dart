@@ -1,8 +1,11 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 
 import 'package:patpat_game/game/game_controller.dart';
 import 'package:patpat_game/game/level_generator.dart';
 import 'package:patpat_game/models/enums.dart';
+import 'package:patpat_game/providers/game_providers.dart';
 import 'package:patpat_game/theme/game_colors.dart';
 import 'package:patpat_game/widgets/booster_bar.dart';
 import 'package:patpat_game/widgets/combo_text.dart';
@@ -13,16 +16,16 @@ import 'package:patpat_game/widgets/level_complete_overlay.dart';
 import 'package:patpat_game/widgets/score_progress_bar.dart';
 
 /// Main gameplay screen: wires [GameController] to all UI widgets.
-class GameScreen extends StatefulWidget {
+class GameScreen extends ConsumerStatefulWidget {
   final int level;
 
   const GameScreen({super.key, required this.level});
 
   @override
-  State<GameScreen> createState() => _GameScreenState();
+  ConsumerState<GameScreen> createState() => _GameScreenState();
 }
 
-class _GameScreenState extends State<GameScreen> {
+class _GameScreenState extends ConsumerState<GameScreen> {
   late final GameController _controller;
 
   @override
@@ -50,7 +53,7 @@ class _GameScreenState extends State<GameScreen> {
   }
 
   void _onBack() {
-    Navigator.of(context).maybePop();
+    context.go('/map');
   }
 
   @override
@@ -122,7 +125,15 @@ class _GameScreenState extends State<GameScreen> {
                   coinsEarned: _controller.coinsEarned,
                   maxCombo: _controller.maxComboThisLevel,
                   onContinue: () {
-                    _startLevel(widget.level + 1);
+                    // Save progress
+                    ref.read(playerProgressProvider.notifier).completeLevel(
+                      widget.level,
+                      _controller.stars,
+                      _controller.score,
+                      _controller.coinsEarned,
+                    );
+                    // Navigate back to map
+                    context.go('/map');
                   },
                 ),
 
