@@ -3,6 +3,8 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:patpat_game/ads/ad_manager.dart';
 import 'package:patpat_game/theme/game_colors.dart';
+import 'package:patpat_game/widgets/shared/gold_button.dart';
+import 'package:patpat_game/widgets/shared/gold_panel.dart';
 
 /// Full-screen popup shown when the player has 0 lives and tries to play.
 class NoLivesPopup extends StatefulWidget {
@@ -83,7 +85,7 @@ class _NoLivesPopupState extends State<NoLivesPopup>
     if (!shown && mounted) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
-          content: Text('Reklam hazir degil, biraz sonra tekrar dene.'),
+          content: Text('Reklam hazır değil, biraz sonra tekrar dene.'),
           duration: Duration(seconds: 2),
         ),
       );
@@ -102,163 +104,130 @@ class _NoLivesPopupState extends State<NoLivesPopup>
           builder: (context, scale, child) {
             return Transform.scale(scale: scale, child: child);
           },
-          child: Container(
-            width: 310,
-            padding: const EdgeInsets.all(28),
-            decoration: BoxDecoration(
-              gradient: const LinearGradient(
-                colors: [Color(0xFF2D0B80), Color(0xFF1A0660)],
-                begin: Alignment.topLeft,
-                end: Alignment.bottomRight,
-              ),
-              borderRadius: BorderRadius.circular(28),
-              border: Border.all(color: GameColors.hotPink, width: 2),
-              boxShadow: [
-                BoxShadow(
-                  color: GameColors.hotPink.withAlpha(60),
-                  blurRadius: 30,
-                ),
-              ],
-            ),
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                // Title
-                const Text(
-                  'CANIN KALMADI!',
-                  style: TextStyle(
-                    color: GameColors.hotPink,
-                    fontSize: 22,
-                    fontWeight: FontWeight.w900,
-                    letterSpacing: 1.5,
-                    shadows: [
-                      Shadow(color: Color(0xFFC01050), blurRadius: 12),
-                    ],
-                  ),
-                ),
-                const SizedBox(height: 20),
-
-                // Hearts row with heartbeat animation
-                AnimatedBuilder(
-                  animation: _heartbeatAnimation,
-                  builder: (context, child) {
-                    return Transform.scale(
-                      scale: _heartbeatAnimation.value,
-                      child: child,
-                    );
-                  },
-                  child: Row(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: List.generate(5, (i) {
-                      return Padding(
-                        padding: const EdgeInsets.symmetric(horizontal: 4),
-                        child: Icon(
-                          Icons.favorite_border_rounded,
-                          size: 32,
-                          color: GameColors.hotPink.withAlpha(120),
+          child: ConstrainedBox(
+            constraints: const BoxConstraints(maxWidth: 320),
+            child: GoldPanel(
+              padding: const EdgeInsets.fromLTRB(28, 28, 28, 24),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  // Title
+                  Text(
+                    'CANIN KALMADI!',
+                    style: TextStyle(
+                      color: GameColors.cherryRed,
+                      fontSize: 22,
+                      fontWeight: FontWeight.w900,
+                      letterSpacing: 1.5,
+                      shadows: [
+                        Shadow(
+                          color: Colors.black.withAlpha(220),
+                          blurRadius: 6,
+                          offset: const Offset(0, 2),
                         ),
+                        const Shadow(
+                          color: GameColors.cherryRedDark,
+                          blurRadius: 12,
+                        ),
+                      ],
+                    ),
+                  ),
+                  const SizedBox(height: 20),
+
+                  // Hearts row with heartbeat animation
+                  AnimatedBuilder(
+                    animation: _heartbeatAnimation,
+                    builder: (context, child) {
+                      return Transform.scale(
+                        scale: _heartbeatAnimation.value,
+                        child: child,
                       );
-                    }),
-                  ),
-                ),
-                const SizedBox(height: 20),
-
-                // Timer
-                Container(
-                  padding:
-                      const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                  decoration: BoxDecoration(
-                    color: Colors.white.withAlpha(15),
-                    borderRadius: BorderRadius.circular(12),
-                    border: Border.all(color: Colors.white.withAlpha(30)),
-                  ),
-                  child: Row(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      Icon(
-                        Icons.timer_rounded,
-                        color: GameColors.neonCyan,
-                        size: 20,
-                      ),
-                      const SizedBox(width: 8),
-                      Text(
-                        'Sonraki can: $_timeText',
-                        style: const TextStyle(
-                          color: Colors.white,
-                          fontSize: 15,
-                          fontWeight: FontWeight.w600,
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-                const SizedBox(height: 24),
-
-                // Watch ad button (only if ads not removed)
-                if (!widget.removeAdsPurchased)
-                  GestureDetector(
-                    onTap: _onWatchAd,
-                    child: Container(
-                      width: double.infinity,
-                      padding: const EdgeInsets.symmetric(vertical: 14),
-                      decoration: BoxDecoration(
-                        gradient: const LinearGradient(
-                          colors: [GameColors.neonGreen, Color(0xFF1A7030)],
-                        ),
-                        borderRadius: BorderRadius.circular(16),
-                        boxShadow: [
-                          BoxShadow(
-                            color: GameColors.neonGreen.withAlpha(80),
-                            blurRadius: 12,
+                    },
+                    child: Row(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: List.generate(5, (i) {
+                        return Padding(
+                          padding: const EdgeInsets.symmetric(horizontal: 4),
+                          child: Icon(
+                            Icons.favorite_border_rounded,
+                            size: 32,
+                            color: GameColors.cherryRed.withAlpha(160),
+                            shadows: [
+                              Shadow(
+                                color: GameColors.cherryRedDark.withAlpha(160),
+                                blurRadius: 8,
+                              ),
+                            ],
                           ),
-                        ],
-                      ),
-                      child: const Row(
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        children: [
-                          Text(
-                            '\uD83D\uDCFA',
-                            style: TextStyle(fontSize: 18),
-                          ),
-                          SizedBox(width: 8),
-                          Text(
-                            'Reklam Izle +1 \u2764\uFE0F',
-                            style: TextStyle(
-                              color: Colors.white,
-                              fontSize: 16,
-                              fontWeight: FontWeight.bold,
-                            ),
-                          ),
-                        ],
-                      ),
+                        );
+                      }),
                     ),
                   ),
+                  const SizedBox(height: 20),
 
-                if (!widget.removeAdsPurchased) const SizedBox(height: 12),
-
-                // Close button
-                GestureDetector(
-                  onTap: widget.onClose,
-                  child: Container(
-                    width: double.infinity,
-                    padding: const EdgeInsets.symmetric(vertical: 12),
+                  // Timer
+                  Container(
+                    padding: const EdgeInsets.symmetric(
+                        horizontal: 16, vertical: 8),
                     decoration: BoxDecoration(
-                      color: Colors.white.withAlpha(15),
-                      borderRadius: BorderRadius.circular(16),
-                      border: Border.all(color: Colors.white.withAlpha(40)),
-                    ),
-                    child: const Text(
-                      'Kapat',
-                      textAlign: TextAlign.center,
-                      style: TextStyle(
-                        color: Colors.white70,
-                        fontSize: 15,
-                        fontWeight: FontWeight.w600,
+                      color: GameColors.panelPurpleDark.withAlpha(180),
+                      borderRadius: BorderRadius.circular(14),
+                      border: Border.all(
+                        color: GameColors.goldFrameMid.withAlpha(160),
+                        width: 1.5,
                       ),
                     ),
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        const Icon(
+                          Icons.timer_rounded,
+                          color: GameColors.goldFrameBright,
+                          size: 20,
+                        ),
+                        const SizedBox(width: 8),
+                        Text(
+                          'Sonraki can: $_timeText',
+                          style: TextStyle(
+                            color: Colors.white,
+                            fontSize: 15,
+                            fontWeight: FontWeight.w800,
+                            shadows: [
+                              Shadow(
+                                color: Colors.black.withAlpha(180),
+                                blurRadius: 3,
+                              ),
+                            ],
+                          ),
+                        ),
+                      ],
+                    ),
                   ),
-                ),
-              ],
+                  const SizedBox(height: 22),
+
+                  // Watch ad button (only if ads not removed)
+                  if (!widget.removeAdsPurchased) ...[
+                    GoldButton(
+                      text: 'Reklam İzle +1 Can',
+                      color: GoldButtonColor.green,
+                      size: GoldButtonSize.medium,
+                      width: double.infinity,
+                      icon: Icons.play_circle_filled_rounded,
+                      onPressed: _onWatchAd,
+                    ),
+                    const SizedBox(height: 12),
+                  ],
+
+                  // Close button
+                  GoldButton(
+                    text: 'Kapat',
+                    color: GoldButtonColor.red,
+                    size: GoldButtonSize.small,
+                    width: double.infinity,
+                    onPressed: widget.onClose,
+                  ),
+                ],
+              ),
             ),
           ),
         ),

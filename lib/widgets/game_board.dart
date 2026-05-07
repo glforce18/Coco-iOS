@@ -753,7 +753,7 @@ class _LightningJelly extends StatelessWidget {
           child: Icon(
             Icons.flash_on,
             size: cellSize * 0.45,
-            color: GameColors.goldFrame.withAlpha(boltAlpha),
+            color: GameColors.goldFrameMid.withAlpha(boltAlpha),
             shadows: [
               Shadow(
                 color: const Color(0xFFFFD700).withAlpha(boltAlpha),
@@ -1189,12 +1189,12 @@ class _ObstacleOverlay extends StatelessWidget {
               shape: BoxShape.circle,
               color: const Color(0x889040E0),
               border: Border.all(
-                color: GameColors.neonPurple,
+                color: GameColors.buttonPurple,
                 width: 2,
               ),
               boxShadow: [
                 BoxShadow(
-                  color: GameColors.neonPurple.withAlpha(60),
+                  color: GameColors.buttonPurple.withAlpha(60),
                   blurRadius: 8,
                 ),
               ],
@@ -1264,12 +1264,12 @@ class _SelectionHighlight extends StatelessWidget {
         decoration: BoxDecoration(
           borderRadius: BorderRadius.circular(10),
           border: Border.all(
-            color: GameColors.goldFrame.withAlpha(alpha),
+            color: GameColors.goldFrameMid.withAlpha(alpha),
             width: borderWidth,
           ),
           boxShadow: [
             BoxShadow(
-              color: GameColors.goldFrame.withAlpha((60 + 40 * pulseValue).toInt()),
+              color: GameColors.goldFrameMid.withAlpha((60 + 40 * pulseValue).toInt()),
               blurRadius: 8 + pulseValue * 4,
               spreadRadius: 1,
             ),

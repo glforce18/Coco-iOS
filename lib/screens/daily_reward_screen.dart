@@ -95,7 +95,7 @@ class _DailyRewardDialogState extends ConsumerState<_DailyRewardDialog>
           margin: const EdgeInsets.symmetric(horizontal: 24),
           decoration: BoxDecoration(
             borderRadius: BorderRadius.circular(24),
-            border: Border.all(color: GameColors.goldFrame, width: 3),
+            border: Border.all(color: GameColors.goldFrameMid, width: 3),
             gradient: const LinearGradient(
               begin: Alignment.topCenter,
               end: Alignment.bottomCenter,
@@ -107,7 +107,7 @@ class _DailyRewardDialogState extends ConsumerState<_DailyRewardDialog>
             ),
             boxShadow: [
               BoxShadow(
-                color: GameColors.goldFrame.withAlpha(60),
+                color: GameColors.goldFrameMid.withAlpha(60),
                 blurRadius: 30,
                 spreadRadius: 2,
               ),
@@ -157,7 +157,7 @@ class _DailyRewardDialogState extends ConsumerState<_DailyRewardDialog>
         ),
       ),
       child: const Text(
-        'GUNLUK ODUL',
+        'GÜNLÜK ÖDÜL',
         textAlign: TextAlign.center,
         style: TextStyle(
           fontSize: 22,
@@ -178,7 +178,7 @@ class _DailyRewardDialogState extends ConsumerState<_DailyRewardDialog>
       child: Column(
         children: [
           Text(
-            'Bugun seni bekleyen odul',
+            'Bugün seni bekleyen ödül',
             style: TextStyle(
               fontSize: 13,
               color: Colors.white.withAlpha(180),
@@ -193,7 +193,7 @@ class _DailyRewardDialogState extends ConsumerState<_DailyRewardDialog>
               border: Border.all(color: GameColors.orange.withAlpha(100)),
             ),
             child: Text(
-              '\uD83D\uDD25 Seri: $streak gun',
+              '\uD83D\uDD25 Seri: $streak gün',
               style: const TextStyle(
                 fontSize: 14,
                 fontWeight: FontWeight.w700,
@@ -265,9 +265,9 @@ class _DailyRewardDialogState extends ConsumerState<_DailyRewardDialog>
                 style: const TextStyle(
                   fontSize: 48,
                   fontWeight: FontWeight.w900,
-                  color: GameColors.goldLight,
+                  color: GameColors.goldFrameBright,
                   shadows: [
-                    Shadow(color: GameColors.goldDark, blurRadius: 12),
+                    Shadow(color: GameColors.goldFrameDeep, blurRadius: 12),
                   ],
                 ),
               ),
@@ -283,7 +283,7 @@ class _DailyRewardDialogState extends ConsumerState<_DailyRewardDialog>
                 children: [
                   if (hammers > 0)
                     _BoosterBadge(
-                        emoji: '\uD83D\uDD28', label: '$hammers Cekic'),
+                        emoji: '\uD83D\uDD28', label: '$hammers Çekiç'),
                   if (blasts > 0)
                     _BoosterBadge(
                         emoji: '\uD83C\uDF08', label: '$blasts Renk Patlatma'),
@@ -322,7 +322,7 @@ class _DailyRewardDialogState extends ConsumerState<_DailyRewardDialog>
         width: double.infinity,
         height: 54,
         child: _GradientButton(
-          label: 'ODUL AL!',
+          label: 'ÖDÜLÜ AL!',
           colors: const [Color(0xFF30B050), Color(0xFF1A7030)],
           onTap: _claimReward,
         ),
@@ -354,13 +354,13 @@ class _DayCard extends StatelessWidget {
     final bgColor = isPast
         ? GameColors.greenDark.withAlpha(160)
         : isToday
-            ? GameColors.goldDark.withAlpha(180)
+            ? GameColors.goldFrameDeep.withAlpha(180)
             : Colors.grey.shade800.withAlpha(120);
 
     final borderColor = isPast
         ? GameColors.green.withAlpha(120)
         : isToday
-            ? GameColors.goldFrame
+            ? GameColors.goldFrameMid
             : Colors.grey.withAlpha(60);
 
     return AnimatedBuilder(
@@ -379,7 +379,7 @@ class _DayCard extends StatelessWidget {
           boxShadow: isToday
               ? [
                   BoxShadow(
-                    color: GameColors.goldFrame.withAlpha(80),
+                    color: GameColors.goldFrameMid.withAlpha(80),
                     blurRadius: 8,
                   )
                 ]
@@ -394,7 +394,7 @@ class _DayCard extends StatelessWidget {
                 fontSize: 10,
                 fontWeight: FontWeight.w700,
                 color: isToday
-                    ? GameColors.goldLight
+                    ? GameColors.goldFrameBright
                     : isPast
                         ? Colors.white
                         : Colors.white38,
@@ -402,7 +402,7 @@ class _DayCard extends StatelessWidget {
             ),
             const SizedBox(height: 2),
             if (isPast)
-              const Icon(Icons.check_circle, size: 16, color: GameColors.neonGreen)
+              const Icon(Icons.check_circle, size: 16, color: GameColors.buttonGreen)
             else if (isToday)
               const Text('\uD83E\uDE99', style: TextStyle(fontSize: 16))
             else

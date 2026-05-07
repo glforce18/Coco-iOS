@@ -43,15 +43,15 @@ const _allTasks = <_EventTask>[
   ),
   _EventTask(
     id: 'earn_stars',
-    title: 'Yildiz Topla',
-    description: '10 yildiz kazan',
+    title: 'Yıldız Topla',
+    description: '10 yıldız kazan',
     emoji: '\u2B50',
     target: 10,
     coinReward: 100,
   ),
   _EventTask(
     id: 'use_specials',
-    title: 'Ozel Guc Kullan',
+    title: 'Özel Güç Kullan',
     description: '5 booster kullan',
     emoji: '\uD83D\uDE80',
     target: 5,
@@ -177,12 +177,12 @@ class _EventScreenState extends ConsumerState<EventScreen> {
       child: Container(
         padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 10),
         decoration: BoxDecoration(
-          color: GameColors.bgDeep.withAlpha(200),
+          color: GameColors.panelPurpleDark.withAlpha(200),
           borderRadius: BorderRadius.circular(20),
           border: Border.all(color: GameColors.purpleLight.withAlpha(50)),
           boxShadow: [
             BoxShadow(
-              color: GameColors.bgDeep.withAlpha(140),
+              color: GameColors.panelPurpleDark.withAlpha(140),
               blurRadius: 12,
             ),
           ],
@@ -208,14 +208,14 @@ class _EventScreenState extends ConsumerState<EventScreen> {
             const SizedBox(width: 12),
             const Expanded(
               child: Text(
-                'HAFTALIK ETKINLIK',
+                'HAFTALIK ETKİNLİK',
                 style: TextStyle(
                   fontSize: 18,
                   fontWeight: FontWeight.w900,
-                  color: GameColors.goldLight,
+                  color: GameColors.goldFrameBright,
                   letterSpacing: 1.5,
                   shadows: [
-                    Shadow(color: GameColors.goldDark, blurRadius: 8),
+                    Shadow(color: GameColors.goldFrameDeep, blurRadius: 8),
                   ],
                 ),
               ),
@@ -238,7 +238,7 @@ class _EventScreenState extends ConsumerState<EventScreen> {
             end: Alignment.bottomRight,
             colors: [
               GameColors.purpleDark.withAlpha(120),
-              GameColors.bgMid.withAlpha(160),
+              GameColors.panelPurple.withAlpha(160),
             ],
           ),
           border: Border.all(color: GameColors.purpleLight.withAlpha(60)),
@@ -264,7 +264,7 @@ class _EventScreenState extends ConsumerState<EventScreen> {
                 ),
                 boxShadow: [
                   BoxShadow(
-                    color: GameColors.goldFrame.withAlpha(60),
+                    color: GameColors.goldFrameMid.withAlpha(60),
                     blurRadius: 8,
                   ),
                 ],
@@ -301,7 +301,7 @@ class _EventScreenState extends ConsumerState<EventScreen> {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   const Text(
-                    'Gorevleri tamamla, odul kazan!',
+                    'Görevleri tamamla, ödül kazan!',
                     style: TextStyle(
                       fontSize: 14,
                       fontWeight: FontWeight.w600,
@@ -310,7 +310,7 @@ class _EventScreenState extends ConsumerState<EventScreen> {
                   ),
                   const SizedBox(height: 4),
                   Text(
-                    'Her hafta yeni gorevler seni bekliyor.',
+                    'Her hafta yeni görevler seni bekliyor.',
                     style: TextStyle(
                       fontSize: 12,
                       color: Colors.white.withAlpha(140),
@@ -325,13 +325,13 @@ class _EventScreenState extends ConsumerState<EventScreen> {
                   const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
               decoration: BoxDecoration(
                 color: daysRemaining <= 1
-                    ? GameColors.pinkDark.withAlpha(120)
+                    ? GameColors.cherryRedDark.withAlpha(120)
                     : GameColors.greenDark.withAlpha(100),
                 borderRadius: BorderRadius.circular(12),
                 border: Border.all(
                   color: daysRemaining <= 1
-                      ? GameColors.hotPink.withAlpha(80)
-                      : GameColors.neonGreen.withAlpha(60),
+                      ? GameColors.cherryRed.withAlpha(80)
+                      : GameColors.buttonGreen.withAlpha(60),
                 ),
               ),
               child: Column(
@@ -343,12 +343,12 @@ class _EventScreenState extends ConsumerState<EventScreen> {
                       fontSize: 18,
                       fontWeight: FontWeight.w900,
                       color: daysRemaining <= 1
-                          ? GameColors.hotPink
-                          : GameColors.neonGreen,
+                          ? GameColors.cherryRed
+                          : GameColors.buttonGreen,
                     ),
                   ),
                   Text(
-                    'gun',
+                    'gün',
                     style: TextStyle(
                       fontSize: 10,
                       fontWeight: FontWeight.w600,
@@ -397,16 +397,16 @@ class _EventTaskCard extends StatelessWidget {
             colors: isComplete
                 ? [
                     GameColors.greenDark.withAlpha(60),
-                    GameColors.bgMid.withAlpha(100),
+                    GameColors.panelPurple.withAlpha(100),
                   ]
                 : [
-                    GameColors.bgLight.withAlpha(80),
-                    GameColors.bgMid.withAlpha(120),
+                    GameColors.panelPurpleLight.withAlpha(80),
+                    GameColors.panelPurple.withAlpha(120),
                   ],
           ),
           border: Border.all(
             color: isComplete
-                ? GameColors.neonGreen.withAlpha(80)
+                ? GameColors.buttonGreen.withAlpha(80)
                 : GameColors.purpleLight.withAlpha(40),
           ),
           boxShadow: [
@@ -433,7 +433,7 @@ class _EventTaskCard extends StatelessWidget {
                         : GameColors.purpleDark.withAlpha(100),
                     border: Border.all(
                       color: isComplete
-                          ? GameColors.neonGreen.withAlpha(80)
+                          ? GameColors.buttonGreen.withAlpha(80)
                           : GameColors.purpleLight.withAlpha(60),
                     ),
                   ),
@@ -457,7 +457,7 @@ class _EventTaskCard extends StatelessWidget {
                           fontSize: 15,
                           fontWeight: FontWeight.w700,
                           color: isComplete
-                              ? GameColors.neonGreen
+                              ? GameColors.buttonGreen
                               : Colors.white,
                         ),
                       ),
@@ -479,18 +479,18 @@ class _EventTaskCard extends StatelessWidget {
                       horizontal: 10, vertical: 4),
                   decoration: BoxDecoration(
                     color: isComplete
-                        ? GameColors.neonGreen.withAlpha(30)
-                        : GameColors.goldDark.withAlpha(60),
+                        ? GameColors.buttonGreen.withAlpha(30)
+                        : GameColors.goldFrameDeep.withAlpha(60),
                     borderRadius: BorderRadius.circular(10),
                     border: Border.all(
                       color: isComplete
-                          ? GameColors.neonGreen.withAlpha(60)
-                          : GameColors.goldFrame.withAlpha(40),
+                          ? GameColors.buttonGreen.withAlpha(60)
+                          : GameColors.goldFrameMid.withAlpha(40),
                     ),
                   ),
                   child: isComplete
                       ? const Icon(Icons.check_circle,
-                          color: GameColors.neonGreen, size: 20)
+                          color: GameColors.buttonGreen, size: 20)
                       : Row(
                           mainAxisSize: MainAxisSize.min,
                           children: [
@@ -502,7 +502,7 @@ class _EventTaskCard extends StatelessWidget {
                               style: const TextStyle(
                                 fontSize: 13,
                                 fontWeight: FontWeight.w700,
-                                color: GameColors.goldLight,
+                                color: GameColors.goldFrameBright,
                               ),
                             ),
                           ],
@@ -534,20 +534,20 @@ class _EventTaskCard extends StatelessWidget {
                                 gradient: LinearGradient(
                                   colors: isComplete
                                       ? [
-                                          GameColors.neonGreen,
+                                          GameColors.buttonGreen,
                                           GameColors.greenLight,
                                         ]
                                       : [
-                                          GameColors.neonCyan,
+                                          GameColors.buttonBlue,
                                           GameColors.blueLight,
                                         ],
                                 ),
                                 boxShadow: [
                                   BoxShadow(
                                     color: isComplete
-                                        ? GameColors.neonGreen
+                                        ? GameColors.buttonGreen
                                             .withAlpha(60)
-                                        : GameColors.neonCyan
+                                        : GameColors.buttonBlue
                                             .withAlpha(60),
                                     blurRadius: 4,
                                   ),
@@ -567,7 +567,7 @@ class _EventTaskCard extends StatelessWidget {
                     fontSize: 12,
                     fontWeight: FontWeight.w700,
                     color: isComplete
-                        ? GameColors.neonGreen
+                        ? GameColors.buttonGreen
                         : Colors.white.withAlpha(180),
                   ),
                 ),

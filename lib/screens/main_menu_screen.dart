@@ -1,4 +1,5 @@
 import 'dart:io' show Platform;
+import 'dart:math';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
@@ -7,6 +8,8 @@ import 'package:patpat_game/data/cloud_sync_manager.dart';
 import 'package:patpat_game/providers/auth_provider.dart';
 import 'package:patpat_game/providers/game_providers.dart';
 import 'package:patpat_game/theme/game_colors.dart';
+import 'package:patpat_game/widgets/shared/bottom_nav.dart';
+import 'package:patpat_game/widgets/shared/gold_button.dart';
 
 class MainMenuScreen extends ConsumerStatefulWidget {
   const MainMenuScreen({super.key});
@@ -15,10 +18,18 @@ class MainMenuScreen extends ConsumerStatefulWidget {
   ConsumerState<MainMenuScreen> createState() => _MainMenuScreenState();
 }
 
-class _MainMenuScreenState extends ConsumerState<MainMenuScreen> {
+class _MainMenuScreenState extends ConsumerState<MainMenuScreen>
+    with SingleTickerProviderStateMixin {
+  late final AnimationController _floatCtrl;
+
   @override
   void initState() {
     super.initState();
+    _floatCtrl = AnimationController(
+      vsync: this,
+      duration: const Duration(seconds: 4),
+    )..repeat();
+
     // Check if user is already logged in from a previous session.
     // Deferred to avoid modifying provider during widget tree build.
     Future(() {
@@ -26,32 +37,35 @@ class _MainMenuScreenState extends ConsumerState<MainMenuScreen> {
     });
   }
 
+  @override
+  void dispose() {
+    _floatCtrl.dispose();
+    super.dispose();
+  }
+
   Widget _buildLoginButton(BuildContext context) {
     final authState = ref.watch(authProvider);
 
     if (authState.isLoggedIn) {
-      // Show logged-in state: user name + tap to show profile/logout
-      return MenuActionButton(
-        text: authState.userName ?? 'Hesabim',
-        gradientColors: const [
-          GameColors.neonCyan,
-          GameColors.blueLight,
-          GameColors.blueDark,
-        ],
-        onTap: () {
+      return GoldButton(
+        text: authState.userName ?? 'Hesabım',
+        color: GoldButtonColor.blue,
+        size: GoldButtonSize.large,
+        width: 260,
+        icon: Icons.account_circle,
+        onPressed: () {
           _showProfilePopup(context);
         },
       );
     }
 
-    return MenuActionButton(
-      text: 'Giris Yap',
-      gradientColors: const [
-        GameColors.neonCyan,
-        GameColors.blueLight,
-        GameColors.blueDark,
-      ],
-      onTap: () {
+    return GoldButton(
+      text: 'Giriş Yap',
+      color: GoldButtonColor.blue,
+      size: GoldButtonSize.large,
+      width: 260,
+      icon: Icons.login,
+      onPressed: () {
         _showLoginPopup(context);
       },
     );
@@ -83,12 +97,12 @@ class _MainMenuScreenState extends ConsumerState<MainMenuScreen> {
               gradient: const LinearGradient(
                 begin: Alignment.topCenter,
                 end: Alignment.bottomCenter,
-                colors: [GameColors.bgLight, GameColors.bgDeep],
+                colors: [GameColors.panelPurpleLight, GameColors.panelPurpleDark],
               ),
-              border: Border.all(color: GameColors.goldFrame, width: 2.5),
+              border: Border.all(color: GameColors.goldFrameMid, width: 2.5),
               boxShadow: [
                 BoxShadow(
-                  color: GameColors.goldDark.withAlpha(60),
+                  color: GameColors.goldFrameDeep.withAlpha(60),
                   blurRadius: 24,
                 ),
               ],
@@ -113,8 +127,8 @@ class _MainMenuScreenState extends ConsumerState<MainMenuScreen> {
                 ] else ...[
                   CircleAvatar(
                     radius: 32,
-                    backgroundColor: GameColors.neonCyan.withAlpha(40),
-                    child: const Icon(Icons.person, color: GameColors.neonCyan, size: 32),
+                    backgroundColor: GameColors.buttonBlue.withAlpha(40),
+                    child: const Icon(Icons.person, color: GameColors.buttonBlue, size: 32),
                   ),
                   const SizedBox(height: 12),
                 ],
@@ -174,11 +188,6 @@ class _MainMenuScreenState extends ConsumerState<MainMenuScreen> {
   }
 
   @override
-  void dispose() {
-    super.dispose();
-  }
-
-  @override
   Widget build(BuildContext context) {
     final progress = ref.watch(playerProgressProvider);
 
@@ -186,7 +195,8 @@ class _MainMenuScreenState extends ConsumerState<MainMenuScreen> {
       body: Stack(
         fit: StackFit.expand,
         children: [
-          // Background image
+          // Background image (logo + subtitle are baked into the PNG —
+          // do NOT overlay duplicate Text widgets on top)
           Image.asset(
             'assets/backgrounds/main_menu_custom_bg.png',
             fit: BoxFit.cover,
@@ -195,13 +205,17 @@ class _MainMenuScreenState extends ConsumerState<MainMenuScreen> {
                 gradient: LinearGradient(
                   begin: Alignment.topCenter,
                   end: Alignment.bottomCenter,
-                  colors: [GameColors.bgLight, GameColors.bgDeep],
+                  colors: [
+                    GameColors.panelPurpleLight,
+                    GameColors.panelPurpleDark,
+                  ],
                 ),
               ),
             ),
           ),
 
-          // Gradient overlay: transparent top -> dark purple bottom
+          // Subtle bottom gradient for stats/nav legibility (kept light so
+          // the embedded logo + scenery in the PNG remain vivid)
           Container(
             decoration: BoxDecoration(
               gradient: LinearGradient(
@@ -209,73 +223,57 @@ class _MainMenuScreenState extends ConsumerState<MainMenuScreen> {
                 end: Alignment.bottomCenter,
                 colors: [
                   Colors.transparent,
-                  GameColors.bgDeep.withAlpha(120),
-                  GameColors.bgDeep.withAlpha(220),
+                  Colors.transparent,
+                  GameColors.panelPurpleDark.withAlpha(160),
+                  GameColors.panelPurpleDark.withAlpha(240),
                 ],
-                stops: const [0.0, 0.5, 1.0],
+                stops: const [0.0, 0.55, 0.85, 1.0],
               ),
             ),
           ),
+
+          // Floating decorative jelly sprites around the logo zone
+          // (mockup M3 — small jellies + sparkles bobbing around the logo).
+          _FloatingJellies(controller: _floatCtrl),
 
           // Main content column
           SafeArea(
             child: Column(
               children: [
-                const Spacer(flex: 3),
+                // Logo/subtitle area is provided by the background PNG.
+                // Reserve space so buttons land below the artwork.
+                const Spacer(flex: 5),
 
-                // Title: "PatPat"
-                const _GameTitle(),
-
-                const SizedBox(height: 6),
-
-                // Subtitle: "ESLESTIRME MACERASI"
-                Text(
-                  'ESLESTIRME MACERASI',
-                  style: TextStyle(
-                    fontSize: 16,
-                    fontWeight: FontWeight.w600,
-                    color: GameColors.goldLight,
-                    letterSpacing: 4,
-                    shadows: [
-                      Shadow(
-                        color: GameColors.goldDark.withAlpha(180),
-                        blurRadius: 8,
-                      ),
-                    ],
-                  ),
-                ),
-
-                const SizedBox(height: 40),
-
-                // Play button
-                MenuActionButton(
+                // Play button — primary CTA
+                GoldButton(
                   text: 'OYNA!',
-                  gradientColors: const [
-                    GameColors.greenLight,
-                    GameColors.green,
-                    GameColors.greenDark,
-                  ],
-                  onTap: () {
+                  color: GoldButtonColor.green,
+                  size: GoldButtonSize.large,
+                  width: 260,
+                  onPressed: () {
                     context.go('/map');
                   },
                 ),
 
-                const SizedBox(height: 12),
+                const SizedBox(height: 14),
 
-                // Login / Profile button
+                // Login / Profile button — secondary CTA
                 _buildLoginButton(context),
 
                 const Spacer(flex: 2),
 
-                // Stats bar at bottom
-                StatsBar(
+                // Bottom stats pill (stars / coins / lives / level)
+                _MenuStatsPill(
                   stars: progress.totalStars,
                   coins: progress.coins,
                   lives: progress.lives,
                   level: progress.currentLevel,
                 ),
 
-                const SizedBox(height: 20),
+                const SizedBox(height: 8),
+
+                // Bottom nav (Home tab active)
+                const PatPatBottomNav(activeTab: BottomNavTab.home),
               ],
             ),
           ),
@@ -293,48 +291,162 @@ class _MainMenuScreenState extends ConsumerState<MainMenuScreen> {
 }
 
 // ---------------------------------------------------------------------------
-// Game Title with colorful shadows
+// _MenuStatsPill — bottom of menu, gold-bordered purple pill with 4 stats
+// (matches mockup M3 — distinct from TopStatsBar which has profile/settings)
 // ---------------------------------------------------------------------------
-class _GameTitle extends StatelessWidget {
-  const _GameTitle();
+class _MenuStatsPill extends StatelessWidget {
+  final int stars;
+  final int coins;
+  final int lives;
+  final int level;
+
+  const _MenuStatsPill({
+    required this.stars,
+    required this.coins,
+    required this.lives,
+    required this.level,
+  });
 
   @override
   Widget build(BuildContext context) {
-    return Text(
-      'PatPat',
-      style: TextStyle(
-        fontSize: 48,
-        fontWeight: FontWeight.w900,
-        color: Colors.white,
-        letterSpacing: 3,
-        shadows: [
-          Shadow(
-            color: GameColors.hotPink.withAlpha(200),
-            blurRadius: 24,
-            offset: const Offset(0, 2),
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 24),
+      child: Container(
+        height: 52,
+        decoration: BoxDecoration(
+          borderRadius: BorderRadius.circular(26),
+          gradient: const LinearGradient(
+            colors: [
+              GameColors.goldFrameBright,
+              GameColors.goldFrameMid,
+              GameColors.goldFrameDeep,
+              GameColors.goldFrameMid,
+              GameColors.goldFrameBright,
+            ],
+            stops: [0.0, 0.25, 0.5, 0.75, 1.0],
           ),
-          Shadow(
-            color: GameColors.neonCyan.withAlpha(160),
-            blurRadius: 32,
-            offset: const Offset(0, -2),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withAlpha(140),
+              blurRadius: 12,
+              offset: const Offset(0, 4),
+            ),
+            BoxShadow(
+              color: GameColors.goldFrameMid.withAlpha(80),
+              blurRadius: 18,
+              spreadRadius: 1,
+            ),
+          ],
+        ),
+        padding: const EdgeInsets.all(3),
+        child: Container(
+          decoration: BoxDecoration(
+            borderRadius: BorderRadius.circular(23),
+            gradient: const LinearGradient(
+              begin: Alignment.topCenter,
+              end: Alignment.bottomCenter,
+              colors: [
+                GameColors.panelPurple,
+                GameColors.panelPurpleDark,
+              ],
+            ),
           ),
-          Shadow(
-            color: GameColors.purpleDark.withAlpha(220),
-            blurRadius: 4,
-            offset: const Offset(2, 4),
+          padding: const EdgeInsets.symmetric(horizontal: 8),
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+            children: [
+              _MenuStat(
+                icon: Icons.star_rounded,
+                color: GameColors.starGoldFilled,
+                text: '$stars',
+              ),
+              _MenuStatDivider(),
+              _MenuStat(
+                icon: Icons.monetization_on,
+                color: GameColors.goldFrameMid,
+                text: '$coins',
+              ),
+              _MenuStatDivider(),
+              _MenuStat(
+                icon: Icons.favorite,
+                color: GameColors.cherryRed,
+                text: '$lives',
+              ),
+              _MenuStatDivider(),
+              _MenuStat(
+                icon: Icons.emoji_events,
+                color: GameColors.goldFrameBright,
+                text: 'Lv $level',
+              ),
+            ],
           ),
-          Shadow(
-            color: GameColors.goldLight.withAlpha(100),
-            blurRadius: 48,
-          ),
-        ],
+        ),
       ),
     );
   }
 }
 
+class _MenuStat extends StatelessWidget {
+  final IconData icon;
+  final Color color;
+  final String text;
+
+  const _MenuStat({
+    required this.icon,
+    required this.color,
+    required this.text,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Row(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        Icon(
+          icon,
+          color: color,
+          size: 20,
+          shadows: [
+            Shadow(
+              color: Colors.black.withAlpha(180),
+              blurRadius: 4,
+            ),
+          ],
+        ),
+        const SizedBox(width: 5),
+        Text(
+          text,
+          style: TextStyle(
+            color: Colors.white,
+            fontSize: 15,
+            fontWeight: FontWeight.w900,
+            shadows: [
+              Shadow(
+                color: Colors.black.withAlpha(200),
+                blurRadius: 3,
+                offset: const Offset(0, 1),
+              ),
+            ],
+          ),
+        ),
+      ],
+    );
+  }
+}
+
+class _MenuStatDivider extends StatelessWidget {
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      width: 1,
+      height: 22,
+      color: GameColors.panelPurpleLight.withAlpha(140),
+    );
+  }
+}
+
 // ---------------------------------------------------------------------------
-// Settings gear button
+// Settings gear button (top-right) — mockup M3 style: gold-bordered purple circle
 // ---------------------------------------------------------------------------
 class _SettingsButton extends StatelessWidget {
   final WidgetRef ref;
@@ -347,298 +459,60 @@ class _SettingsButton extends StatelessWidget {
         _showSettingsPopup(context, ref);
       },
       child: Container(
-        width: 44,
-        height: 44,
+        width: 52,
+        height: 52,
         decoration: BoxDecoration(
           shape: BoxShape.circle,
-          color: GameColors.bgDeep.withAlpha(160),
-          border: Border.all(color: GameColors.goldFrame.withAlpha(120)),
+          gradient: const LinearGradient(
+            colors: [
+              GameColors.goldFrameBright,
+              GameColors.goldFrameMid,
+              GameColors.goldFrameDeep,
+              GameColors.goldFrameMid,
+              GameColors.goldFrameBright,
+            ],
+            stops: [0.0, 0.25, 0.5, 0.75, 1.0],
+          ),
           boxShadow: [
             BoxShadow(
-              color: GameColors.purpleDark.withAlpha(80),
-              blurRadius: 8,
+              color: Colors.black.withAlpha(140),
+              blurRadius: 10,
+              offset: const Offset(0, 4),
+            ),
+            BoxShadow(
+              color: GameColors.goldFrameMid.withAlpha(100),
+              blurRadius: 14,
+              spreadRadius: 1,
             ),
           ],
         ),
-        child: const Icon(
-          Icons.settings,
-          color: Colors.white70,
-          size: 22,
-        ),
-      ),
-    );
-  }
-}
-
-// ---------------------------------------------------------------------------
-// MenuActionButton — reusable gradient button
-// ---------------------------------------------------------------------------
-class MenuActionButton extends StatefulWidget {
-  final String text;
-  final List<Color> gradientColors;
-  final VoidCallback? onTap;
-
-  const MenuActionButton({
-    super.key,
-    required this.text,
-    required this.gradientColors,
-    this.onTap,
-  });
-
-  @override
-  State<MenuActionButton> createState() => _MenuActionButtonState();
-}
-
-class _MenuActionButtonState extends State<MenuActionButton>
-    with SingleTickerProviderStateMixin {
-  late final AnimationController _shimmerController;
-
-  @override
-  void initState() {
-    super.initState();
-    _shimmerController = AnimationController(
-      vsync: this,
-      duration: const Duration(milliseconds: 2400),
-    )..repeat();
-  }
-
-  @override
-  void dispose() {
-    _shimmerController.dispose();
-    super.dispose();
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    final bool enabled = widget.onTap != null;
-    final double opacity = enabled ? 1.0 : 0.5;
-
-    return Opacity(
-      opacity: opacity,
-      child: GestureDetector(
-        onTap: widget.onTap,
+        padding: const EdgeInsets.all(3),
         child: Container(
-          width: 240,
-          height: 64,
-          decoration: BoxDecoration(
-            borderRadius: BorderRadius.circular(32),
+          decoration: const BoxDecoration(
+            shape: BoxShape.circle,
             gradient: LinearGradient(
-              begin: Alignment.topLeft,
-              end: Alignment.bottomRight,
-              colors: widget.gradientColors,
-            ),
-            border: Border.all(
-              color: GameColors.goldFrame.withAlpha(160),
-              width: 2,
-            ),
-            boxShadow: [
-              BoxShadow(
-                color: widget.gradientColors[1].withAlpha(100),
-                blurRadius: 16,
-                offset: const Offset(0, 6),
-              ),
-              BoxShadow(
-                color: GameColors.bgDeep.withAlpha(100),
-                blurRadius: 4,
-                offset: const Offset(0, 2),
-              ),
-            ],
-          ),
-          child: ClipRRect(
-            borderRadius: BorderRadius.circular(32),
-            child: Stack(
-              children: [
-                // Shimmer highlight
-                if (enabled)
-                  AnimatedBuilder(
-                    animation: _shimmerController,
-                    builder: (context, child) {
-                      return Positioned(
-                        left: -80 +
-                            _shimmerController.value *
-                                (240 + 80),
-                        top: 0,
-                        child: Container(
-                          width: 80,
-                          height: 64,
-                          decoration: BoxDecoration(
-                            gradient: LinearGradient(
-                              colors: [
-                                Colors.white.withAlpha(0),
-                                Colors.white.withAlpha(40),
-                                Colors.white.withAlpha(0),
-                              ],
-                            ),
-                          ),
-                        ),
-                      );
-                    },
-                  ),
-
-                // Top highlight (subtle white gradient)
-                Positioned(
-                  top: 0,
-                  left: 0,
-                  right: 0,
-                  height: 28,
-                  child: DecoratedBox(
-                    decoration: BoxDecoration(
-                      borderRadius: const BorderRadius.vertical(
-                        top: Radius.circular(32),
-                      ),
-                      gradient: LinearGradient(
-                        begin: Alignment.topCenter,
-                        end: Alignment.bottomCenter,
-                        colors: [
-                          Colors.white.withAlpha(50),
-                          Colors.white.withAlpha(0),
-                        ],
-                      ),
-                    ),
-                  ),
-                ),
-
-                // Centered text
-                Center(
-                  child: Text(
-                    widget.text,
-                    style: TextStyle(
-                      fontSize: 20,
-                      fontWeight: FontWeight.w800,
-                      color: Colors.white,
-                      letterSpacing: 1.5,
-                      shadows: [
-                        Shadow(
-                          color: Colors.black.withAlpha(120),
-                          blurRadius: 4,
-                          offset: const Offset(0, 2),
-                        ),
-                      ],
-                    ),
-                  ),
-                ),
-
-                // Ink splash effect
-                if (enabled)
-                  Positioned.fill(
-                    child: Material(
-                      color: Colors.transparent,
-                      child: InkWell(
-                        borderRadius: BorderRadius.circular(32),
-                        onTap: widget.onTap,
-                        splashColor: Colors.white.withAlpha(40),
-                        highlightColor: Colors.white.withAlpha(20),
-                      ),
-                    ),
-                  ),
+              begin: Alignment.topCenter,
+              end: Alignment.bottomCenter,
+              colors: [
+                GameColors.panelPurpleLight,
+                GameColors.panelPurpleDark,
               ],
             ),
           ),
-        ),
-      ),
-    );
-  }
-}
-
-// ---------------------------------------------------------------------------
-// StatsBar — bottom stats row
-// ---------------------------------------------------------------------------
-class StatsBar extends StatelessWidget {
-  final int stars;
-  final int coins;
-  final int lives;
-  final int level;
-
-  const StatsBar({
-    super.key,
-    required this.stars,
-    required this.coins,
-    required this.lives,
-    required this.level,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 16),
-      child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
-        decoration: BoxDecoration(
-          color: GameColors.bgDeep.withAlpha(200),
-          borderRadius: BorderRadius.circular(20),
-          border: Border.all(
-            color: GameColors.purpleLight.withAlpha(50),
-          ),
-          boxShadow: [
-            BoxShadow(
-              color: GameColors.bgDeep.withAlpha(140),
-              blurRadius: 12,
-            ),
-          ],
-        ),
-        child: Row(
-          mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-          children: [
-            _StatCapsule(
-              emoji: '\u2B50', // star
-              value: '$stars',
-              color: GameColors.yellowLight,
-            ),
-            _StatCapsule(
-              emoji: '\uD83E\uDE99', // coin
-              value: '$coins',
-              color: GameColors.orangeLight,
-            ),
-            _StatCapsule(
-              emoji: '\u2764\uFE0F', // heart
-              value: '$lives',
-              color: GameColors.pinkLight,
-            ),
-            _StatCapsule(
-              emoji: '\uD83C\uDFC6', // trophy
-              value: 'Lv $level',
-              color: GameColors.purpleLight,
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-}
-
-class _StatCapsule extends StatelessWidget {
-  final String emoji;
-  final String value;
-  final Color color;
-
-  const _StatCapsule({
-    required this.emoji,
-    required this.value,
-    required this.color,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    return Row(
-      mainAxisSize: MainAxisSize.min,
-      children: [
-        Text(emoji, style: const TextStyle(fontSize: 18)),
-        const SizedBox(width: 4),
-        Text(
-          value,
-          style: TextStyle(
-            fontSize: 14,
-            fontWeight: FontWeight.w700,
-            color: color,
+          alignment: Alignment.center,
+          child: Icon(
+            Icons.settings,
+            color: Colors.white,
+            size: 24,
             shadows: [
               Shadow(
-                color: color.withAlpha(80),
-                blurRadius: 6,
+                color: Colors.black.withAlpha(180),
+                blurRadius: 4,
               ),
             ],
           ),
         ),
-      ],
+      ),
     );
   }
 }
@@ -683,7 +557,7 @@ class _LoginDialogState extends ConsumerState<_LoginDialog> {
     } else if (mounted) {
       setState(() {
         _isLoading = false;
-        _errorMessage = 'Giris basarisiz oldu';
+        _errorMessage = 'Giriş başarısız oldu';
       });
     }
   }
@@ -702,16 +576,16 @@ class _LoginDialogState extends ConsumerState<_LoginDialog> {
           gradient: const LinearGradient(
             begin: Alignment.topCenter,
             end: Alignment.bottomCenter,
-            colors: [GameColors.bgLight, GameColors.bgDeep],
+            colors: [GameColors.panelPurpleLight, GameColors.panelPurpleDark],
           ),
-          border: Border.all(color: GameColors.goldFrame, width: 2.5),
+          border: Border.all(color: GameColors.goldFrameMid, width: 2.5),
           boxShadow: [
             BoxShadow(
-              color: GameColors.goldDark.withAlpha(60),
+              color: GameColors.goldFrameDeep.withAlpha(60),
               blurRadius: 24,
             ),
             BoxShadow(
-              color: GameColors.bgDeep.withAlpha(200),
+              color: GameColors.panelPurpleDark.withAlpha(200),
               blurRadius: 8,
             ),
           ],
@@ -724,15 +598,15 @@ class _LoginDialogState extends ConsumerState<_LoginDialog> {
               children: [
                 Center(
                   child: Text(
-                    'Giris Yap',
+                    'Giriş Yap',
                     style: TextStyle(
                       fontSize: 22,
                       fontWeight: FontWeight.w800,
-                      color: GameColors.goldLight,
+                      color: GameColors.goldFrameBright,
                       letterSpacing: 1,
                       shadows: [
                         Shadow(
-                          color: GameColors.goldDark.withAlpha(140),
+                          color: GameColors.goldFrameDeep.withAlpha(140),
                           blurRadius: 8,
                         ),
                       ],
@@ -755,7 +629,7 @@ class _LoginDialogState extends ConsumerState<_LoginDialog> {
 
             // Subtitle
             Text(
-              'Ilerlemeni kaydet ve\ncihazlar arasi senkronla',
+              'İlerlemeni kaydet ve\ncihazlar arası senkronla',
               textAlign: TextAlign.center,
               style: TextStyle(
                 fontSize: 13,
@@ -781,7 +655,7 @@ class _LoginDialogState extends ConsumerState<_LoginDialog> {
                         color: GameColors.orangeLight, size: 32),
                     const SizedBox(height: 8),
                     Text(
-                      'Firebase yapilandirilmadi',
+                      'Firebase yapılandırılmadı',
                       style: TextStyle(
                         fontSize: 14,
                         fontWeight: FontWeight.w600,
@@ -790,7 +664,7 @@ class _LoginDialogState extends ConsumerState<_LoginDialog> {
                     ),
                     const SizedBox(height: 4),
                     Text(
-                      'Giris ozelligi henuz aktif degil.',
+                      'Giriş özelliği henüz aktif değil.',
                       textAlign: TextAlign.center,
                       style: TextStyle(
                         fontSize: 12,
@@ -805,11 +679,11 @@ class _LoginDialogState extends ConsumerState<_LoginDialog> {
               const SizedBox(height: 20),
               const CircularProgressIndicator(
                 valueColor:
-                    AlwaysStoppedAnimation<Color>(GameColors.neonCyan),
+                    AlwaysStoppedAnimation<Color>(GameColors.buttonBlue),
               ),
               const SizedBox(height: 16),
               Text(
-                'Giris yapiliyor...',
+                'Giriş yapılıyor...',
                 style: TextStyle(
                   fontSize: 14,
                   color: Colors.white.withAlpha(180),
@@ -819,7 +693,7 @@ class _LoginDialogState extends ConsumerState<_LoginDialog> {
             ] else ...[
               // Google Sign-In button
               _SignInButton(
-                label: 'Google ile Giris Yap',
+                label: 'Google ile Giriş Yap',
                 icon: Icons.g_mobiledata,
                 iconColor: Colors.white,
                 gradientColors: const [
@@ -835,7 +709,7 @@ class _LoginDialogState extends ConsumerState<_LoginDialog> {
               if (Platform.isIOS) ...[
                 const SizedBox(height: 12),
                 _SignInButton(
-                  label: 'Apple ile Giris Yap',
+                  label: 'Apple ile Giriş Yap',
                   icon: Icons.apple,
                   iconColor: Colors.white,
                   gradientColors: const [
@@ -962,19 +836,19 @@ class _SettingsDialog extends ConsumerWidget {
           gradient: const LinearGradient(
             begin: Alignment.topCenter,
             end: Alignment.bottomCenter,
-            colors: [GameColors.bgLight, GameColors.bgDeep],
+            colors: [GameColors.panelPurpleLight, GameColors.panelPurpleDark],
           ),
           border: Border.all(
-            color: GameColors.goldFrame,
+            color: GameColors.goldFrameMid,
             width: 2.5,
           ),
           boxShadow: [
             BoxShadow(
-              color: GameColors.goldDark.withAlpha(60),
+              color: GameColors.goldFrameDeep.withAlpha(60),
               blurRadius: 24,
             ),
             BoxShadow(
-              color: GameColors.bgDeep.withAlpha(200),
+              color: GameColors.panelPurpleDark.withAlpha(200),
               blurRadius: 8,
             ),
           ],
@@ -991,11 +865,11 @@ class _SettingsDialog extends ConsumerWidget {
                     style: TextStyle(
                       fontSize: 22,
                       fontWeight: FontWeight.w800,
-                      color: GameColors.goldLight,
+                      color: GameColors.goldFrameBright,
                       letterSpacing: 1,
                       shadows: [
                         Shadow(
-                          color: GameColors.goldDark.withAlpha(140),
+                          color: GameColors.goldFrameDeep.withAlpha(140),
                           blurRadius: 8,
                         ),
                       ],
@@ -1032,7 +906,7 @@ class _SettingsDialog extends ConsumerWidget {
 
             // Music toggle
             _SettingsToggle(
-              label: 'Muzik',
+              label: 'Müzik',
               emoji: '\uD83C\uDFB5', // music note
               value: progress.musicEnabled,
               onChanged: (v) {
@@ -1046,7 +920,7 @@ class _SettingsDialog extends ConsumerWidget {
 
             // Vibration toggle
             _SettingsToggle(
-              label: 'Titresim',
+              label: 'Titreşim',
               emoji: '\uD83D\uDCF3', // vibration
               value: progress.vibrationEnabled,
               onChanged: (v) {
@@ -1094,12 +968,75 @@ class _SettingsToggle extends StatelessWidget {
         Switch(
           value: value,
           onChanged: onChanged,
-          activeThumbColor: GameColors.neonCyan,
-          activeTrackColor: GameColors.neonCyan.withAlpha(60),
+          activeThumbColor: GameColors.buttonBlue,
+          activeTrackColor: GameColors.buttonBlue.withAlpha(60),
           inactiveThumbColor: Colors.grey,
           inactiveTrackColor: Colors.grey.withAlpha(60),
         ),
       ],
+    );
+  }
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// _FloatingJellies — small bobbing jelly sprites positioned around the logo
+// area (mockup M3 style). Each jelly has its own phase and bob amplitude so
+// they feel alive without being distracting.
+// ─────────────────────────────────────────────────────────────────────────────
+
+class _FloatingJellies extends StatelessWidget {
+  final AnimationController controller;
+  const _FloatingJellies({required this.controller});
+
+  // (assetSuffix, normalized x, normalized y, scale, phase offset)
+  // Positions are relative to screen size; y is fraction of screen height.
+  // Logo sits roughly between y=0.10 and y=0.30.
+  static const _jellies = <(String, double, double, double, double)>[
+    // Top-left red potion-ish (use orange jelly as accent)
+    ('orange', 0.10, 0.07, 0.55, 0.0),
+    // Top-right blue jelly
+    ('blue', 0.86, 0.10, 0.50, 0.25),
+    // Left side pink jelly
+    ('pink', 0.06, 0.22, 0.60, 0.5),
+    // Right side green jelly
+    ('green', 0.90, 0.24, 0.55, 0.75),
+    // Below subtitle — purple jelly
+    ('purple', 0.78, 0.34, 0.45, 0.15),
+    // Yellow star jelly bottom-left
+    ('yellow', 0.14, 0.36, 0.45, 0.6),
+  ];
+
+  @override
+  Widget build(BuildContext context) {
+    final size = MediaQuery.of(context).size;
+    return AnimatedBuilder(
+      animation: controller,
+      builder: (context, _) {
+        final t = controller.value;
+        return IgnorePointer(
+          child: Stack(
+            children: _jellies.map((j) {
+              final (suffix, nx, ny, scale, phase) = j;
+              final bob = sin((t + phase) * 2 * pi) * 6;
+              final wobble = cos((t + phase) * 2 * pi) * 3;
+              final spriteSize = 64.0 * scale;
+              return Positioned(
+                left: size.width * nx - spriteSize / 2 + wobble,
+                top: size.height * ny - spriteSize / 2 + bob,
+                child: Transform.rotate(
+                  angle: sin((t + phase) * 2 * pi) * 0.08,
+                  child: Image.asset(
+                    'assets/sprites/jelly_$suffix.png',
+                    width: spriteSize,
+                    height: spriteSize,
+                    errorBuilder: (_, __, ___) => const SizedBox.shrink(),
+                  ),
+                ),
+              );
+            }).toList(),
+          ),
+        );
+      },
     );
   }
 }

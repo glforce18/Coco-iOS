@@ -10,10 +10,10 @@ class ComboText extends StatelessWidget {
 
   String get _label {
     if (comboCount >= 8) return 'EFSANE! x$comboCount';
-    if (comboCount >= 6) return 'MUHTESEM! x$comboCount';
-    if (comboCount >= 4) return 'HARIKA! x$comboCount';
+    if (comboCount >= 6) return 'MUHTEŞEM! x$comboCount';
+    if (comboCount >= 4) return 'HARİKA! x$comboCount';
     if (comboCount >= 3) return 'KOMBO! x$comboCount';
-    return 'SUPER! x$comboCount';
+    return 'SÜPER! x$comboCount';
   }
 
   @override
@@ -33,13 +33,13 @@ class ComboText extends StatelessWidget {
         _label,
         textAlign: TextAlign.center,
         style: const TextStyle(
-          color: GameColors.goldFrame,
+          color: GameColors.goldFrameBright,
           fontSize: 28,
           fontWeight: FontWeight.w900,
           letterSpacing: 2,
           shadows: [
-            Shadow(color: GameColors.goldDark, blurRadius: 12),
-            Shadow(color: GameColors.hotPink, blurRadius: 24),
+            Shadow(color: GameColors.goldFrameDeep, blurRadius: 12),
+            Shadow(color: GameColors.cherryRed, blurRadius: 24),
           ],
         ),
       ),

@@ -207,6 +207,63 @@ lib/
 
 ---
 
+## Royal Match-Style Polish (10 Nisan 2026)
+
+7 fazlık kapsamlı görsel yeniden tasarım — tüm UI ekranları Royal Match estetiğine
+hizalandı. Gameplay engine ve VFX'lere dokunulmadı; sadece UI chrome ve overlay'ler
+yenilendi.
+
+### Faz 1 — Tasarım sistemi temeli
+- **Yeni palet tokenları** (`theme/game_colors.dart`): `panelPurpleLight/Purple/Dark`,
+  `goldFrameBright/Mid/Deep`, `goldHighlight`, `starGoldFilled/Empty`,
+  `cherryRed/cherryRedDark`, `buttonGreen/Blue/Purple` (+ Dark varyantları).
+- **Shared widget kütüphanesi** (`widgets/shared/`):
+  - `GoldPanel` — 5-katmanlı altın metalik çerçeveli mor modal kabı (sparkle bg)
+  - `GoldButton` — 3D altın bordürlü buton (5 renk × 3 boyut, press feedback)
+  - `StarStrip` — 0–3 yıldızlı yatay strip (custom painter, animasyonlu pop-in)
+  - `PatPatBottomNav` — 5 sekmeli alt nav (Home/Market/Map/Achievements/Profile)
+  - `TopStatsBar` — Yıldız/Coin/Kalp + profil/bildirim/ayar circle butonları
+
+### Faz 2 — Main Menu (M3)
+- Yeni paletle tam yeniden tasarım, animasyonlu jelly maskot, OYNA butonu GoldButton.
+
+### Faz 3 — Map Screen (M1)
+- Royal Match yol mantığına geçiş: zigzag düğümler, hazine sandığı (boss reward),
+  bölge selector pill'leri, "Yıldız Ödülleri" milestone barı, "Günlük" cherry red ribbon.
+
+### Faz 4 — Level Start Popup (M4)
+- GoldPanel'a sarıldı, StarStrip + GoldButton + 3 booster kartı (Çekiç/Renk/+1) +
+  rainbow gradient özel jelly indicator + close X butonu.
+
+### Faz 5 — Game HUD (M2)
+- Üst bar gold metalik çerçeveye geçti, hedef/hamle/level rozetleri yeni paletle
+  yeniden çizildi, Türkçe karakter hataları temizlendi.
+
+### Faz 6 — Tutarlılık polish süpürmesi
+**14 dosyada legacy palette referansı sıfırlandı** (`bgDeep/bgMid/bgLight/hotPink/
+goldLight/goldDark/goldFrame/neonPurple/neonCyan/neonGreen` artık kullanılmıyor).
+- **Meta ekranlar:** shop, profile, achievement, daily_reward, spin_wheel, event,
+  mascot_home, game_screen → palette swap + Türkçe karakter düzeltmeleri (30+ string).
+- **Game overlay'ler:** `level_complete_overlay`, `game_over_overlay`, `no_lives_popup`
+  → GoldPanel'a sarıldı, GoldButton ile yeniden yapılandırıldı, StarStrip eklendi.
+- **In-game chrome:** `booster_bar` → gold metalik çerçeve + Türkçe (sec→seç,
+  Iptal→İptal); `score_progress_bar`, `tutorial_overlay`, `combo_text`, `game_board`
+  selection ring → palette swap.
+- **Türkçe karakter audit:** MAGAZA→MAĞAZA, BASARIMLAR→BAŞARIMLAR, OYUN BITTI→OYUN
+  BİTTİ, TEBRIKLER→TEBRİKLER, Cik→Çık, Iptal→İptal, Hedef sec→Hedef seç, Reklam
+  Izle→Reklam İzle, Cekic→Çekiç, Yildiz→Yıldız, Cicek→Çiçek, Agac→Ağaç, vb.
+
+### Faz 7 — Doğrulama
+- `flutter analyze` → 0 issue
+- `flutter test` → 155/155 geçti
+- `flutter build apk --release` → 85.0 MB release APK üretildi
+
+### Diff özet
+23 dosya değişti (~+2288/-2164 satır). 4 untracked shared widget (gold_panel,
+gold_button, star_strip, bottom_nav, top_stats_bar) eklendi.
+
+---
+
 ## Sonraki Adımlar
 
 - [ ] Ses sistemi (prosedürel WAV üretimi) — son aşamada

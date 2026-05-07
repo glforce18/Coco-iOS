@@ -50,14 +50,14 @@ class ScoreProgressBar extends StatelessWidget {
                     gradient: const LinearGradient(
                       colors: [
                         GameColors.purple,
-                        GameColors.hotPink,
-                        GameColors.goldFrame,
+                        GameColors.cherryRed,
+                        GameColors.goldFrameMid,
                       ],
                     ),
                     borderRadius: BorderRadius.circular(5),
                     boxShadow: [
                       BoxShadow(
-                        color: GameColors.hotPink.withAlpha(80),
+                        color: GameColors.cherryRed.withAlpha(80),
                         blurRadius: 6,
                       ),
                     ],
@@ -99,7 +99,7 @@ class _StarMarker extends StatelessWidget {
       child: Icon(
         filled ? Icons.star : Icons.star_border,
         size: 18,
-        color: filled ? GameColors.goldFrame : Colors.white38,
+        color: filled ? GameColors.goldFrameMid : Colors.white38,
       ),
     );
   }

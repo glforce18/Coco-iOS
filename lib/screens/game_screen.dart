@@ -267,7 +267,7 @@ class _GameBackground extends StatelessWidget {
           errorBuilder: (_, __, ___) => Container(
             decoration: const BoxDecoration(
               gradient: LinearGradient(
-                colors: [GameColors.bgDeep, GameColors.bgMid, GameColors.bgLight],
+                colors: [GameColors.panelPurpleDark, GameColors.panelPurple, GameColors.panelPurpleLight],
                 begin: Alignment.topCenter,
                 end: Alignment.bottomCenter,
               ),
@@ -281,9 +281,9 @@ class _GameBackground extends StatelessWidget {
               begin: Alignment.topCenter,
               end: Alignment.bottomCenter,
               colors: [
-                GameColors.bgDeep.withAlpha(140),
-                GameColors.bgDeep.withAlpha(100),
-                GameColors.bgDeep.withAlpha(160),
+                GameColors.panelPurpleDark.withAlpha(140),
+                GameColors.panelPurpleDark.withAlpha(100),
+                GameColors.panelPurpleDark.withAlpha(160),
               ],
               stops: const [0.0, 0.5, 1.0],
             ),
@@ -325,12 +325,12 @@ class _GoldFrameBoard extends StatelessWidget {
         ),
         boxShadow: [
           BoxShadow(
-            color: GameColors.goldFrame.withAlpha(50),
+            color: GameColors.goldFrameMid.withAlpha(50),
             blurRadius: 16,
             spreadRadius: 2,
           ),
           BoxShadow(
-            color: GameColors.goldDark.withAlpha(40),
+            color: GameColors.goldFrameDeep.withAlpha(40),
             blurRadius: 8,
             offset: const Offset(0, 4),
           ),
@@ -380,12 +380,12 @@ class _PauseOverlay extends StatelessWidget {
             ),
             borderRadius: BorderRadius.circular(24),
             border: Border.all(
-              color: GameColors.goldFrame.withAlpha(140),
+              color: GameColors.goldFrameMid.withAlpha(140),
               width: 2,
             ),
             boxShadow: [
               BoxShadow(
-                color: GameColors.goldFrame.withAlpha(30),
+                color: GameColors.goldFrameMid.withAlpha(30),
                 blurRadius: 20,
                 spreadRadius: 2,
               ),
@@ -397,31 +397,31 @@ class _PauseOverlay extends StatelessWidget {
               const Text(
                 'DURAKLADI',
                 style: TextStyle(
-                  color: GameColors.goldLight,
+                  color: GameColors.goldFrameBright,
                   fontSize: 24,
                   fontWeight: FontWeight.w900,
                   letterSpacing: 2,
                   shadows: [
-                    Shadow(color: GameColors.goldDark, blurRadius: 8),
+                    Shadow(color: GameColors.goldFrameDeep, blurRadius: 8),
                   ],
                 ),
               ),
               const SizedBox(height: 28),
               _PauseButton(
                 label: 'Devam Et',
-                color: GameColors.neonGreen,
+                color: GameColors.buttonGreen,
                 onTap: onResume,
               ),
               const SizedBox(height: 12),
               _PauseButton(
-                label: 'Basla',
-                color: GameColors.neonCyan,
+                label: 'Baştan Başla',
+                color: GameColors.buttonBlue,
                 onTap: onRestart,
               ),
               const SizedBox(height: 12),
               _PauseButton(
-                label: 'Cik',
-                color: GameColors.hotPink,
+                label: 'Çık',
+                color: GameColors.cherryRed,
                 onTap: onQuit,
               ),
             ],

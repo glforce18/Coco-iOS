@@ -8,6 +8,7 @@ import 'package:patpat_game/billing/billing_manager.dart';
 import 'package:patpat_game/models/enums.dart';
 import 'package:patpat_game/providers/game_providers.dart';
 import 'package:patpat_game/theme/game_colors.dart';
+import 'package:patpat_game/widgets/shared/bottom_nav.dart';
 
 // ═══════════════════════════════════════════════════════════════════════════
 // ShopScreen — rich purchase UI with booster cards + IAP packages
@@ -57,12 +58,12 @@ class _ShopScreenState extends ConsumerState<ShopScreen>
   Future<void> _buyBooster(BoosterType type) async {
     final progress = ref.read(playerProgressProvider);
     if (progress.coins < type.cost) {
-      _showSnackBar('Yeterli altinin yok!', GameColors.hotPink);
+      _showSnackBar('Yeterli altının yok!', GameColors.cherryRed);
       return;
     }
     await ref.read(playerProgressProvider.notifier).buyBooster(type);
     if (mounted) {
-      _showSnackBar('${type.displayName} satin alindi!', GameColors.neonGreen);
+      _showSnackBar('${type.displayName} satın alındı!', GameColors.buttonGreen);
     }
   }
 
@@ -77,7 +78,7 @@ class _ShopScreenState extends ConsumerState<ShopScreen>
   Future<void> _restore() async {
     await _billing.restorePurchases();
     if (mounted) {
-      _showSnackBar('Satin alimlar geri yuklendi', GameColors.neonCyan);
+      _showSnackBar('Satın alımlar geri yüklendi', GameColors.buttonBlue);
     }
   }
 
@@ -103,6 +104,9 @@ class _ShopScreenState extends ConsumerState<ShopScreen>
     final progress = ref.watch(playerProgressProvider);
 
     return Scaffold(
+      bottomNavigationBar: const PatPatBottomNav(
+        activeTab: BottomNavTab.market,
+      ),
       body: Stack(
         fit: StackFit.expand,
         children: [
@@ -153,9 +157,9 @@ class _ShopScreenState extends ConsumerState<ShopScreen>
                       children: [
                         // ── Booster section ──
                         _SectionHeader(
-                          title: 'Guclendiriciler',
+                          title: 'Güçlendiriciler',
                           icon: Icons.bolt,
-                          iconColor: GameColors.goldFrame,
+                          iconColor: GameColors.goldFrameMid,
                         ),
                         const SizedBox(height: 10),
                         _BoosterCard(
@@ -173,9 +177,9 @@ class _ShopScreenState extends ConsumerState<ShopScreen>
                         _BoosterCard(
                           type: BoosterType.colorBlast,
                           icon: Icons.auto_awesome,
-                          iconColor: GameColors.neonPurple,
+                          iconColor: GameColors.buttonPurple,
                           glowColor: GameColors.purpleDark,
-                          description: 'Ayni renk jellileri patlat',
+                          description: 'Aynı renk jellileri patlat',
                           count: progress.colorBlastCount,
                           coins: progress.coins,
                           pulseAnim: _pulseAnim,
@@ -198,9 +202,9 @@ class _ShopScreenState extends ConsumerState<ShopScreen>
 
                         // ── Coin Packs section ──
                         _SectionHeader(
-                          title: 'Altin Paketleri',
+                          title: 'Altın Paketleri',
                           icon: Icons.monetization_on,
-                          iconColor: GameColors.goldFrame,
+                          iconColor: GameColors.goldFrameMid,
                         ),
                         const SizedBox(height: 10),
 
@@ -224,7 +228,7 @@ class _ShopScreenState extends ConsumerState<ShopScreen>
                           gradient: const [Color(0xFF1A3C6E), Color(0xFF0D1E40)],
                           borderColor: GameColors.blueLight,
                           billing: _billing,
-                          badgeText: 'Populer',
+                          badgeText: 'Popüler',
                           onBuy: () => _buyIAP(BillingManager.coinsMediumId),
                         ),
                         const SizedBox(height: 10),
@@ -232,9 +236,9 @@ class _ShopScreenState extends ConsumerState<ShopScreen>
                           amount: 5000,
                           productId: BillingManager.coinsLargeId,
                           gradient: const [Color(0xFF5C3A1A), Color(0xFF3D2510)],
-                          borderColor: GameColors.goldFrame,
+                          borderColor: GameColors.goldFrameMid,
                           billing: _billing,
-                          badgeText: 'En Degerli',
+                          badgeText: 'En Değerli',
                           onBuy: () => _buyIAP(BillingManager.coinsLargeId),
                         ),
 
@@ -242,20 +246,20 @@ class _ShopScreenState extends ConsumerState<ShopScreen>
 
                         // ── Special offers section ──
                         _SectionHeader(
-                          title: 'Ozel Teklifler',
+                          title: 'Özel Teklifler',
                           icon: Icons.star,
-                          iconColor: GameColors.hotPink,
+                          iconColor: GameColors.cherryRed,
                         ),
                         const SizedBox(height: 10),
 
                         // Remove Ads
                         _SpecialOfferCard(
-                          title: 'Reklam Kaldirma',
-                          description: 'Oyundaki tum reklamlari kaldir',
+                          title: 'Reklam Kaldırma',
+                          description: 'Oyundaki tüm reklamları kaldır',
                           icon: Icons.block,
-                          iconColor: GameColors.neonCyan,
+                          iconColor: GameColors.buttonBlue,
                           gradient: const [Color(0xFF0D3A4A), Color(0xFF061E28)],
-                          borderColor: GameColors.neonCyan,
+                          borderColor: GameColors.buttonBlue,
                           productId: BillingManager.removeAdsId,
                           billing: _billing,
                           isPurchased: progress.removeAdsPurchased,
@@ -265,12 +269,12 @@ class _ShopScreenState extends ConsumerState<ShopScreen>
 
                         // Starter Bundle
                         _SpecialOfferCard(
-                          title: 'Baslangic Paketi',
-                          description: '500 altin + 5 can + ozel avantajlar',
+                          title: 'Başlangıç Paketi',
+                          description: '500 altın + 5 can + özel avantajlar',
                           icon: Icons.card_giftcard,
-                          iconColor: GameColors.goldFrame,
+                          iconColor: GameColors.goldFrameMid,
                           gradient: const [Color(0xFF4A3A0D), Color(0xFF2A2008)],
-                          borderColor: GameColors.goldFrame,
+                          borderColor: GameColors.goldFrameMid,
                           productId: BillingManager.starterBundleId,
                           billing: _billing,
                           isPurchased: progress.starterBundleClaimed,
@@ -280,12 +284,12 @@ class _ShopScreenState extends ConsumerState<ShopScreen>
 
                         // VIP Monthly
                         _SpecialOfferCard(
-                          title: 'VIP Uyelik',
-                          description: 'Aylik VIP avantajlari ve ozel icerik',
+                          title: 'VIP Üyelik',
+                          description: 'Aylık VIP avantajları ve özel içerik',
                           icon: Icons.workspace_premium,
-                          iconColor: GameColors.hotPink,
+                          iconColor: GameColors.cherryRed,
                           gradient: const [Color(0xFF4A0D30), Color(0xFF2A0618)],
-                          borderColor: GameColors.hotPink,
+                          borderColor: GameColors.cherryRed,
                           productId: BillingManager.vipMonthlyId,
                           billing: _billing,
                           isPurchased: progress.vipActive,
@@ -308,7 +312,7 @@ class _ShopScreenState extends ConsumerState<ShopScreen>
                                     color: Colors.white.withAlpha(30)),
                               ),
                               child: const Text(
-                                'Satin Alimlari Geri Yukle',
+                                'Satın Alımları Geri Yükle',
                                 style: TextStyle(
                                   color: Colors.white54,
                                   fontSize: 13,
@@ -349,12 +353,12 @@ class _ShopHeader extends StatelessWidget {
       child: Container(
         padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 10),
         decoration: BoxDecoration(
-          color: GameColors.bgDeep.withAlpha(220),
+          color: GameColors.panelPurpleDark.withAlpha(220),
           borderRadius: BorderRadius.circular(20),
-          border: Border.all(color: GameColors.goldFrame.withAlpha(60)),
+          border: Border.all(color: GameColors.goldFrameMid.withAlpha(60)),
           boxShadow: [
             BoxShadow(
-              color: GameColors.goldDark.withAlpha(30),
+              color: GameColors.goldFrameDeep.withAlpha(30),
               blurRadius: 16,
             ),
           ],
@@ -384,10 +388,10 @@ class _ShopHeader extends StatelessWidget {
             // Title
             ShaderMask(
               shaderCallback: (bounds) => const LinearGradient(
-                colors: [GameColors.goldLight, GameColors.goldFrame],
+                colors: [GameColors.goldFrameBright, GameColors.goldFrameMid],
               ).createShader(bounds),
               child: const Text(
-                'MAGAZA',
+                'MAĞAZA',
                 style: TextStyle(
                   fontSize: 26,
                   fontWeight: FontWeight.w900,
@@ -405,16 +409,16 @@ class _ShopHeader extends StatelessWidget {
               decoration: BoxDecoration(
                 gradient: LinearGradient(
                   colors: [
-                    GameColors.goldDark.withAlpha(120),
-                    GameColors.goldDark.withAlpha(60),
+                    GameColors.goldFrameDeep.withAlpha(120),
+                    GameColors.goldFrameDeep.withAlpha(60),
                   ],
                 ),
                 borderRadius: BorderRadius.circular(16),
                 border:
-                    Border.all(color: GameColors.goldFrame.withAlpha(100)),
+                    Border.all(color: GameColors.goldFrameMid.withAlpha(100)),
                 boxShadow: [
                   BoxShadow(
-                    color: GameColors.goldDark.withAlpha(40),
+                    color: GameColors.goldFrameDeep.withAlpha(40),
                     blurRadius: 8,
                   ),
                 ],
@@ -430,7 +434,7 @@ class _ShopHeader extends StatelessWidget {
                     style: const TextStyle(
                       fontSize: 16,
                       fontWeight: FontWeight.w800,
-                      color: GameColors.goldLight,
+                      color: GameColors.goldFrameBright,
                     ),
                   ),
                 ],
@@ -546,8 +550,8 @@ class _BoosterCard extends StatelessWidget {
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
           colors: [
-            GameColors.bgMid.withAlpha(220),
-            GameColors.bgDeep.withAlpha(240),
+            GameColors.panelPurple.withAlpha(220),
+            GameColors.panelPurpleDark.withAlpha(240),
           ],
         ),
         borderRadius: BorderRadius.circular(18),
@@ -659,13 +663,13 @@ class _BoosterCard extends StatelessWidget {
                 borderRadius: BorderRadius.circular(14),
                 border: Border.all(
                   color: canAfford
-                      ? GameColors.neonGreen.withAlpha(120)
+                      ? GameColors.buttonGreen.withAlpha(120)
                       : Colors.grey.withAlpha(40),
                 ),
                 boxShadow: canAfford
                     ? [
                         BoxShadow(
-                          color: GameColors.neonGreen.withAlpha(40),
+                          color: GameColors.buttonGreen.withAlpha(40),
                           blurRadius: 8,
                         ),
                       ]
@@ -757,13 +761,13 @@ class _CoinPackCard extends StatelessWidget {
                     shape: BoxShape.circle,
                     gradient: const RadialGradient(
                       colors: [
-                        GameColors.goldFrame,
-                        GameColors.goldDark,
+                        GameColors.goldFrameMid,
+                        GameColors.goldFrameDeep,
                       ],
                     ),
                     boxShadow: [
                       BoxShadow(
-                        color: GameColors.goldFrame.withAlpha(60),
+                        color: GameColors.goldFrameMid.withAlpha(60),
                         blurRadius: 12,
                       ),
                     ],
@@ -783,16 +787,16 @@ class _CoinPackCard extends StatelessWidget {
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Text(
-                        '$amount Altin',
+                        '$amount Altın',
                         style: const TextStyle(
                           fontSize: 18,
                           fontWeight: FontWeight.w800,
-                          color: GameColors.goldLight,
+                          color: GameColors.goldFrameBright,
                         ),
                       ),
                       if (!available)
                         Text(
-                          'Magaza yuklenemedi',
+                          'Mağaza yüklenemedi',
                           style: TextStyle(
                             fontSize: 11,
                             color: Colors.white.withAlpha(80),
@@ -817,7 +821,7 @@ class _CoinPackCard extends StatelessWidget {
                     borderRadius: BorderRadius.circular(14),
                     border: Border.all(
                       color: available
-                          ? GameColors.neonGreen.withAlpha(100)
+                          ? GameColors.buttonGreen.withAlpha(100)
                           : Colors.grey.withAlpha(30),
                     ),
                   ),
@@ -844,12 +848,12 @@ class _CoinPackCard extends StatelessWidget {
               padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 3),
               decoration: BoxDecoration(
                 gradient: const LinearGradient(
-                  colors: [GameColors.hotPink, GameColors.pinkDark],
+                  colors: [GameColors.cherryRed, GameColors.pinkDark],
                 ),
                 borderRadius: BorderRadius.circular(10),
                 boxShadow: [
                   BoxShadow(
-                    color: GameColors.hotPink.withAlpha(80),
+                    color: GameColors.cherryRed.withAlpha(80),
                     blurRadius: 8,
                   ),
                 ],
@@ -917,13 +921,13 @@ class _SpecialOfferCard extends StatelessWidget {
           borderRadius: BorderRadius.circular(18),
           border: Border.all(
             color: isPurchased
-                ? GameColors.neonGreen.withAlpha(120)
+                ? GameColors.buttonGreen.withAlpha(120)
                 : borderColor.withAlpha(80),
             width: 1.5,
           ),
           boxShadow: [
             BoxShadow(
-              color: (isPurchased ? GameColors.neonGreen : borderColor)
+              color: (isPurchased ? GameColors.buttonGreen : borderColor)
                   .withAlpha(20),
               blurRadius: 12,
             ),
@@ -952,7 +956,7 @@ class _SpecialOfferCard extends StatelessWidget {
                 ],
               ),
               child: isPurchased
-                  ? const Icon(Icons.check, color: GameColors.neonGreen, size: 28)
+                  ? const Icon(Icons.check, color: GameColors.buttonGreen, size: 28)
                   : Icon(icon, color: Colors.white, size: 26),
             ),
             const SizedBox(width: 14),
@@ -967,7 +971,7 @@ class _SpecialOfferCard extends StatelessWidget {
                     style: TextStyle(
                       fontSize: 16,
                       fontWeight: FontWeight.w800,
-                      color: isPurchased ? GameColors.neonGreen : iconColor,
+                      color: isPurchased ? GameColors.buttonGreen : iconColor,
                     ),
                   ),
                   const SizedBox(height: 3),
@@ -976,7 +980,7 @@ class _SpecialOfferCard extends StatelessWidget {
                     style: TextStyle(
                       fontSize: 12,
                       color: isPurchased
-                          ? GameColors.neonGreen.withAlpha(160)
+                          ? GameColors.buttonGreen.withAlpha(160)
                           : Colors.white.withAlpha(140),
                     ),
                   ),
@@ -990,17 +994,17 @@ class _SpecialOfferCard extends StatelessWidget {
                 padding:
                     const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
                 decoration: BoxDecoration(
-                  color: GameColors.neonGreen.withAlpha(30),
+                  color: GameColors.buttonGreen.withAlpha(30),
                   borderRadius: BorderRadius.circular(14),
                   border: Border.all(
-                      color: GameColors.neonGreen.withAlpha(80)),
+                      color: GameColors.buttonGreen.withAlpha(80)),
                 ),
                 child: const Text(
-                  'Alindi',
+                  'Alındı',
                   style: TextStyle(
                     fontSize: 13,
                     fontWeight: FontWeight.w700,
-                    color: GameColors.neonGreen,
+                    color: GameColors.buttonGreen,
                   ),
                 ),
               )
@@ -1019,7 +1023,7 @@ class _SpecialOfferCard extends StatelessWidget {
                   borderRadius: BorderRadius.circular(14),
                   border: Border.all(
                     color: available
-                        ? GameColors.neonGreen.withAlpha(100)
+                        ? GameColors.buttonGreen.withAlpha(100)
                         : Colors.grey.withAlpha(30),
                   ),
                 ),
@@ -1060,7 +1064,7 @@ class _StoreUnavailableBanner extends StatelessWidget {
           const SizedBox(width: 10),
           Expanded(
             child: Text(
-              'Magaza yuklenemedi. Gercek alimlar cihazda denenir.',
+              'Mağaza yüklenemedi. Gerçek alımlar cihazda denenir.',
               style: TextStyle(
                 fontSize: 12,
                 color: GameColors.orange.withAlpha(200),
@@ -1105,8 +1109,8 @@ class _SparkleParticlePainter extends CustomPainter {
       final alpha = (0.15 + 0.2 * sin(t * 2 * pi)).clamp(0.0, 1.0);
 
       paint.color = Color.lerp(
-        GameColors.goldFrame,
-        GameColors.neonCyan,
+        GameColors.goldFrameBright,
+        GameColors.goldFrameMid,
         rng.nextDouble(),
       )!
           .withAlpha((alpha * 255).toInt());

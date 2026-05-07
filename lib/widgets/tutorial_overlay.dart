@@ -168,7 +168,7 @@ class _CutoutPainter extends CustomPainter {
     final borderPaint = Paint()
       ..style = PaintingStyle.stroke
       ..strokeWidth = 2.5 + pulseValue * 1.5
-      ..color = GameColors.goldFrame.withAlpha(160 + (95 * pulseValue).toInt());
+      ..color = GameColors.goldFrameMid.withAlpha(160 + (95 * pulseValue).toInt());
     canvas.drawRRect(
       RRect.fromRectAndRadius(cutout, const Radius.circular(12)),
       borderPaint,
@@ -207,12 +207,12 @@ class _MessageBox extends StatelessWidget {
         ),
         borderRadius: BorderRadius.circular(20),
         border: Border.all(
-          color: GameColors.goldFrame.withAlpha(120),
+          color: GameColors.goldFrameMid.withAlpha(120),
           width: 2,
         ),
         boxShadow: [
           BoxShadow(
-            color: GameColors.goldDark.withAlpha(60),
+            color: GameColors.goldFrameDeep.withAlpha(60),
             blurRadius: 20,
             spreadRadius: 2,
           ),
@@ -225,7 +225,7 @@ class _MessageBox extends StatelessWidget {
           Text(
             step.title,
             style: const TextStyle(
-              color: GameColors.goldLight,
+              color: GameColors.goldFrameBright,
               fontSize: 22,
               fontWeight: FontWeight.w900,
               letterSpacing: 1,

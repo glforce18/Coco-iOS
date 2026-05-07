@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 
 import 'package:patpat_game/theme/game_colors.dart';
+import 'package:patpat_game/widgets/shared/gold_button.dart';
+import 'package:patpat_game/widgets/shared/gold_panel.dart';
 
 /// Overlay shown when the player runs out of moves/time.
 class GameOverOverlay extends StatelessWidget {
@@ -31,155 +33,84 @@ class GameOverOverlay extends StatelessWidget {
           builder: (context, scale, child) {
             return Transform.scale(scale: scale, child: child);
           },
-          child: Container(
-            width: 300,
-            padding: const EdgeInsets.all(24),
-            decoration: BoxDecoration(
-              gradient: const LinearGradient(
-                colors: [Color(0xFF2D0B80), Color(0xFF1A0660)],
-                begin: Alignment.topLeft,
-                end: Alignment.bottomRight,
-              ),
-              borderRadius: BorderRadius.circular(24),
-              border: Border.all(color: GameColors.hotPink, width: 2),
-              boxShadow: [
-                BoxShadow(
-                  color: GameColors.hotPink.withAlpha(60),
-                  blurRadius: 24,
-                ),
-              ],
-            ),
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                // Title
-                const Text(
-                  'OYUN BITTI',
-                  style: TextStyle(
-                    color: GameColors.hotPink,
-                    fontSize: 28,
-                    fontWeight: FontWeight.w900,
-                    letterSpacing: 2,
-                    shadows: [
-                      Shadow(color: Color(0xFFC01050), blurRadius: 12),
-                    ],
-                  ),
-                ),
-                const SizedBox(height: 20),
-                // Score
-                Text(
-                  'Puan: $score',
-                  style: const TextStyle(
-                    color: Colors.white,
-                    fontSize: 20,
-                    fontWeight: FontWeight.bold,
-                  ),
-                ),
-                const SizedBox(height: 28),
-                // Retry button
-                GestureDetector(
-                  onTap: onRetry,
-                  child: Container(
-                    width: double.infinity,
-                    padding: const EdgeInsets.symmetric(vertical: 14),
-                    decoration: BoxDecoration(
-                      gradient: const LinearGradient(
-                        colors: [GameColors.neonGreen, Color(0xFF1A7030)],
-                      ),
-                      borderRadius: BorderRadius.circular(16),
-                      boxShadow: [
-                        BoxShadow(
-                          color: GameColors.neonGreen.withAlpha(80),
+          child: ConstrainedBox(
+            constraints: const BoxConstraints(maxWidth: 320),
+            child: GoldPanel(
+              padding: const EdgeInsets.fromLTRB(24, 26, 24, 24),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  // Title
+                  Text(
+                    'OYUN BİTTİ',
+                    style: TextStyle(
+                      color: GameColors.cherryRed,
+                      fontSize: 28,
+                      fontWeight: FontWeight.w900,
+                      letterSpacing: 2,
+                      shadows: [
+                        Shadow(
+                          color: Colors.black.withAlpha(220),
+                          blurRadius: 6,
+                          offset: const Offset(0, 2),
+                        ),
+                        const Shadow(
+                          color: GameColors.cherryRedDark,
                           blurRadius: 12,
                         ),
                       ],
                     ),
-                    child: const Text(
-                      'Tekrar Dene',
-                      textAlign: TextAlign.center,
-                      style: TextStyle(
-                        color: Colors.white,
-                        fontSize: 16,
-                        fontWeight: FontWeight.bold,
-                      ),
+                  ),
+                  const SizedBox(height: 20),
+                  // Score
+                  Text(
+                    'Puan: $score',
+                    style: TextStyle(
+                      color: Colors.white,
+                      fontSize: 20,
+                      fontWeight: FontWeight.w900,
+                      shadows: [
+                        Shadow(
+                          color: Colors.black.withAlpha(200),
+                          blurRadius: 4,
+                        ),
+                      ],
                     ),
                   ),
-                ),
-                // Watch ad for extra moves button
-                if (showAdButton) ...[
-                  const SizedBox(height: 12),
-                  GestureDetector(
-                    onTap: onWatchAd,
-                    child: Container(
+                  const SizedBox(height: 26),
+                  // Retry button
+                  GoldButton(
+                    text: 'Tekrar Dene',
+                    color: GoldButtonColor.green,
+                    size: GoldButtonSize.medium,
+                    width: double.infinity,
+                    icon: Icons.refresh_rounded,
+                    onPressed: onRetry,
+                  ),
+                  // Watch ad for extra moves button
+                  if (showAdButton) ...[
+                    const SizedBox(height: 12),
+                    GoldButton(
+                      text: 'Reklam İzle +3 Hamle',
+                      color: GoldButtonColor.blue,
+                      size: GoldButtonSize.medium,
                       width: double.infinity,
-                      padding: const EdgeInsets.symmetric(vertical: 14),
-                      decoration: BoxDecoration(
-                        gradient: const LinearGradient(
-                          colors: [Color(0xFF00C853), Color(0xFF009624)],
-                        ),
-                        borderRadius: BorderRadius.circular(16),
-                        boxShadow: [
-                          BoxShadow(
-                            color: const Color(0xFF00C853).withAlpha(80),
-                            blurRadius: 12,
-                          ),
-                        ],
-                      ),
-                      child: const Row(
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        children: [
-                          Text(
-                            '\uD83D\uDCFA',
-                            style: TextStyle(fontSize: 18),
-                          ),
-                          SizedBox(width: 8),
-                          Text(
-                            'Reklam Izle +3 Hamle',
-                            style: TextStyle(
-                              color: Colors.white,
-                              fontSize: 16,
-                              fontWeight: FontWeight.bold,
-                            ),
-                          ),
-                        ],
-                      ),
+                      icon: Icons.play_circle_filled_rounded,
+                      onPressed: onWatchAd,
                     ),
+                  ],
+                  const SizedBox(height: 12),
+                  // Quit button
+                  GoldButton(
+                    text: 'Çık',
+                    color: GoldButtonColor.red,
+                    size: GoldButtonSize.medium,
+                    width: double.infinity,
+                    icon: Icons.close_rounded,
+                    onPressed: onQuit,
                   ),
                 ],
-                const SizedBox(height: 12),
-                // Quit button
-                GestureDetector(
-                  onTap: onQuit,
-                  child: Container(
-                    width: double.infinity,
-                    padding: const EdgeInsets.symmetric(vertical: 14),
-                    decoration: BoxDecoration(
-                      gradient: LinearGradient(
-                        colors: [
-                          GameColors.hotPink,
-                          GameColors.hotPink.withAlpha(180),
-                        ],
-                      ),
-                      borderRadius: BorderRadius.circular(16),
-                      boxShadow: [
-                        BoxShadow(
-                          color: GameColors.hotPink.withAlpha(60),
-                          blurRadius: 12,
-                        ),
-                      ],
-                    ),
-                    child: const Text(
-                      'Cik',
-                      textAlign: TextAlign.center,
-                      style: TextStyle(
-                        color: Colors.white,
-                        fontSize: 16,
-                        fontWeight: FontWeight.bold,
-                      ),
-                    ),
-                  ),
-                ),
-              ],
+              ),
             ),
           ),
         ),

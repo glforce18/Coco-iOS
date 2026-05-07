@@ -37,4 +37,32 @@ class GameColors {
   static const neonCyan = Color(0xFF00E5FF);
   static const neonGreen = Color(0xFF00FF88);
   static const neonPurple = Color(0xFFB44DFF);
+
+  // ── Mockup palette (added 2026-04-10 for Royal Match-style polish) ──
+  // Panel gradient (top → bottom) for modals, popups, stat bars
+  static const panelPurpleLight = Color(0xFF6B2C9C);
+  static const panelPurple = Color(0xFF4A1A7E);
+  static const panelPurpleDark = Color(0xFF2D0B5C);
+
+  // Gold metallic frame (5-stop gradient: bright → mid → dark → mid → bright)
+  static const goldFrameBright = Color(0xFFFFE066);
+  static const goldFrameMid = Color(0xFFF0A030);
+  static const goldFrameDeep = Color(0xFFB86810);
+  static const goldHighlight = Color(0xFFFFF4A8);
+
+  // Star colors (filled vs empty)
+  static const starGoldFilled = Color(0xFFFFD24A);
+  static const starGoldEmpty = Color(0xFF3D1B5C);
+
+  // Accent: red ribbon for "Günlük" daily reward
+  static const cherryRed = Color(0xFFE63946);
+  static const cherryRedDark = Color(0xFF9D1F2B);
+
+  // Button accent variants (used by GoldButton)
+  static const buttonGreen = Color(0xFF4CAF50);
+  static const buttonGreenDark = Color(0xFF1F7A33);
+  static const buttonBlue = Color(0xFF3B82F6);
+  static const buttonBlueDark = Color(0xFF1E40AF);
+  static const buttonPurple = Color(0xFF8B5CF6);
+  static const buttonPurpleDark = Color(0xFF5B21B6);
 }

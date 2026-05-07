@@ -12,10 +12,10 @@ import 'package:patpat_game/theme/game_colors.dart';
 // ---------------------------------------------------------------------------
 
 enum DecorationCategory {
-  furniture('Mobilya', Icons.chair_rounded, GameColors.neonPurple),
-  wallpaper('Duvar Kagidi', Icons.wallpaper_rounded, GameColors.neonCyan),
-  accessory('Aksesuar', Icons.auto_awesome_rounded, GameColors.hotPink),
-  garden('Bahce', Icons.park_rounded, GameColors.neonGreen);
+  furniture('Mobilya', Icons.chair_rounded, GameColors.buttonPurple),
+  wallpaper('Duvar Kağıdı', Icons.wallpaper_rounded, GameColors.buttonBlue),
+  accessory('Aksesuar', Icons.auto_awesome_rounded, GameColors.cherryRed),
+  garden('Bahçe', Icons.park_rounded, GameColors.buttonGreen);
 
   final String label;
   final IconData icon;
@@ -24,9 +24,9 @@ enum DecorationCategory {
 }
 
 enum DecorationRarity {
-  common('Yaygin', GameColors.neonGreen),
-  rare('Nadir', GameColors.neonCyan),
-  epic('Epik', GameColors.neonPurple);
+  common('Yaygın', GameColors.buttonGreen),
+  rare('Nadir', GameColors.buttonBlue),
+  epic('Epik', GameColors.buttonPurple);
 
   final String label;
   final Color color;
@@ -60,18 +60,18 @@ const _allDecorations = <DecorationItem>[
   DecorationItem(id: 'lamp', name: 'Lamba', price: 80, category: DecorationCategory.furniture, rarity: DecorationRarity.common, icon: Icons.light_rounded),
   DecorationItem(id: 'piano', name: 'Piyano', price: 500, category: DecorationCategory.furniture, rarity: DecorationRarity.epic, icon: Icons.piano_rounded),
   // Wallpaper
-  DecorationItem(id: 'stars_wp', name: 'Yildizli', price: 100, category: DecorationCategory.wallpaper, rarity: DecorationRarity.common, icon: Icons.star_rounded),
+  DecorationItem(id: 'stars_wp', name: 'Yıldızlı', price: 100, category: DecorationCategory.wallpaper, rarity: DecorationRarity.common, icon: Icons.star_rounded),
   DecorationItem(id: 'forest_wp', name: 'Orman', price: 150, category: DecorationCategory.wallpaper, rarity: DecorationRarity.rare, icon: Icons.forest_rounded),
   DecorationItem(id: 'ocean_wp', name: 'Deniz', price: 200, category: DecorationCategory.wallpaper, rarity: DecorationRarity.rare, icon: Icons.water_rounded),
   // Accessory
-  DecorationItem(id: 'crown', name: 'Tac', price: 300, category: DecorationCategory.accessory, rarity: DecorationRarity.epic, icon: Icons.workspace_premium_rounded),
+  DecorationItem(id: 'crown', name: 'Taç', price: 300, category: DecorationCategory.accessory, rarity: DecorationRarity.epic, icon: Icons.workspace_premium_rounded),
   DecorationItem(id: 'bowtie', name: 'Papyon', price: 100, category: DecorationCategory.accessory, rarity: DecorationRarity.common, icon: Icons.checkroom_rounded),
-  DecorationItem(id: 'glasses', name: 'Gozluk', price: 150, category: DecorationCategory.accessory, rarity: DecorationRarity.rare, icon: Icons.visibility_rounded),
+  DecorationItem(id: 'glasses', name: 'Gözlük', price: 150, category: DecorationCategory.accessory, rarity: DecorationRarity.rare, icon: Icons.visibility_rounded),
   // Garden
-  DecorationItem(id: 'flower', name: 'Cicek', price: 80, category: DecorationCategory.garden, rarity: DecorationRarity.common, icon: Icons.local_florist_rounded),
-  DecorationItem(id: 'tree', name: 'Agac', price: 200, category: DecorationCategory.garden, rarity: DecorationRarity.rare, icon: Icons.nature_rounded),
+  DecorationItem(id: 'flower', name: 'Çiçek', price: 80, category: DecorationCategory.garden, rarity: DecorationRarity.common, icon: Icons.local_florist_rounded),
+  DecorationItem(id: 'tree', name: 'Ağaç', price: 200, category: DecorationCategory.garden, rarity: DecorationRarity.rare, icon: Icons.nature_rounded),
   DecorationItem(id: 'pool', name: 'Havuz', price: 400, category: DecorationCategory.garden, rarity: DecorationRarity.epic, icon: Icons.pool_rounded),
-  DecorationItem(id: 'swing', name: 'Salincak', price: 250, category: DecorationCategory.garden, rarity: DecorationRarity.rare, icon: Icons.toys_rounded),
+  DecorationItem(id: 'swing', name: 'Salıncak', price: 250, category: DecorationCategory.garden, rarity: DecorationRarity.rare, icon: Icons.toys_rounded),
 ];
 
 // ---------------------------------------------------------------------------
@@ -120,8 +120,8 @@ class _MascotHomeScreenState extends ConsumerState<MascotHomeScreen>
     if (progress.coins < item.price) {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text('Yetersiz altin! ${item.price} altin gerekli.'),
-          backgroundColor: GameColors.hotPink,
+          content: Text('Yetersiz altın! ${item.price} altın gerekli.'),
+          backgroundColor: GameColors.cherryRed,
         ),
       );
       return;
@@ -243,10 +243,10 @@ class _MascotHomeHeader extends StatelessWidget {
               style: TextStyle(
                 fontSize: 22,
                 fontWeight: FontWeight.w800,
-                color: GameColors.goldLight,
+                color: GameColors.goldFrameBright,
                 shadows: [
                   Shadow(
-                    color: GameColors.goldDark.withAlpha(160),
+                    color: GameColors.goldFrameDeep.withAlpha(160),
                     blurRadius: 8,
                   ),
                 ],
@@ -257,14 +257,14 @@ class _MascotHomeHeader extends StatelessWidget {
           Container(
             padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
             decoration: BoxDecoration(
-              color: GameColors.neonPurple.withAlpha(40),
+              color: GameColors.buttonPurple.withAlpha(40),
               borderRadius: BorderRadius.circular(12),
-              border: Border.all(color: GameColors.neonPurple.withAlpha(80)),
+              border: Border.all(color: GameColors.buttonPurple.withAlpha(80)),
             ),
             child: Text(
               '$ownedCount/$totalCount',
               style: const TextStyle(
-                color: GameColors.neonPurple,
+                color: GameColors.buttonPurple,
                 fontSize: 12,
                 fontWeight: FontWeight.w700,
               ),
@@ -275,9 +275,9 @@ class _MascotHomeHeader extends StatelessWidget {
           Container(
             padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
             decoration: BoxDecoration(
-              color: GameColors.goldDark.withAlpha(80),
+              color: GameColors.goldFrameDeep.withAlpha(80),
               borderRadius: BorderRadius.circular(12),
-              border: Border.all(color: GameColors.goldFrame.withAlpha(60)),
+              border: Border.all(color: GameColors.goldFrameMid.withAlpha(60)),
             ),
             child: Row(
               mainAxisSize: MainAxisSize.min,
@@ -287,7 +287,7 @@ class _MascotHomeHeader extends StatelessWidget {
                 Text(
                   '$coins',
                   style: const TextStyle(
-                    color: GameColors.goldLight,
+                    color: GameColors.goldFrameBright,
                     fontSize: 14,
                     fontWeight: FontWeight.w700,
                   ),
@@ -659,14 +659,14 @@ class _DecorationCard extends StatelessWidget {
               Container(
                 padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 3),
                 decoration: BoxDecoration(
-                  color: GameColors.neonGreen.withAlpha(30),
+                  color: GameColors.buttonGreen.withAlpha(30),
                   borderRadius: BorderRadius.circular(10),
-                  border: Border.all(color: GameColors.neonGreen.withAlpha(80)),
+                  border: Border.all(color: GameColors.buttonGreen.withAlpha(80)),
                 ),
                 child: const Text(
                   'Sahip',
                   style: TextStyle(
-                    color: GameColors.neonGreen,
+                    color: GameColors.buttonGreen,
                     fontSize: 11,
                     fontWeight: FontWeight.w700,
                   ),
@@ -681,7 +681,7 @@ class _DecorationCard extends StatelessWidget {
                   Text(
                     '${item.price}',
                     style: const TextStyle(
-                      color: GameColors.goldLight,
+                      color: GameColors.goldFrameBright,
                       fontSize: 13,
                       fontWeight: FontWeight.w700,
                     ),
@@ -722,12 +722,12 @@ class _BuyConfirmDialog extends StatelessWidget {
           ),
           borderRadius: BorderRadius.circular(24),
           border: Border.all(
-            color: GameColors.goldFrame.withAlpha(100),
+            color: GameColors.goldFrameMid.withAlpha(100),
             width: 2,
           ),
           boxShadow: [
             BoxShadow(
-              color: GameColors.neonPurple.withAlpha(40),
+              color: GameColors.buttonPurple.withAlpha(40),
               blurRadius: 24,
               spreadRadius: 2,
             ),
@@ -758,7 +758,7 @@ class _BuyConfirmDialog extends StatelessWidget {
             ),
             const SizedBox(height: 8),
             Text(
-              '${item.price} altina satin almak istiyor musun?',
+              '${item.price} altına satın almak istiyor musun?',
               textAlign: TextAlign.center,
               style: TextStyle(
                 color: Colors.white.withAlpha(180),
@@ -779,7 +779,7 @@ class _BuyConfirmDialog extends StatelessWidget {
                         border: Border.all(color: Colors.white.withAlpha(40)),
                       ),
                       child: const Text(
-                        'Vazgec',
+                        'Vazgeç',
                         textAlign: TextAlign.center,
                         style: TextStyle(
                           color: Colors.white60,
@@ -798,18 +798,18 @@ class _BuyConfirmDialog extends StatelessWidget {
                       padding: const EdgeInsets.symmetric(vertical: 12),
                       decoration: BoxDecoration(
                         gradient: const LinearGradient(
-                          colors: [GameColors.goldFrame, GameColors.goldDark],
+                          colors: [GameColors.goldFrameMid, GameColors.goldFrameDeep],
                         ),
                         borderRadius: BorderRadius.circular(14),
                         boxShadow: [
                           BoxShadow(
-                            color: GameColors.goldDark.withAlpha(80),
+                            color: GameColors.goldFrameDeep.withAlpha(80),
                             blurRadius: 8,
                           ),
                         ],
                       ),
                       child: const Text(
-                        'Satin Al',
+                        'Satın Al',
                         textAlign: TextAlign.center,
                         style: TextStyle(
                           color: Colors.white,

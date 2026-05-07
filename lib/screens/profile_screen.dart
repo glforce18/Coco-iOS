@@ -7,6 +7,8 @@ import 'package:go_router/go_router.dart';
 
 import 'package:patpat_game/providers/game_providers.dart';
 import 'package:patpat_game/theme/game_colors.dart';
+import 'package:patpat_game/widgets/shared/bottom_nav.dart';
+import 'package:patpat_game/widgets/shared/gold_button.dart';
 
 /// Profile screen showing mascot, player stats, boosters, and progress.
 class ProfileScreen extends ConsumerStatefulWidget {
@@ -58,6 +60,9 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen>
     final progress = ref.watch(playerProgressProvider);
 
     return Scaffold(
+      bottomNavigationBar: const PatPatBottomNav(
+        activeTab: BottomNavTab.profile,
+      ),
       body: Stack(
         fit: StackFit.expand,
         children: [
@@ -128,7 +133,7 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen>
                             letterSpacing: 1,
                             shadows: [
                               Shadow(
-                                color: GameColors.neonPurple,
+                                color: GameColors.buttonPurple,
                                 blurRadius: 12,
                               ),
                             ],
@@ -209,19 +214,19 @@ class _OrbPainter extends CustomPainter {
         Offset(size.width * 0.2,
             size.height * (0.15 + 0.05 * sin(t * 2 * pi))),
         50.0,
-        GameColors.neonPurple.withAlpha(30),
+        GameColors.buttonPurple.withAlpha(30),
       ),
       (
         Offset(size.width * 0.8,
             size.height * (0.3 + 0.04 * sin(t * 2 * pi + 1))),
         40.0,
-        GameColors.neonCyan.withAlpha(25),
+        GameColors.buttonBlue.withAlpha(25),
       ),
       (
         Offset(size.width * 0.5,
             size.height * (0.7 + 0.06 * sin(t * 2 * pi + 2))),
         60.0,
-        GameColors.hotPink.withAlpha(20),
+        GameColors.cherryRed.withAlpha(20),
       ),
     ];
 
@@ -269,10 +274,10 @@ class _ProfileHeader extends StatelessWidget {
           const SizedBox(width: 12),
           ShaderMask(
             shaderCallback: (rect) => const LinearGradient(
-              colors: [GameColors.goldLight, GameColors.goldFrame],
+              colors: [GameColors.goldFrameBright, GameColors.goldFrameMid],
             ).createShader(rect),
             child: const Text(
-              'PATPAT PROFIL',
+              'PATPAT PROFİL',
               style: TextStyle(
                 color: Colors.white,
                 fontSize: 26,
@@ -329,17 +334,17 @@ class _MascotDisplay extends StatelessWidget {
                   decoration: BoxDecoration(
                     shape: BoxShape.circle,
                     border: Border.all(
-                      color: GameColors.goldFrame,
+                      color: GameColors.goldFrameMid,
                       width: 3.5,
                     ),
                     boxShadow: [
                       BoxShadow(
-                        color: GameColors.goldFrame.withAlpha(60),
+                        color: GameColors.goldFrameMid.withAlpha(60),
                         blurRadius: 16,
                         spreadRadius: 3,
                       ),
                       BoxShadow(
-                        color: GameColors.neonPurple.withAlpha(40),
+                        color: GameColors.buttonPurple.withAlpha(40),
                         blurRadius: 24,
                       ),
                     ],
@@ -422,9 +427,9 @@ class _CrownPainter extends CustomPainter {
     final crownPaint = Paint()
       ..shader = LinearGradient(
         colors: const [
-          GameColors.goldLight,
-          GameColors.goldFrame,
-          GameColors.goldDark,
+          GameColors.goldFrameBright,
+          GameColors.goldFrameMid,
+          GameColors.goldFrameDeep,
         ],
         begin: Alignment.topCenter,
         end: Alignment.bottomCenter,
@@ -433,7 +438,7 @@ class _CrownPainter extends CustomPainter {
 
     // Gem on top
     final gemPaint = Paint()
-      ..color = GameColors.goldLight
+      ..color = GameColors.goldFrameBright
       ..maskFilter = const MaskFilter.blur(BlurStyle.normal, 2);
     canvas.drawCircle(Offset(cx, cy - 12), 3, gemPaint);
   }
@@ -524,13 +529,13 @@ class _StatsGrid extends StatelessWidget {
   Widget build(BuildContext context) {
     final stats = [
       _StatData(
-          Icons.trending_up_rounded, 'Seviye', '$level', GameColors.neonGreen),
+          Icons.trending_up_rounded, 'Seviye', '$level', GameColors.buttonGreen),
       _StatData(Icons.star_rounded, 'Toplam Y\u0131ld\u0131z', '$totalStars',
-          GameColors.goldFrame),
+          GameColors.goldFrameMid),
       _StatData(Icons.score_rounded, 'Toplam Skor',
-          _formatNumber(totalScore), GameColors.hotPink),
+          _formatNumber(totalScore), GameColors.cherryRed),
       _StatData(Icons.monetization_on_rounded, 'Toplam Coin', '$coins',
-          GameColors.goldLight),
+          GameColors.goldFrameBright),
       _StatData(Icons.emoji_events_rounded, 'Kazan\u0131lan Ba\u015far\u0131m',
           '$achievementCount', GameColors.orange),
       _StatData(Icons.local_fire_department_rounded, 'G\u00fcnl\u00fck Seri',
@@ -695,7 +700,7 @@ class _BoosterInventory extends StatelessWidget {
             icon: Icons.auto_awesome_rounded,
             name: 'Renk Patlat',
             count: colorBlast,
-            color: GameColors.neonPurple,
+            color: GameColors.buttonPurple,
           ),
         ),
         const SizedBox(width: 10),
@@ -760,11 +765,11 @@ class _BoosterCard extends StatelessWidget {
                       padding: const EdgeInsets.symmetric(
                           horizontal: 6, vertical: 2),
                       decoration: BoxDecoration(
-                        color: GameColors.goldDark,
+                        color: GameColors.goldFrameDeep,
                         borderRadius: BorderRadius.circular(10),
                         boxShadow: [
                           BoxShadow(
-                            color: GameColors.goldDark.withAlpha(120),
+                            color: GameColors.goldFrameDeep.withAlpha(120),
                             blurRadius: 4,
                           ),
                         ],
@@ -840,7 +845,7 @@ class _LevelProgressBar extends StatelessWidget {
                   Text(
                     '${(pct * 100).toStringAsFixed(1)}%',
                     style: const TextStyle(
-                      color: GameColors.goldLight,
+                      color: GameColors.goldFrameBright,
                       fontSize: 13,
                       fontWeight: FontWeight.w800,
                     ),
@@ -862,9 +867,9 @@ class _LevelProgressBar extends StatelessWidget {
                           decoration: const BoxDecoration(
                             gradient: LinearGradient(
                               colors: [
-                                GameColors.neonPurple,
-                                GameColors.hotPink,
-                                GameColors.goldFrame,
+                                GameColors.buttonPurple,
+                                GameColors.cherryRed,
+                                GameColors.goldFrameMid,
                               ],
                             ),
                           ),
@@ -888,18 +893,18 @@ class _LevelProgressBar extends StatelessWidget {
                         decoration: BoxDecoration(
                           shape: BoxShape.circle,
                           color: reached
-                              ? GameColors.goldFrame
+                              ? GameColors.goldFrameMid
                               : Colors.white.withAlpha(30),
                           border: Border.all(
                             color: reached
-                                ? GameColors.goldLight
+                                ? GameColors.goldFrameBright
                                 : Colors.white.withAlpha(50),
                             width: 1.5,
                           ),
                           boxShadow: reached
                               ? [
                                   BoxShadow(
-                                    color: GameColors.goldDark.withAlpha(80),
+                                    color: GameColors.goldFrameDeep.withAlpha(80),
                                     blurRadius: 4,
                                   ),
                                 ]
@@ -911,7 +916,7 @@ class _LevelProgressBar extends StatelessWidget {
                         '$m',
                         style: TextStyle(
                           color: reached
-                              ? GameColors.goldLight
+                              ? GameColors.goldFrameBright
                               : Colors.white.withAlpha(60),
                           fontSize: 9,
                           fontWeight: FontWeight.w600,
@@ -939,39 +944,13 @@ class _MascotHomeButton extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return GestureDetector(
-      onTap: onTap,
-      child: Container(
-        width: double.infinity,
-        padding: const EdgeInsets.symmetric(vertical: 14),
-        decoration: BoxDecoration(
-          gradient: const LinearGradient(
-            colors: [GameColors.neonPurple, GameColors.purple],
-          ),
-          borderRadius: BorderRadius.circular(16),
-          boxShadow: [
-            BoxShadow(
-              color: GameColors.neonPurple.withAlpha(60),
-              blurRadius: 12,
-            ),
-          ],
-        ),
-        child: const Row(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Icon(Icons.home_rounded, color: Colors.white, size: 22),
-            SizedBox(width: 8),
-            Text(
-              'Maskot Evine Git',
-              style: TextStyle(
-                color: Colors.white,
-                fontSize: 16,
-                fontWeight: FontWeight.w700,
-              ),
-            ),
-          ],
-        ),
-      ),
+    return GoldButton(
+      text: 'Maskot Evine Git',
+      color: GoldButtonColor.purple,
+      size: GoldButtonSize.medium,
+      width: double.infinity,
+      icon: Icons.home_rounded,
+      onPressed: onTap,
     );
   }
 }

@@ -25,18 +25,18 @@ class LevelGoal {
 }
 
 enum GameRegion {
-  candyGarden('Seker Bahcesi', 1, 20, 0),
+  candyGarden('Şeker Bahçesi', 1, 20, 0),
   colorHill('Renk Tepesi', 21, 40, 15),
   balloonValley('Balon Vadisi', 41, 60, 40),
-  sparkleForest('Isiltili Orman', 61, 80, 75),
-  funLand('Eglence Ulkesi', 81, 100, 120),
-  dreamWorld('Ruya Dunyasi', 101, 120, 180),
-  crystalCave('Kristal Magara', 121, 140, 250),
-  stormPeak('Firtina Zirvesi', 141, 160, 320),
-  lavaIsland('Lav Adasi', 161, 180, 400),
-  frozenKingdom('Buz Kralligi', 181, 200, 480),
-  shadowRealm('Golge Diyari', 201, 220, 560),
-  celestialTower('Goksel Kule', 221, 240, 650);
+  sparkleForest('Işıltılı Orman', 61, 80, 75),
+  funLand('Eğlence Ülkesi', 81, 100, 120),
+  dreamWorld('Rüya Dünyası', 101, 120, 180),
+  crystalCave('Kristal Mağara', 121, 140, 250),
+  stormPeak('Fırtına Zirvesi', 141, 160, 320),
+  lavaIsland('Lav Adası', 161, 180, 400),
+  frozenKingdom('Buz Krallığı', 181, 200, 480),
+  shadowRealm('Gölge Diyarı', 201, 220, 560),
+  celestialTower('Göksel Kule', 221, 240, 650);
 
   final String displayName;
   final int startLevel;

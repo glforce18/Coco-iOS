@@ -4,6 +4,7 @@ import 'package:go_router/go_router.dart';
 import 'package:patpat_game/models/achievement.dart';
 import 'package:patpat_game/providers/game_providers.dart';
 import 'package:patpat_game/theme/game_colors.dart';
+import 'package:patpat_game/widgets/shared/bottom_nav.dart';
 
 class AchievementScreen extends ConsumerWidget {
   const AchievementScreen({super.key});
@@ -20,6 +21,9 @@ class AchievementScreen extends ConsumerWidget {
         earned.fold<int>(0, (sum, a) => sum + a.coinReward);
 
     return Scaffold(
+      bottomNavigationBar: const PatPatBottomNav(
+        activeTab: BottomNavTab.achievements,
+      ),
       body: Container(
         width: double.infinity,
         height: double.infinity,
@@ -70,7 +74,7 @@ class AchievementScreen extends ConsumerWidget {
                     if (earned.isNotEmpty) ...[
                       _SectionHeader(
                         label: 'KAZANILAN',
-                        color: GameColors.neonGreen,
+                        color: GameColors.buttonGreen,
                         count: earned.length,
                       ),
                       const SizedBox(height: 8),
@@ -84,7 +88,7 @@ class AchievementScreen extends ConsumerWidget {
                     // Locked section
                     if (locked.isNotEmpty) ...[
                       _SectionHeader(
-                        label: 'KILITLI',
+                        label: 'KİLİTLİ',
                         color: Colors.white38,
                         count: locked.length,
                       ),
@@ -130,12 +134,12 @@ class _AchievementHeader extends StatelessWidget {
       child: Container(
         padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 10),
         decoration: BoxDecoration(
-          color: GameColors.bgDeep.withAlpha(200),
+          color: GameColors.panelPurpleDark.withAlpha(200),
           borderRadius: BorderRadius.circular(20),
           border: Border.all(color: GameColors.purpleLight.withAlpha(50)),
           boxShadow: [
             BoxShadow(
-              color: GameColors.bgDeep.withAlpha(140),
+              color: GameColors.panelPurpleDark.withAlpha(140),
               blurRadius: 12,
             ),
           ],
@@ -159,14 +163,14 @@ class _AchievementHeader extends StatelessWidget {
             const SizedBox(width: 12),
             const Expanded(
               child: Text(
-                'BASARIMLAR',
+                'BAŞARIMLAR',
                 style: TextStyle(
                   fontSize: 20,
                   fontWeight: FontWeight.w900,
-                  color: GameColors.goldLight,
+                  color: GameColors.goldFrameBright,
                   letterSpacing: 2,
                   shadows: [
-                    Shadow(color: GameColors.goldDark, blurRadius: 8),
+                    Shadow(color: GameColors.goldFrameDeep, blurRadius: 8),
                   ],
                 ),
               ),
@@ -175,10 +179,10 @@ class _AchievementHeader extends StatelessWidget {
               padding:
                   const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
               decoration: BoxDecoration(
-                color: GameColors.goldDark.withAlpha(80),
+                color: GameColors.goldFrameDeep.withAlpha(80),
                 borderRadius: BorderRadius.circular(12),
                 border:
-                    Border.all(color: GameColors.goldFrame.withAlpha(60)),
+                    Border.all(color: GameColors.goldFrameMid.withAlpha(60)),
               ),
               child: Row(
                 mainAxisSize: MainAxisSize.min,
@@ -191,7 +195,7 @@ class _AchievementHeader extends StatelessWidget {
                     style: const TextStyle(
                       fontSize: 14,
                       fontWeight: FontWeight.w700,
-                      color: GameColors.goldLight,
+                      color: GameColors.goldFrameBright,
                     ),
                   ),
                 ],
@@ -238,14 +242,14 @@ class _ProgressBar extends StatelessWidget {
                       borderRadius: BorderRadius.circular(8),
                       gradient: const LinearGradient(
                         colors: [
-                          GameColors.goldDark,
-                          GameColors.goldFrame,
-                          GameColors.goldLight,
+                          GameColors.goldFrameDeep,
+                          GameColors.goldFrameMid,
+                          GameColors.goldFrameBright,
                         ],
                       ),
                       boxShadow: [
                         BoxShadow(
-                          color: GameColors.goldFrame.withAlpha(80),
+                          color: GameColors.goldFrameMid.withAlpha(80),
                           blurRadius: 6,
                         ),
                       ],
@@ -335,22 +339,22 @@ class _AchievementCard extends StatelessWidget {
             colors: isEarned
                 ? [
                     GameColors.greenDark.withAlpha(60),
-                    GameColors.bgMid.withAlpha(120),
+                    GameColors.panelPurple.withAlpha(120),
                   ]
                 : [
                     Colors.grey.shade900.withAlpha(80),
-                    GameColors.bgDeep.withAlpha(120),
+                    GameColors.panelPurpleDark.withAlpha(120),
                   ],
           ),
           border: Border.all(
             color: isEarned
-                ? GameColors.neonGreen.withAlpha(80)
+                ? GameColors.buttonGreen.withAlpha(80)
                 : Colors.white.withAlpha(20),
           ),
           boxShadow: isEarned
               ? [
                   BoxShadow(
-                    color: GameColors.neonGreen.withAlpha(20),
+                    color: GameColors.buttonGreen.withAlpha(20),
                     blurRadius: 8,
                   ),
                 ]
@@ -369,13 +373,13 @@ class _AchievementCard extends StatelessWidget {
                     : Colors.grey.shade800.withAlpha(120),
                 border: Border.all(
                   color: isEarned
-                      ? GameColors.neonGreen.withAlpha(100)
+                      ? GameColors.buttonGreen.withAlpha(100)
                       : Colors.white.withAlpha(30),
                 ),
                 boxShadow: isEarned
                     ? [
                         BoxShadow(
-                          color: GameColors.neonGreen.withAlpha(40),
+                          color: GameColors.buttonGreen.withAlpha(40),
                           blurRadius: 8,
                         ),
                       ]
@@ -426,12 +430,12 @@ class _AchievementCard extends StatelessWidget {
                 padding:
                     const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
                 decoration: BoxDecoration(
-                  color: GameColors.neonGreen.withAlpha(40),
+                  color: GameColors.buttonGreen.withAlpha(40),
                   borderRadius: BorderRadius.circular(10),
                 ),
                 child: const Icon(
                   Icons.check_circle,
-                  color: GameColors.neonGreen,
+                  color: GameColors.buttonGreen,
                   size: 22,
                 ),
               )
@@ -440,10 +444,10 @@ class _AchievementCard extends StatelessWidget {
                 padding:
                     const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
                 decoration: BoxDecoration(
-                  color: GameColors.goldDark.withAlpha(60),
+                  color: GameColors.goldFrameDeep.withAlpha(60),
                   borderRadius: BorderRadius.circular(10),
                   border: Border.all(
-                      color: GameColors.goldFrame.withAlpha(40)),
+                      color: GameColors.goldFrameMid.withAlpha(40)),
                 ),
                 child: Row(
                   mainAxisSize: MainAxisSize.min,
@@ -456,7 +460,7 @@ class _AchievementCard extends StatelessWidget {
                       style: const TextStyle(
                         fontSize: 13,
                         fontWeight: FontWeight.w700,
-                        color: GameColors.goldLight,
+                        color: GameColors.goldFrameBright,
                       ),
                     ),
                   ],

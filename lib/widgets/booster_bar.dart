@@ -22,31 +22,50 @@ class BoosterBar extends StatelessWidget {
 
     return Container(
       margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
-      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
       decoration: BoxDecoration(
-        gradient: LinearGradient(
+        borderRadius: BorderRadius.circular(26),
+        gradient: const LinearGradient(
           colors: [
-            const Color(0xDD1A0660),
-            const Color(0xDD2D0B80),
+            GameColors.goldFrameBright,
+            GameColors.goldFrameMid,
+            GameColors.goldFrameDeep,
+            GameColors.goldFrameMid,
+            GameColors.goldFrameBright,
           ],
-        ),
-        borderRadius: BorderRadius.circular(24),
-        border: Border.all(
-          color: isActive
-              ? GameColors.hotPink.withAlpha(160)
-              : GameColors.goldFrame.withAlpha(80),
-          width: 1.5,
+          stops: [0.0, 0.25, 0.5, 0.75, 1.0],
         ),
         boxShadow: [
           BoxShadow(
-            color: (isActive ? GameColors.hotPink : GameColors.goldDark)
-                .withAlpha(30),
+            color: Colors.black.withAlpha(140),
             blurRadius: 12,
             offset: const Offset(0, 4),
           ),
+          BoxShadow(
+            color: (isActive
+                    ? GameColors.cherryRed
+                    : GameColors.goldFrameMid)
+                .withAlpha(100),
+            blurRadius: 14,
+            spreadRadius: 1,
+          ),
         ],
       ),
-      child: isActive ? _buildCancelRow() : _buildBoosterRow(),
+      padding: const EdgeInsets.all(2.5),
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+        decoration: BoxDecoration(
+          borderRadius: BorderRadius.circular(24),
+          gradient: const LinearGradient(
+            begin: Alignment.topCenter,
+            end: Alignment.bottomCenter,
+            colors: [
+              GameColors.panelPurple,
+              GameColors.panelPurpleDark,
+            ],
+          ),
+        ),
+        child: isActive ? _buildCancelRow() : _buildBoosterRow(),
+      ),
     );
   }
 
@@ -56,20 +75,20 @@ class BoosterBar extends StatelessWidget {
       children: [
         _BoosterButton(
           icon: Icons.gavel_rounded,
-          label: 'Cekic',
-          color: GameColors.orange,
+          label: 'Çekiç',
+          color: GameColors.cherryRed,
           onTap: () => onActivate(BoosterType.hammer),
         ),
         _BoosterButton(
           icon: Icons.auto_awesome,
           label: 'Renk',
-          color: GameColors.neonPurple,
+          color: GameColors.buttonPurple,
           onTap: () => onActivate(BoosterType.colorBlast),
         ),
         _BoosterButton(
           icon: Icons.add_circle_outline_rounded,
           label: '+3',
-          color: GameColors.neonCyan,
+          color: GameColors.buttonBlue,
           onTap: () => onActivate(BoosterType.extraMoves),
         ),
       ],
@@ -86,26 +105,29 @@ class BoosterBar extends StatelessWidget {
           height: 28,
           decoration: BoxDecoration(
             shape: BoxShape.circle,
-            color: GameColors.hotPink.withAlpha(40),
-            border: Border.all(color: GameColors.hotPink.withAlpha(120)),
+            color: GameColors.cherryRed.withAlpha(60),
+            border: Border.all(color: GameColors.cherryRed.withAlpha(160)),
           ),
           child: Icon(
             boosterMode == ActiveBoosterMode.hammerSelect
                 ? Icons.gavel_rounded
                 : Icons.auto_awesome,
-            color: GameColors.hotPink,
+            color: Colors.white,
             size: 16,
           ),
         ),
         const SizedBox(width: 10),
         Text(
           boosterMode == ActiveBoosterMode.hammerSelect
-              ? 'Hedef sec'
-              : 'Renk sec',
-          style: const TextStyle(
-            color: Colors.white70,
+              ? 'Hedef seç'
+              : 'Renk seç',
+          style: TextStyle(
+            color: Colors.white.withAlpha(220),
             fontSize: 14,
-            fontWeight: FontWeight.w600,
+            fontWeight: FontWeight.w700,
+            shadows: [
+              Shadow(color: Colors.black.withAlpha(180), blurRadius: 3),
+            ],
           ),
         ),
         const SizedBox(width: 16),
@@ -114,30 +136,35 @@ class BoosterBar extends StatelessWidget {
           child: Container(
             padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 8),
             decoration: BoxDecoration(
-              gradient: LinearGradient(
+              gradient: const LinearGradient(
+                begin: Alignment.topCenter,
+                end: Alignment.bottomCenter,
                 colors: [
-                  GameColors.hotPink.withAlpha(200),
-                  GameColors.hotPink.withAlpha(140),
+                  GameColors.cherryRed,
+                  GameColors.cherryRedDark,
                 ],
               ),
               borderRadius: BorderRadius.circular(16),
               border: Border.all(
-                color: GameColors.hotPink.withAlpha(200),
-                width: 1,
+                color: GameColors.goldFrameBright,
+                width: 1.5,
               ),
               boxShadow: [
                 BoxShadow(
-                  color: GameColors.hotPink.withAlpha(50),
-                  blurRadius: 8,
+                  color: GameColors.cherryRed.withAlpha(120),
+                  blurRadius: 10,
                 ),
               ],
             ),
             child: const Text(
-              'Iptal',
+              'İptal',
               style: TextStyle(
                 color: Colors.white,
-                fontWeight: FontWeight.bold,
+                fontWeight: FontWeight.w900,
                 fontSize: 14,
+                shadows: [
+                  Shadow(color: Colors.black54, blurRadius: 3),
+                ],
               ),
             ),
           ),
@@ -173,48 +200,69 @@ class _BoosterButton extends StatelessWidget {
         children: [
           // Gold-framed icon circle
           Container(
-            width: 50,
-            height: 50,
-            decoration: BoxDecoration(
+            width: 52,
+            height: 52,
+            decoration: const BoxDecoration(
               shape: BoxShape.circle,
-              gradient: RadialGradient(
-                center: const Alignment(-0.2, -0.3),
-                radius: 0.9,
+              gradient: LinearGradient(
                 colors: [
-                  color.withAlpha(220),
-                  color.withAlpha(140),
-                  color.withAlpha(80),
+                  GameColors.goldFrameBright,
+                  GameColors.goldFrameMid,
+                  GameColors.goldFrameDeep,
+                  GameColors.goldFrameMid,
+                  GameColors.goldFrameBright,
                 ],
-              ),
-              border: Border.all(
-                color: GameColors.goldFrame.withAlpha(200),
-                width: 2.5,
+                stops: [0.0, 0.25, 0.5, 0.75, 1.0],
               ),
               boxShadow: [
                 BoxShadow(
-                  color: color.withAlpha(60),
-                  blurRadius: 10,
-                  spreadRadius: 1,
-                ),
-                BoxShadow(
-                  color: GameColors.goldDark.withAlpha(30),
-                  blurRadius: 6,
+                  color: Colors.black54,
+                  blurRadius: 8,
+                  offset: Offset(0, 3),
                 ),
               ],
             ),
-            child: Icon(icon, color: Colors.white, size: 24),
+            padding: const EdgeInsets.all(2.5),
+            child: Container(
+              decoration: BoxDecoration(
+                shape: BoxShape.circle,
+                gradient: RadialGradient(
+                  center: const Alignment(-0.2, -0.3),
+                  radius: 0.9,
+                  colors: [
+                    color,
+                    Color.lerp(color, Colors.black, 0.5) ?? color,
+                  ],
+                ),
+                boxShadow: [
+                  BoxShadow(
+                    color: color.withAlpha(120),
+                    blurRadius: 10,
+                  ),
+                ],
+              ),
+              alignment: Alignment.center,
+              child: Icon(
+                icon,
+                color: Colors.white,
+                size: 24,
+                shadows: [
+                  Shadow(color: Colors.black.withAlpha(180), blurRadius: 3),
+                ],
+              ),
+            ),
           ),
           const SizedBox(height: 4),
           Text(
             label,
             style: TextStyle(
-              color: GameColors.goldLight.withAlpha(200),
+              color: Colors.white.withAlpha(230),
               fontSize: 11,
-              fontWeight: FontWeight.w700,
+              fontWeight: FontWeight.w800,
               shadows: [
                 Shadow(
-                  color: GameColors.goldDark.withAlpha(100),
-                  blurRadius: 4,
+                  color: Colors.black.withAlpha(180),
+                  blurRadius: 3,
                 ),
               ],
             ),

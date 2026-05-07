@@ -30,114 +30,132 @@ class GameHud extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
-      margin: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
+      margin: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
       decoration: BoxDecoration(
+        borderRadius: BorderRadius.circular(24),
         gradient: const LinearGradient(
-          colors: [Color(0xDD1A0660), Color(0xDD2D0B80)],
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-        ),
-        borderRadius: BorderRadius.circular(20),
-        border: Border.all(
-          color: GameColors.goldFrame.withAlpha(100),
-          width: 1.5,
+          begin: Alignment.topCenter,
+          end: Alignment.bottomCenter,
+          colors: [
+            GameColors.goldHighlight,
+            GameColors.goldFrameBright,
+            GameColors.goldFrameMid,
+            GameColors.goldFrameDeep,
+            GameColors.goldFrameMid,
+            GameColors.goldFrameBright,
+            GameColors.goldHighlight,
+          ],
+          stops: [0.0, 0.15, 0.35, 0.5, 0.65, 0.85, 1.0],
         ),
         boxShadow: [
           BoxShadow(
-            color: GameColors.goldDark.withAlpha(30),
-            blurRadius: 12,
-            offset: const Offset(0, 4),
+            color: Colors.black.withAlpha(180),
+            blurRadius: 16,
+            offset: const Offset(0, 6),
           ),
           BoxShadow(
-            color: GameColors.neonPurple.withAlpha(20),
-            blurRadius: 20,
+            color: GameColors.goldFrameMid.withAlpha(120),
+            blurRadius: 22,
+            spreadRadius: 1,
           ),
         ],
       ),
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          // Top row: Back + Goals | Level | Timer + Moves + Pause
-          Row(
-            children: [
-              // Back button
-              _GoldCircleButton(
-                icon: Icons.arrow_back_rounded,
-                onTap: onBack,
-                size: 30,
-              ),
-              const SizedBox(width: 6),
-
-              // Hedef (goals) section
-              Expanded(
-                flex: 3,
-                child: _GoalsPanel(goals: goals),
-              ),
-
-              const SizedBox(width: 6),
-
-              // Level badge — center
-              _LevelBadge(level: level),
-
-              const SizedBox(width: 6),
-
-              // Right side: timer + moves
-              Expanded(
-                flex: 2,
-                child: Row(
-                  mainAxisAlignment: MainAxisAlignment.end,
-                  children: [
-                    // Timer (if > 0)
-                    if (timeLeft > 0) ...[
-                      _TimerChip(timeLeft: timeLeft),
-                      const SizedBox(width: 6),
+      padding: const EdgeInsets.all(3.5),
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 8),
+        decoration: BoxDecoration(
+          borderRadius: BorderRadius.circular(20),
+          gradient: const LinearGradient(
+            begin: Alignment.topCenter,
+            end: Alignment.bottomCenter,
+            colors: [
+              GameColors.panelPurpleLight,
+              GameColors.panelPurple,
+              GameColors.panelPurpleDark,
+            ],
+          ),
+        ),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            // Top row: Back + Goals | Level | Timer + Moves + Pause
+            Row(
+              children: [
+                _GoldCircleButton(
+                  icon: Icons.arrow_back_rounded,
+                  onTap: onBack,
+                  size: 32,
+                ),
+                const SizedBox(width: 6),
+                Expanded(
+                  flex: 3,
+                  child: _GoalsPanel(goals: goals),
+                ),
+                const SizedBox(width: 6),
+                _LevelBadge(level: level),
+                const SizedBox(width: 6),
+                Expanded(
+                  flex: 2,
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.end,
+                    children: [
+                      if (timeLeft > 0) ...[
+                        _TimerChip(timeLeft: timeLeft),
+                        const SizedBox(width: 6),
+                      ],
+                      _MovesCounter(movesLeft: movesLeft),
                     ],
-                    // Moves counter
-                    _MovesCounter(movesLeft: movesLeft),
+                  ),
+                ),
+                const SizedBox(width: 6),
+                _GoldCircleButton(
+                  icon: Icons.pause_rounded,
+                  onTap: onPause,
+                  size: 32,
+                ),
+              ],
+            ),
+
+            const SizedBox(height: 6),
+
+            // Score display
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 3),
+              decoration: BoxDecoration(
+                borderRadius: BorderRadius.circular(14),
+                gradient: const LinearGradient(
+                  colors: [
+                    GameColors.goldFrameBright,
+                    GameColors.goldFrameMid,
+                    GameColors.goldFrameBright,
+                  ],
+                ),
+                boxShadow: [
+                  BoxShadow(
+                    color: GameColors.goldFrameMid.withAlpha(120),
+                    blurRadius: 10,
+                  ),
+                ],
+              ),
+              child: Text(
+                '$score',
+                style: TextStyle(
+                  color: GameColors.panelPurpleDark,
+                  fontSize: 18,
+                  fontWeight: FontWeight.w900,
+                  letterSpacing: 1,
+                  shadows: [
+                    Shadow(
+                      color: Colors.white.withAlpha(120),
+                      blurRadius: 2,
+                      offset: const Offset(0, 1),
+                    ),
                   ],
                 ),
               ),
-
-              const SizedBox(width: 6),
-
-              // Pause button
-              _GoldCircleButton(
-                icon: Icons.pause_rounded,
-                onTap: onPause,
-                size: 30,
-              ),
-            ],
-          ),
-          const SizedBox(height: 4),
-
-          // Score display
-          Container(
-            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 2),
-            decoration: BoxDecoration(
-              gradient: LinearGradient(
-                colors: [
-                  GameColors.goldDark.withAlpha(40),
-                  GameColors.goldFrame.withAlpha(20),
-                  GameColors.goldDark.withAlpha(40),
-                ],
-              ),
-              borderRadius: BorderRadius.circular(12),
             ),
-            child: Text(
-              '$score',
-              style: const TextStyle(
-                color: GameColors.goldLight,
-                fontSize: 18,
-                fontWeight: FontWeight.w900,
-                letterSpacing: 1,
-                shadows: [
-                  Shadow(color: GameColors.goldDark, blurRadius: 8),
-                ],
-              ),
-            ),
-          ),
-        ],
+          ],
+        ),
       ),
     );
   }
@@ -154,59 +172,69 @@ class _LevelBadge extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
-      width: 48,
-      height: 48,
       decoration: BoxDecoration(
         shape: BoxShape.circle,
         gradient: const LinearGradient(
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
           colors: [
-            Color(0xFF3D1A70),
-            Color(0xFF1A0A40),
+            GameColors.goldFrameBright,
+            GameColors.goldFrameMid,
+            GameColors.goldFrameDeep,
+            GameColors.goldFrameMid,
+            GameColors.goldFrameBright,
           ],
-        ),
-        border: Border.all(
-          color: GameColors.goldFrame,
-          width: 2.5,
+          stops: [0.0, 0.25, 0.5, 0.75, 1.0],
         ),
         boxShadow: [
           BoxShadow(
-            color: GameColors.goldFrame.withAlpha(60),
-            blurRadius: 10,
+            color: GameColors.goldFrameMid.withAlpha(120),
+            blurRadius: 12,
             spreadRadius: 1,
-          ),
-          BoxShadow(
-            color: GameColors.neonPurple.withAlpha(40),
-            blurRadius: 16,
           ),
         ],
       ),
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          Text(
-            'Lv',
-            style: TextStyle(
-              color: GameColors.goldLight.withAlpha(200),
-              fontSize: 9,
-              fontWeight: FontWeight.w600,
-              height: 1,
-            ),
+      padding: const EdgeInsets.all(2.5),
+      child: Container(
+        width: 46,
+        height: 46,
+        decoration: const BoxDecoration(
+          shape: BoxShape.circle,
+          gradient: LinearGradient(
+            begin: Alignment.topCenter,
+            end: Alignment.bottomCenter,
+            colors: [
+              GameColors.panelPurple,
+              GameColors.panelPurpleDark,
+            ],
           ),
-          Text(
-            '$level',
-            style: const TextStyle(
-              color: GameColors.goldLight,
-              fontSize: 16,
-              fontWeight: FontWeight.w900,
-              height: 1.1,
-              shadows: [
-                Shadow(color: GameColors.goldDark, blurRadius: 6),
-              ],
+        ),
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Text(
+              'Lv',
+              style: TextStyle(
+                color: Colors.white.withAlpha(200),
+                fontSize: 9,
+                fontWeight: FontWeight.w800,
+                height: 1,
+                letterSpacing: 0.5,
+              ),
             ),
-          ),
-        ],
+            const SizedBox(height: 1),
+            Text(
+              '$level',
+              style: const TextStyle(
+                color: GameColors.goldFrameBright,
+                fontSize: 17,
+                fontWeight: FontWeight.w900,
+                height: 1,
+                shadows: [
+                  Shadow(color: Colors.black54, blurRadius: 4),
+                ],
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }
@@ -222,34 +250,10 @@ class _GoalsPanel extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 4),
-      decoration: BoxDecoration(
-        color: Colors.white.withAlpha(10),
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: Colors.white.withAlpha(20)),
-      ),
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text(
-            'Hedef',
-            style: TextStyle(
-              color: GameColors.goldLight.withAlpha(180),
-              fontSize: 9,
-              fontWeight: FontWeight.w700,
-              letterSpacing: 1,
-            ),
-          ),
-          const SizedBox(height: 2),
-          Wrap(
-            spacing: 4,
-            runSpacing: 2,
-            children: goals.map((g) => _GoalChip(goal: g)).toList(),
-          ),
-        ],
-      ),
+    return Wrap(
+      spacing: 4,
+      runSpacing: 4,
+      children: goals.map((g) => _GoalChip(goal: g)).toList(),
     );
   }
 }
@@ -262,50 +266,85 @@ class _GoalChip extends StatelessWidget {
   Widget build(BuildContext context) {
     final complete = goal.isComplete;
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
       decoration: BoxDecoration(
-        color: complete
-            ? GameColors.neonGreen.withAlpha(30)
-            : Colors.white.withAlpha(10),
-        borderRadius: BorderRadius.circular(8),
-        border: Border.all(
-          color: complete
-              ? GameColors.neonGreen.withAlpha(120)
-              : Colors.white.withAlpha(30),
-        ),
-      ),
-      child: Row(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          // Jelly color dot
-          Container(
-            width: 10,
-            height: 10,
-            decoration: BoxDecoration(
-              shape: BoxShape.circle,
-              color: goal.jellyType.color,
-              boxShadow: [
-                BoxShadow(
-                  color: goal.jellyType.color.withAlpha(100),
-                  blurRadius: 3,
-                ),
-              ],
-            ),
-          ),
-          const SizedBox(width: 4),
-          Text(
-            '${goal.collected}/${goal.count}',
-            style: TextStyle(
-              color: complete ? GameColors.neonGreen : Colors.white,
-              fontSize: 11,
-              fontWeight: FontWeight.bold,
-            ),
-          ),
-          if (complete) ...[
-            const SizedBox(width: 2),
-            const Icon(Icons.check_circle, color: GameColors.neonGreen, size: 11),
+        borderRadius: BorderRadius.circular(14),
+        gradient: const LinearGradient(
+          colors: [
+            GameColors.goldFrameBright,
+            GameColors.goldFrameMid,
+            GameColors.goldFrameDeep,
+            GameColors.goldFrameMid,
+            GameColors.goldFrameBright,
           ],
+          stops: [0.0, 0.25, 0.5, 0.75, 1.0],
+        ),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withAlpha(120),
+            blurRadius: 6,
+            offset: const Offset(0, 2),
+          ),
         ],
+      ),
+      padding: const EdgeInsets.all(2),
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+        decoration: BoxDecoration(
+          borderRadius: BorderRadius.circular(12),
+          gradient: LinearGradient(
+            begin: Alignment.topCenter,
+            end: Alignment.bottomCenter,
+            colors: complete
+                ? [
+                    GameColors.buttonGreen,
+                    GameColors.buttonGreenDark,
+                  ]
+                : const [
+                    GameColors.panelPurple,
+                    GameColors.panelPurpleDark,
+                  ],
+          ),
+        ),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Container(
+              width: 14,
+              height: 14,
+              decoration: BoxDecoration(
+                shape: BoxShape.circle,
+                color: goal.jellyType.color,
+                border: Border.all(color: Colors.white24, width: 1),
+                boxShadow: [
+                  BoxShadow(
+                    color: goal.jellyType.color.withAlpha(160),
+                    blurRadius: 4,
+                  ),
+                ],
+              ),
+            ),
+            const SizedBox(width: 5),
+            Text(
+              '${goal.collected}/${goal.count}',
+              style: TextStyle(
+                color: Colors.white,
+                fontSize: 12,
+                fontWeight: FontWeight.w900,
+                shadows: [
+                  Shadow(color: Colors.black.withAlpha(180), blurRadius: 3),
+                ],
+              ),
+            ),
+            if (complete) ...[
+              const SizedBox(width: 3),
+              const Icon(
+                Icons.check_circle_rounded,
+                color: Colors.white,
+                size: 13,
+              ),
+            ],
+          ],
+        ),
       ),
     );
   }
@@ -322,55 +361,73 @@ class _MovesCounter extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final isLow = movesLeft <= 3;
-    final bgColor = isLow
-        ? GameColors.hotPink.withAlpha(40)
-        : const Color(0xFF1A5060);
-    final borderColor = isLow
-        ? GameColors.hotPink
-        : GameColors.neonCyan;
-    final textColor = isLow
-        ? GameColors.hotPink
-        : Colors.white;
 
-    return Column(
-      mainAxisSize: MainAxisSize.min,
-      children: [
-        Text(
-          'Hamle',
-          style: TextStyle(
-            color: borderColor.withAlpha(180),
-            fontSize: 8,
-            fontWeight: FontWeight.w700,
-            letterSpacing: 0.5,
+    return Container(
+      decoration: BoxDecoration(
+        borderRadius: BorderRadius.circular(18),
+        gradient: const LinearGradient(
+          colors: [
+            GameColors.goldFrameBright,
+            GameColors.goldFrameMid,
+            GameColors.goldFrameDeep,
+            GameColors.goldFrameMid,
+            GameColors.goldFrameBright,
+          ],
+          stops: [0.0, 0.25, 0.5, 0.75, 1.0],
+        ),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withAlpha(120),
+            blurRadius: 6,
+            offset: const Offset(0, 2),
+          ),
+        ],
+      ),
+      padding: const EdgeInsets.all(2),
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+        decoration: BoxDecoration(
+          borderRadius: BorderRadius.circular(16),
+          gradient: LinearGradient(
+            begin: Alignment.topCenter,
+            end: Alignment.bottomCenter,
+            colors: isLow
+                ? const [
+                    GameColors.cherryRed,
+                    GameColors.cherryRedDark,
+                  ]
+                : const [
+                    GameColors.panelPurple,
+                    GameColors.panelPurpleDark,
+                  ],
           ),
         ),
-        const SizedBox(height: 1),
-        Container(
-          width: 34,
-          height: 34,
-          decoration: BoxDecoration(
-            shape: BoxShape.circle,
-            color: bgColor,
-            border: Border.all(color: borderColor, width: 2),
-            boxShadow: [
-              BoxShadow(
-                color: borderColor.withAlpha(40),
-                blurRadius: 8,
-              ),
-            ],
-          ),
-          child: Center(
-            child: Text(
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Icon(
+              Icons.swap_horiz_rounded,
+              color: Colors.white,
+              size: 16,
+              shadows: [
+                Shadow(color: Colors.black.withAlpha(180), blurRadius: 3),
+              ],
+            ),
+            const SizedBox(width: 4),
+            Text(
               '$movesLeft',
               style: TextStyle(
-                color: textColor,
-                fontSize: 15,
+                color: Colors.white,
+                fontSize: 16,
                 fontWeight: FontWeight.w900,
+                shadows: [
+                  Shadow(color: Colors.black.withAlpha(200), blurRadius: 4),
+                ],
               ),
             ),
-          ),
+          ],
         ),
-      ],
+      ),
     );
   }
 }
@@ -387,32 +444,70 @@ class _TimerChip extends StatelessWidget {
   Widget build(BuildContext context) {
     final isLow = timeLeft <= 10;
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 3),
       decoration: BoxDecoration(
-        color: (isLow ? GameColors.hotPink : GameColors.neonCyan).withAlpha(25),
-        borderRadius: BorderRadius.circular(10),
-        border: Border.all(
-          color: (isLow ? GameColors.hotPink : GameColors.neonCyan).withAlpha(100),
+        borderRadius: BorderRadius.circular(14),
+        gradient: const LinearGradient(
+          colors: [
+            GameColors.goldFrameBright,
+            GameColors.goldFrameMid,
+            GameColors.goldFrameDeep,
+            GameColors.goldFrameMid,
+            GameColors.goldFrameBright,
+          ],
+          stops: [0.0, 0.25, 0.5, 0.75, 1.0],
         ),
-      ),
-      child: Row(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Icon(
-            Icons.timer_rounded,
-            color: isLow ? GameColors.hotPink : GameColors.neonCyan,
-            size: 14,
-          ),
-          const SizedBox(width: 2),
-          Text(
-            '$timeLeft',
-            style: TextStyle(
-              color: isLow ? GameColors.hotPink : GameColors.neonCyan,
-              fontSize: 13,
-              fontWeight: FontWeight.bold,
-            ),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withAlpha(120),
+            blurRadius: 6,
+            offset: const Offset(0, 2),
           ),
         ],
+      ),
+      padding: const EdgeInsets.all(2),
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+        decoration: BoxDecoration(
+          borderRadius: BorderRadius.circular(12),
+          gradient: LinearGradient(
+            begin: Alignment.topCenter,
+            end: Alignment.bottomCenter,
+            colors: isLow
+                ? const [
+                    GameColors.cherryRed,
+                    GameColors.cherryRedDark,
+                  ]
+                : const [
+                    GameColors.panelPurple,
+                    GameColors.panelPurpleDark,
+                  ],
+          ),
+        ),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            const Icon(
+              Icons.timer_rounded,
+              color: Colors.white,
+              size: 14,
+              shadows: [
+                Shadow(color: Colors.black54, blurRadius: 3),
+              ],
+            ),
+            const SizedBox(width: 3),
+            Text(
+              '$timeLeft',
+              style: TextStyle(
+                color: Colors.white,
+                fontSize: 13,
+                fontWeight: FontWeight.w900,
+                shadows: [
+                  Shadow(color: Colors.black.withAlpha(200), blurRadius: 3),
+                ],
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }
@@ -442,26 +537,47 @@ class _GoldCircleButton extends StatelessWidget {
         height: size,
         decoration: BoxDecoration(
           shape: BoxShape.circle,
-          gradient: LinearGradient(
-            begin: Alignment.topLeft,
-            end: Alignment.bottomRight,
+          gradient: const LinearGradient(
             colors: [
-              Colors.white.withAlpha(30),
-              Colors.white.withAlpha(10),
+              GameColors.goldFrameBright,
+              GameColors.goldFrameMid,
+              GameColors.goldFrameDeep,
+              GameColors.goldFrameMid,
+              GameColors.goldFrameBright,
             ],
-          ),
-          border: Border.all(
-            color: GameColors.goldFrame.withAlpha(100),
-            width: 1.5,
+            stops: [0.0, 0.25, 0.5, 0.75, 1.0],
           ),
           boxShadow: [
             BoxShadow(
-              color: GameColors.goldDark.withAlpha(30),
-              blurRadius: 4,
+              color: Colors.black.withAlpha(140),
+              blurRadius: 6,
+              offset: const Offset(0, 2),
             ),
           ],
         ),
-        child: Icon(icon, color: GameColors.goldLight, size: size * 0.55),
+        padding: const EdgeInsets.all(2),
+        child: Container(
+          decoration: const BoxDecoration(
+            shape: BoxShape.circle,
+            gradient: LinearGradient(
+              begin: Alignment.topCenter,
+              end: Alignment.bottomCenter,
+              colors: [
+                GameColors.panelPurple,
+                GameColors.panelPurpleDark,
+              ],
+            ),
+          ),
+          alignment: Alignment.center,
+          child: Icon(
+            icon,
+            color: Colors.white,
+            size: size * 0.55,
+            shadows: [
+              Shadow(color: Colors.black.withAlpha(180), blurRadius: 3),
+            ],
+          ),
+        ),
       ),
     );
   }

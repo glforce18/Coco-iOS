@@ -137,7 +137,7 @@ class _SpinWheelScreenState extends ConsumerState<SpinWheelScreen>
           style: TextStyle(fontWeight: FontWeight.w600),
         ),
         duration: const Duration(seconds: 2),
-        backgroundColor: GameColors.pinkDark,
+        backgroundColor: GameColors.cherryRedDark,
         behavior: SnackBarBehavior.floating,
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
         margin: const EdgeInsets.symmetric(horizontal: 60, vertical: 16),
@@ -187,10 +187,10 @@ class _SpinWheelScreenState extends ConsumerState<SpinWheelScreen>
                 style: TextStyle(
                   fontSize: 28,
                   fontWeight: FontWeight.w900,
-                  color: GameColors.goldLight,
+                  color: GameColors.goldFrameBright,
                   letterSpacing: 3,
                   shadows: [
-                    Shadow(color: GameColors.goldDark, blurRadius: 16),
+                    Shadow(color: GameColors.goldFrameDeep, blurRadius: 16),
                   ],
                 ),
               ),
@@ -346,9 +346,9 @@ class _SpinWheelScreenState extends ConsumerState<SpinWheelScreen>
           Container(
             padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
             decoration: BoxDecoration(
-              color: GameColors.goldDark.withAlpha(100),
+              color: GameColors.goldFrameDeep.withAlpha(100),
               borderRadius: BorderRadius.circular(14),
-              border: Border.all(color: GameColors.goldFrame.withAlpha(80)),
+              border: Border.all(color: GameColors.goldFrameMid.withAlpha(80)),
             ),
             child: Row(
               mainAxisSize: MainAxisSize.min,
@@ -360,7 +360,7 @@ class _SpinWheelScreenState extends ConsumerState<SpinWheelScreen>
                   style: const TextStyle(
                     fontSize: 16,
                     fontWeight: FontWeight.w700,
-                    color: GameColors.goldLight,
+                    color: GameColors.goldFrameBright,
                   ),
                 ),
               ],
@@ -419,7 +419,7 @@ class _SpinWheelScreenState extends ConsumerState<SpinWheelScreen>
         border: Border.all(color: Colors.white.withAlpha(120), width: 2),
         boxShadow: [
           BoxShadow(
-            color: GameColors.goldFrame.withAlpha(100),
+            color: GameColors.goldFrameMid.withAlpha(100),
             blurRadius: 12,
           ),
         ],
@@ -462,7 +462,7 @@ class _SpinWheelScreenState extends ConsumerState<SpinWheelScreen>
               segment.color.withAlpha(80),
             ],
           ),
-          border: Border.all(color: GameColors.goldFrame, width: 2),
+          border: Border.all(color: GameColors.goldFrameMid, width: 2),
           boxShadow: [
             BoxShadow(
               color: segment.color.withAlpha(100),
@@ -759,13 +759,13 @@ class _LedRingPainter extends CustomPainter {
       final alpha = isLit ? 255 : 60;
 
       final paint = Paint()
-        ..color = GameColors.goldFrame.withAlpha(alpha);
+        ..color = GameColors.goldFrameMid.withAlpha(alpha);
 
       canvas.drawCircle(Offset(x, y), 4, paint);
 
       if (isLit) {
         final glowPaint = Paint()
-          ..color = GameColors.goldFrame.withAlpha(40)
+          ..color = GameColors.goldFrameMid.withAlpha(40)
           ..maskFilter = const MaskFilter.blur(BlurStyle.normal, 6);
         canvas.drawCircle(Offset(x, y), 6, glowPaint);
       }

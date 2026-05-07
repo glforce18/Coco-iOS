@@ -10,6 +10,8 @@ import 'package:patpat_game/screens/daily_reward_screen.dart';
 import 'package:patpat_game/theme/game_colors.dart';
 import 'package:patpat_game/widgets/level_start_popup.dart';
 import 'package:patpat_game/widgets/no_lives_popup.dart';
+import 'package:patpat_game/widgets/shared/bottom_nav.dart';
+import 'package:patpat_game/widgets/shared/top_stats_bar.dart';
 
 // ---------------------------------------------------------------------------
 // Region enum -> background asset mapping
@@ -117,21 +119,26 @@ class _MapScreenState extends ConsumerState<MapScreen>
       body: Stack(
         fit: StackFit.expand,
         children: [
-          // Background image or gradient fallback
+          // Background image or gradient fallback (full opacity, NO heavy overlay)
           _RegionBackground(region: _selectedRegion),
 
-          // Soft overlay for depth
-          Container(
-            decoration: BoxDecoration(
-              gradient: LinearGradient(
-                begin: Alignment.topCenter,
-                end: Alignment.bottomCenter,
-                colors: [
-                  Colors.black.withAlpha(50),
-                  Colors.black.withAlpha(10),
-                  Colors.black.withAlpha(70),
-                ],
-                stops: const [0.0, 0.4, 1.0],
+          // Very subtle vignette only at the very top + bottom edges so the
+          // status bar / bottom nav stay legible. Body of the map keeps its
+          // full color so the waterfall, mushrooms and crystals shine through.
+          IgnorePointer(
+            child: Container(
+              decoration: BoxDecoration(
+                gradient: LinearGradient(
+                  begin: Alignment.topCenter,
+                  end: Alignment.bottomCenter,
+                  colors: [
+                    Colors.black.withAlpha(60),
+                    Colors.black.withAlpha(0),
+                    Colors.black.withAlpha(0),
+                    Colors.black.withAlpha(90),
+                  ],
+                  stops: const [0.0, 0.12, 0.78, 1.0],
+                ),
               ),
             ),
           ),
@@ -143,20 +150,19 @@ class _MapScreenState extends ConsumerState<MapScreen>
           SafeArea(
             child: Column(
               children: [
-                // Fixed top header
-                _MapHeader(
+                // Fixed top stats bar (mockup M1/M4 style)
+                TopStatsBar(
+                  stars: progress.totalStars,
                   coins: progress.coins,
                   lives: progress.lives,
-                  totalStars: progress.totalStars,
-                  currentLevel: progress.currentLevel,
-                  onBack: () => context.go('/menu'),
-                  onSpin: () => context.go('/spin'),
-                  onProfile: () => context.go('/profile'),
+                  onProfileTap: () => context.go('/menu'),
+                  onSettingsTap: () => context.go('/profile'),
+                  onNotificationTap: () => context.go('/spin'),
                 ),
 
                 const SizedBox(height: 4),
 
-                // Region selector tabs
+                // Region selector tabs (background changes per region)
                 _RegionSelector(
                   selectedRegion: _selectedRegion,
                   totalStars: progress.totalStars,
@@ -179,11 +185,14 @@ class _MapScreenState extends ConsumerState<MapScreen>
                   ),
                 ),
 
-                // Bottom milestone + nav bar
-                _BottomBar(
+                // Star milestone progress + region badge
+                _StarMilestoneBar(
                   totalStars: progress.totalStars,
                   region: _selectedRegion,
                 ),
+
+                // Bottom nav (Map tab active)
+                const PatPatBottomNav(activeTab: BottomNavTab.map),
               ],
             ),
           ),
@@ -347,215 +356,6 @@ class _GradientFallback extends StatelessWidget {
 }
 
 // ---------------------------------------------------------------------------
-// MapHeader — mascot, stars, coins, lives, settings
-// ---------------------------------------------------------------------------
-class _MapHeader extends StatelessWidget {
-  final int coins;
-  final int lives;
-  final int totalStars;
-  final int currentLevel;
-  final VoidCallback onBack;
-  final VoidCallback onSpin;
-  final VoidCallback onProfile;
-
-  const _MapHeader({
-    required this.coins,
-    required this.lives,
-    required this.totalStars,
-    required this.currentLevel,
-    required this.onBack,
-    required this.onSpin,
-    required this.onProfile,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-      child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
-        decoration: BoxDecoration(
-          color: GameColors.bgDeep.withAlpha(210),
-          borderRadius: BorderRadius.circular(20),
-          border: Border.all(
-            color: GameColors.goldFrame.withAlpha(50),
-          ),
-          boxShadow: [
-            BoxShadow(
-              color: GameColors.bgDeep.withAlpha(160),
-              blurRadius: 12,
-            ),
-          ],
-        ),
-        child: Row(
-          children: [
-            // Mascot icon / back button
-            GestureDetector(
-              onTap: () {
-                onBack();
-              },
-              child: Container(
-                width: 36,
-                height: 36,
-                decoration: BoxDecoration(
-                  shape: BoxShape.circle,
-                  gradient: const LinearGradient(
-                    colors: [Color(0xFFCC80FF), Color(0xFF8B24DB)],
-                  ),
-                  border: Border.all(
-                    color: GameColors.goldFrame.withAlpha(120),
-                    width: 2,
-                  ),
-                  boxShadow: [
-                    BoxShadow(
-                      color: GameColors.neonPurple.withAlpha(40),
-                      blurRadius: 6,
-                    ),
-                  ],
-                ),
-                child: ClipOval(
-                  child: Image.asset(
-                    'assets/sprites/jelly_purple.png',
-                    fit: BoxFit.cover,
-                    errorBuilder: (_, __, ___) => const Icon(
-                      Icons.arrow_back_rounded,
-                      color: Colors.white,
-                      size: 18,
-                    ),
-                  ),
-                ),
-              ),
-            ),
-
-            const SizedBox(width: 6),
-
-            // Stars
-            _HeaderCapsule(
-              emoji: '\u2B50',
-              value: '$totalStars',
-              bgColor: GameColors.goldDark.withAlpha(80),
-              textColor: GameColors.goldLight,
-            ),
-
-            const SizedBox(width: 5),
-
-            // Coins
-            _HeaderCapsule(
-              emoji: '\uD83E\uDE99',
-              value: '$coins',
-              bgColor: GameColors.goldDark.withAlpha(80),
-              textColor: GameColors.goldLight,
-            ),
-
-            const SizedBox(width: 5),
-
-            // Lives
-            _HeaderCapsule(
-              emoji: '\u2764\uFE0F',
-              value: '$lives',
-              bgColor: GameColors.pinkDark.withAlpha(80),
-              textColor: GameColors.pinkLight,
-            ),
-
-            const Spacer(),
-
-            // Spin wheel
-            GestureDetector(
-              onTap: () {
-                onSpin();
-              },
-              child: Container(
-                width: 32,
-                height: 32,
-                decoration: BoxDecoration(
-                  shape: BoxShape.circle,
-                  gradient: const LinearGradient(
-                    colors: [Color(0xFFFFE44D), Color(0xFFB8860B)],
-                  ),
-                  boxShadow: [
-                    BoxShadow(
-                      color: GameColors.goldFrame.withAlpha(60),
-                      blurRadius: 6,
-                    ),
-                  ],
-                ),
-                child: const Center(
-                  child: Text('\uD83C\uDFA1', style: TextStyle(fontSize: 14)),
-                ),
-              ),
-            ),
-
-            const SizedBox(width: 6),
-
-            // Settings gear
-            GestureDetector(
-              onTap: () {
-                onProfile();
-              },
-              child: Container(
-                width: 32,
-                height: 32,
-                decoration: BoxDecoration(
-                  shape: BoxShape.circle,
-                  color: Colors.white.withAlpha(15),
-                  border: Border.all(color: Colors.white.withAlpha(40)),
-                ),
-                child: const Icon(
-                  Icons.settings_rounded,
-                  color: Colors.white70,
-                  size: 18,
-                ),
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-}
-
-class _HeaderCapsule extends StatelessWidget {
-  final String emoji;
-  final String value;
-  final Color bgColor;
-  final Color textColor;
-
-  const _HeaderCapsule({
-    required this.emoji,
-    required this.value,
-    required this.bgColor,
-    required this.textColor,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
-      decoration: BoxDecoration(
-        color: bgColor,
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: textColor.withAlpha(50)),
-      ),
-      child: Row(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Text(emoji, style: const TextStyle(fontSize: 12)),
-          const SizedBox(width: 3),
-          Text(
-            value,
-            style: TextStyle(
-              fontSize: 12,
-              fontWeight: FontWeight.w700,
-              color: textColor,
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-}
-
-// ---------------------------------------------------------------------------
 // RegionSelector — horizontal scrollable tabs
 // ---------------------------------------------------------------------------
 class _RegionSelector extends StatefulWidget {
@@ -574,147 +374,223 @@ class _RegionSelector extends StatefulWidget {
 }
 
 class _RegionSelectorState extends State<_RegionSelector> {
-  late final ScrollController _scrollController;
-
-  @override
-  void initState() {
-    super.initState();
-    _scrollController = ScrollController();
-    WidgetsBinding.instance.addPostFrameCallback((_) => _scrollToSelected());
-  }
-
-  @override
-  void didUpdateWidget(covariant _RegionSelector old) {
-    super.didUpdateWidget(old);
-    if (old.selectedRegion != widget.selectedRegion) {
-      _scrollToSelected();
-    }
-  }
-
-  void _scrollToSelected() {
-    final index = GameRegion.values.indexOf(widget.selectedRegion);
-    final target = (index * 138.0) - 60;
-    if (_scrollController.hasClients) {
-      _scrollController.animateTo(
-        target.clamp(0.0, _scrollController.position.maxScrollExtent),
-        duration: const Duration(milliseconds: 350),
-        curve: Curves.easeOutCubic,
-      );
-    }
-  }
-
-  @override
-  void dispose() {
-    _scrollController.dispose();
-    super.dispose();
-  }
-
   @override
   Widget build(BuildContext context) {
-    return SizedBox(
-      height: 40,
-      child: ListView.separated(
-        controller: _scrollController,
-        scrollDirection: Axis.horizontal,
-        padding: const EdgeInsets.symmetric(horizontal: 12),
-        itemCount: GameRegion.values.length,
-        separatorBuilder: (_, __) => const SizedBox(width: 6),
-        itemBuilder: (context, index) {
-          final region = GameRegion.values[index];
-          final isSelected = region == widget.selectedRegion;
-          final isUnlocked = widget.totalStars >= region.starsRequired;
+    final regions = GameRegion.values;
+    final currentIndex = regions.indexOf(widget.selectedRegion);
+    final hasPrev = currentIndex > 0;
+    final hasNext = currentIndex < regions.length - 1;
+    final nextRegion = hasNext ? regions[currentIndex + 1] : null;
+    final nextUnlocked =
+        nextRegion != null && widget.totalStars >= nextRegion.starsRequired;
 
-          return _RegionChip(
-            region: region,
-            isSelected: isSelected,
-            isUnlocked: isUnlocked,
-            onTap: isUnlocked
-                ? () => widget.onRegionSelected(region)
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          // Previous chevron (only if available)
+          _RegionChevron(
+            icon: Icons.chevron_left_rounded,
+            enabled: hasPrev,
+            onTap: hasPrev
+                ? () => widget.onRegionSelected(regions[currentIndex - 1])
                 : null,
-          );
-        },
+          ),
+          const SizedBox(width: 8),
+
+          // Center BIG gold pill — the active region
+          Flexible(
+            child: _ActiveRegionPill(region: widget.selectedRegion),
+          ),
+
+          const SizedBox(width: 8),
+
+          // Next chevron (locked indicator if next region is locked)
+          _RegionChevron(
+            icon: Icons.chevron_right_rounded,
+            enabled: nextUnlocked,
+            locked: hasNext && !nextUnlocked,
+            starsRequired: hasNext && !nextUnlocked
+                ? nextRegion!.starsRequired
+                : null,
+            onTap: nextUnlocked
+                ? () => widget.onRegionSelected(regions[currentIndex + 1])
+                : null,
+          ),
+        ],
       ),
     );
   }
 }
 
-class _RegionChip extends StatelessWidget {
+/// Big centered gold-bordered pill showing the active region name (mockup M1).
+class _ActiveRegionPill extends StatelessWidget {
   final GameRegion region;
-  final bool isSelected;
-  final bool isUnlocked;
+  const _ActiveRegionPill({required this.region});
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      decoration: BoxDecoration(
+        borderRadius: BorderRadius.circular(22),
+        gradient: const LinearGradient(
+          begin: Alignment.topCenter,
+          end: Alignment.bottomCenter,
+          colors: [
+            GameColors.goldFrameBright,
+            GameColors.goldHighlight,
+            GameColors.goldFrameMid,
+            GameColors.goldFrameDeep,
+            GameColors.goldFrameMid,
+            GameColors.goldFrameBright,
+          ],
+          stops: [0.0, 0.18, 0.4, 0.55, 0.8, 1.0],
+        ),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withAlpha(160),
+            blurRadius: 10,
+            offset: const Offset(0, 4),
+          ),
+          BoxShadow(
+            color: GameColors.goldFrameMid.withAlpha(140),
+            blurRadius: 16,
+            spreadRadius: 1,
+          ),
+        ],
+      ),
+      padding: const EdgeInsets.all(3),
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 22, vertical: 8),
+        decoration: BoxDecoration(
+          borderRadius: BorderRadius.circular(19),
+          gradient: const LinearGradient(
+            begin: Alignment.topCenter,
+            end: Alignment.bottomCenter,
+            colors: [
+              GameColors.panelPurpleLight,
+              GameColors.panelPurple,
+              GameColors.panelPurpleDark,
+            ],
+          ),
+        ),
+        child: Text(
+          region.displayName,
+          maxLines: 1,
+          overflow: TextOverflow.ellipsis,
+          style: TextStyle(
+            color: Colors.white,
+            fontSize: 16,
+            fontWeight: FontWeight.w900,
+            letterSpacing: 0.5,
+            shadows: [
+              Shadow(
+                color: Colors.black.withAlpha(220),
+                blurRadius: 6,
+                offset: const Offset(0, 2),
+              ),
+              const Shadow(
+                color: GameColors.panelPurpleDark,
+                blurRadius: 8,
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+/// Round gold-bordered chevron button for region nav (prev/next).
+class _RegionChevron extends StatelessWidget {
+  final IconData icon;
+  final bool enabled;
+  final bool locked;
+  final int? starsRequired;
   final VoidCallback? onTap;
 
-  const _RegionChip({
-    required this.region,
-    required this.isSelected,
-    required this.isUnlocked,
+  const _RegionChevron({
+    required this.icon,
+    required this.enabled,
+    this.locked = false,
+    this.starsRequired,
     this.onTap,
   });
 
   @override
   Widget build(BuildContext context) {
-    final bgColor = isSelected
-        ? GameColors.goldDark.withAlpha(120)
-        : isUnlocked
-            ? GameColors.bgLight.withAlpha(160)
-            : GameColors.bgDeep.withAlpha(180);
-
-    final borderColor = isSelected
-        ? GameColors.goldFrame
-        : isUnlocked
-            ? GameColors.purpleLight.withAlpha(60)
-            : Colors.grey.withAlpha(40);
-
-    final textColor = isSelected
-        ? GameColors.goldLight
-        : isUnlocked
-            ? Colors.white
-            : Colors.white38;
-
     return GestureDetector(
       onTap: onTap,
       child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+        width: 42,
+        height: 42,
         decoration: BoxDecoration(
-          color: bgColor,
-          borderRadius: BorderRadius.circular(14),
-          border: Border.all(color: borderColor, width: isSelected ? 2 : 1),
-          boxShadow: isSelected
-              ? [
-                  BoxShadow(
-                    color: GameColors.goldDark.withAlpha(60),
-                    blurRadius: 8,
-                  ),
-                ]
-              : null,
-        ),
-        child: Row(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            if (!isUnlocked) ...[
-              const Icon(Icons.lock, size: 12, color: Colors.white38),
-              const SizedBox(width: 4),
+          shape: BoxShape.circle,
+          gradient: const LinearGradient(
+            begin: Alignment.topCenter,
+            end: Alignment.bottomCenter,
+            colors: [
+              GameColors.goldFrameBright,
+              GameColors.goldFrameMid,
+              GameColors.goldFrameDeep,
+              GameColors.goldFrameMid,
+              GameColors.goldFrameBright,
             ],
-            Text(
-              region.displayName,
-              style: TextStyle(
-                fontSize: 12,
-                fontWeight: isSelected ? FontWeight.w700 : FontWeight.w500,
-                color: textColor,
-              ),
+            stops: [0.0, 0.25, 0.5, 0.75, 1.0],
+          ),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withAlpha(150),
+              blurRadius: 8,
+              offset: const Offset(0, 3),
             ),
-            if (!isUnlocked) ...[
-              const SizedBox(width: 4),
-              Text(
-                '\u2B50${region.starsRequired}',
-                style: TextStyle(
-                  fontSize: 10,
-                  color: GameColors.yellowDark.withAlpha(160),
-                  fontWeight: FontWeight.w600,
-                ),
-              ),
-            ],
           ],
+        ),
+        padding: const EdgeInsets.all(2.5),
+        child: Container(
+          decoration: const BoxDecoration(
+            shape: BoxShape.circle,
+            gradient: LinearGradient(
+              begin: Alignment.topCenter,
+              end: Alignment.bottomCenter,
+              colors: [
+                GameColors.panelPurple,
+                GameColors.panelPurpleDark,
+              ],
+            ),
+          ),
+          alignment: Alignment.center,
+          child: locked
+              ? Stack(
+                  alignment: Alignment.center,
+                  children: [
+                    Icon(
+                      Icons.lock,
+                      color: Colors.white.withAlpha(180),
+                      size: 16,
+                    ),
+                    if (starsRequired != null)
+                      Positioned(
+                        bottom: -2,
+                        child: Text(
+                          '$starsRequired★',
+                          style: const TextStyle(
+                            color: GameColors.starGoldFilled,
+                            fontSize: 8,
+                            fontWeight: FontWeight.w900,
+                          ),
+                        ),
+                      ),
+                  ],
+                )
+              : Icon(
+                  icon,
+                  color: enabled
+                      ? Colors.white
+                      : Colors.white.withAlpha(80),
+                  size: 24,
+                ),
         ),
       ),
     );
@@ -763,18 +639,23 @@ class _ZigzagPath extends StatelessWidget {
     // Reverse so level 1 is at the bottom
     final reversedRows = rows.reversed.toList();
 
+    // +1 for the treasure chest header at index 0 (top of path = boss reward)
     return ListView.builder(
       controller: scrollController,
       padding: const EdgeInsets.symmetric(vertical: 16),
-      itemCount: reversedRows.length,
+      itemCount: reversedRows.length + 1,
       itemBuilder: (context, index) {
-        final row = reversedRows[index];
-        // Determine if this row connects downward (toward higher levels)
-        final isLastRow = index == reversedRows.length - 1;
-        // Connection direction: the reversed row above connects to the row below
-        final hasConnectionBelow = index < reversedRows.length - 1;
-        // The connecting edge is at the side where the last element of the
-        // upper reversed row meets the first element of the lower reversed row.
+        if (index == 0) {
+          // Treasure chest at the very top of the path
+          return _TreasureChest(
+            sparkleAnimation: sparkleAnimation,
+            isUnlocked: progress.starsForLevel(region.endLevel) > 0,
+          );
+        }
+        final rowIdx = index - 1;
+        final row = reversedRows[rowIdx];
+        final isLastRow = rowIdx == reversedRows.length - 1;
+        final hasConnectionBelow = rowIdx < reversedRows.length - 1;
         return _PathRowWidget(
           row: row,
           progress: progress,
@@ -784,11 +665,248 @@ class _ZigzagPath extends StatelessWidget {
           isLastRow: isLastRow,
           hasConnectionBelow: hasConnectionBelow,
           nextRowIndex:
-              isLastRow ? null : reversedRows[index + 1].rowIndex,
+              isLastRow ? null : reversedRows[rowIdx + 1].rowIndex,
         );
       },
     );
   }
+}
+
+// ---------------------------------------------------------------------------
+// TreasureChest — decorative chest at the top of the path (mockup M1)
+// Rendered with a custom painter for a clean glowing gold chest look,
+// with a pulsing sparkle when the region is complete.
+// ---------------------------------------------------------------------------
+class _TreasureChest extends StatelessWidget {
+  final AnimationController sparkleAnimation;
+  final bool isUnlocked;
+
+  const _TreasureChest({
+    required this.sparkleAnimation,
+    required this.isUnlocked,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return SizedBox(
+      height: 200,
+      child: AnimatedBuilder(
+        animation: sparkleAnimation,
+        builder: (context, _) {
+          final t = sparkleAnimation.value;
+          final glowAlpha = isUnlocked
+              ? (180 + (60 * sin(t * 2 * pi)).toInt())
+              : 90;
+          // Big glowing chest centered horizontally near the top of the path.
+          return Center(
+            child: Container(
+              width: 160,
+              height: 160,
+              decoration: BoxDecoration(
+                shape: BoxShape.circle,
+                boxShadow: [
+                  // Inner-most warm glow
+                  BoxShadow(
+                    color: GameColors.goldHighlight.withAlpha(glowAlpha),
+                    blurRadius: 36,
+                    spreadRadius: 10,
+                  ),
+                  // Mid glow
+                  BoxShadow(
+                    color: GameColors.goldFrameMid.withAlpha(glowAlpha),
+                    blurRadius: 60,
+                    spreadRadius: 16,
+                  ),
+                  // Outer wide glow
+                  BoxShadow(
+                    color: GameColors.goldFrameBright
+                        .withAlpha((glowAlpha * 0.5).toInt()),
+                    blurRadius: 90,
+                    spreadRadius: 24,
+                  ),
+                ],
+              ),
+              child: CustomPaint(
+                painter: _ChestPainter(
+                  sparkleT: t,
+                  unlocked: isUnlocked,
+                ),
+              ),
+            ),
+          );
+        },
+      ),
+    );
+  }
+}
+
+class _ChestPainter extends CustomPainter {
+  final double sparkleT;
+  final bool unlocked;
+
+  _ChestPainter({required this.sparkleT, required this.unlocked});
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    final w = size.width;
+    final h = size.height;
+
+    // Chest body proportions
+    final bodyTop = h * 0.42;
+    final bodyBottom = h * 0.85;
+    final bodyLeft = w * 0.15;
+    final bodyRight = w * 0.85;
+
+    // Chest lid (curved)
+    final lidTop = h * 0.18;
+    final lidBottom = h * 0.45;
+
+    // Wood (dark purple-brown body)
+    final bodyPaint = Paint()
+      ..shader = LinearGradient(
+        begin: Alignment.topCenter,
+        end: Alignment.bottomCenter,
+        colors: unlocked
+            ? const [
+                GameColors.panelPurple,
+                GameColors.panelPurpleDark,
+              ]
+            : [
+                Colors.grey.shade700,
+                Colors.grey.shade900,
+              ],
+      ).createShader(Rect.fromLTRB(bodyLeft, bodyTop, bodyRight, bodyBottom));
+
+    final bodyRect = RRect.fromRectAndRadius(
+      Rect.fromLTRB(bodyLeft, bodyTop, bodyRight, bodyBottom),
+      const Radius.circular(6),
+    );
+    canvas.drawRRect(bodyRect, bodyPaint);
+
+    // Gold body trim (top + bottom + sides)
+    final trimPaint = Paint()
+      ..color = GameColors.goldFrameBright
+      ..style = PaintingStyle.stroke
+      ..strokeWidth = 3;
+    canvas.drawRRect(bodyRect, trimPaint);
+
+    // Vertical gold band (center of body)
+    final bandPaint = Paint()
+      ..shader = const LinearGradient(
+        begin: Alignment.topCenter,
+        end: Alignment.bottomCenter,
+        colors: [
+          GameColors.goldFrameBright,
+          GameColors.goldFrameMid,
+        ],
+      ).createShader(Rect.fromLTRB(w * 0.45, bodyTop, w * 0.55, bodyBottom));
+    canvas.drawRect(
+      Rect.fromLTRB(w * 0.45, bodyTop, w * 0.55, bodyBottom),
+      bandPaint,
+    );
+
+    // Lock plate at center of body (gold square)
+    final lockSize = w * 0.13;
+    final lockRect = Rect.fromCenter(
+      center: Offset(w * 0.5, h * 0.62),
+      width: lockSize,
+      height: lockSize,
+    );
+    canvas.drawRRect(
+      RRect.fromRectAndRadius(lockRect, const Radius.circular(2)),
+      Paint()
+        ..shader = const LinearGradient(
+          begin: Alignment.topCenter,
+          end: Alignment.bottomCenter,
+          colors: [
+            GameColors.goldHighlight,
+            GameColors.goldFrameMid,
+          ],
+        ).createShader(lockRect),
+    );
+    canvas.drawRRect(
+      RRect.fromRectAndRadius(lockRect, const Radius.circular(2)),
+      Paint()
+        ..color = GameColors.goldFrameDeep
+        ..style = PaintingStyle.stroke
+        ..strokeWidth = 1.5,
+    );
+
+    // Lid (curved top)
+    final lidPath = Path()
+      ..moveTo(bodyLeft, lidBottom)
+      ..lineTo(bodyLeft, lidTop + 8)
+      ..quadraticBezierTo(
+        w * 0.5,
+        lidTop - 8,
+        bodyRight,
+        lidTop + 8,
+      )
+      ..lineTo(bodyRight, lidBottom)
+      ..close();
+
+    final lidPaint = Paint()
+      ..shader = LinearGradient(
+        begin: Alignment.topCenter,
+        end: Alignment.bottomCenter,
+        colors: unlocked
+            ? const [
+                GameColors.goldHighlight,
+                GameColors.goldFrameMid,
+                GameColors.goldFrameDeep,
+              ]
+            : [
+                Colors.grey.shade400,
+                Colors.grey.shade700,
+              ],
+      ).createShader(Rect.fromLTRB(bodyLeft, lidTop, bodyRight, lidBottom));
+    canvas.drawPath(lidPath, lidPaint);
+
+    // Lid outline
+    canvas.drawPath(
+      lidPath,
+      Paint()
+        ..color = GameColors.goldFrameDeep
+        ..style = PaintingStyle.stroke
+        ..strokeWidth = 2.5,
+    );
+
+    // Lid trim line at the seam
+    canvas.drawLine(
+      Offset(bodyLeft, lidBottom),
+      Offset(bodyRight, lidBottom),
+      Paint()
+        ..color = GameColors.goldFrameDeep
+        ..strokeWidth = 2,
+    );
+
+    // Sparkle stars around the chest (4 corners)
+    if (unlocked) {
+      final sparkPositions = [
+        Offset(w * 0.1, h * 0.15),
+        Offset(w * 0.92, h * 0.18),
+        Offset(w * 0.08, h * 0.5),
+        Offset(w * 0.92, h * 0.55),
+      ];
+      for (int i = 0; i < sparkPositions.length; i++) {
+        final phase = i * 0.25;
+        final spark = (sin((sparkleT + phase) * 2 * pi) + 1) / 2;
+        final r = 2 + spark * 3;
+        canvas.drawCircle(
+          sparkPositions[i],
+          r,
+          Paint()
+            ..color = GameColors.goldHighlight
+                .withAlpha((180 * spark).toInt())
+            ..maskFilter = const MaskFilter.blur(BlurStyle.normal, 2),
+        );
+      }
+    }
+  }
+
+  @override
+  bool shouldRepaint(covariant _ChestPainter old) =>
+      old.sparkleT != sparkleT || old.unlocked != unlocked;
 }
 
 class _PathRow {
@@ -824,7 +942,7 @@ class _PathRowWidget extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return SizedBox(
-      height: 110,
+      height: 150,
       child: CustomPaint(
         painter: _RowPathPainter(
           levelCount: row.levels.length,
@@ -835,9 +953,7 @@ class _PathRowWidget extends StatelessWidget {
         child: Padding(
           padding: const EdgeInsets.symmetric(horizontal: 16),
           child: Row(
-            mainAxisAlignment: row.levels.length == 1
-                ? MainAxisAlignment.center
-                : MainAxisAlignment.spaceEvenly,
+            mainAxisAlignment: MainAxisAlignment.spaceEvenly,
             children: row.levels.map((level) {
               return _LevelNode(
                 level: level,
@@ -876,67 +992,94 @@ class _RowPathPainter extends CustomPainter {
 
   @override
   void paint(Canvas canvas, Size size) {
-    final pathPaint = Paint()
-      ..color = const Color(0xFFB8860B).withAlpha(150)
-      ..strokeWidth = 3.5
+    // Three-layer path: outer dark shadow, mid gold-deep, top bright gold
+    // — gives a thick "stone path" feel that pops on the bg.
+    final shadowPaint = Paint()
+      ..color = Colors.black.withAlpha(160)
+      ..strokeWidth = 24
+      ..style = PaintingStyle.stroke
+      ..strokeCap = StrokeCap.round
+      ..maskFilter = const MaskFilter.blur(BlurStyle.normal, 6);
+
+    final outerPaint = Paint()
+      ..color = GameColors.goldFrameDeep
+      ..strokeWidth = 18
+      ..style = PaintingStyle.stroke
+      ..strokeCap = StrokeCap.round;
+
+    final midPaint = Paint()
+      ..color = GameColors.goldFrameMid
+      ..strokeWidth = 13
+      ..style = PaintingStyle.stroke
+      ..strokeCap = StrokeCap.round;
+
+    final innerPaint = Paint()
+      ..color = GameColors.goldFrameBright
+      ..strokeWidth = 7
       ..style = PaintingStyle.stroke
       ..strokeCap = StrokeCap.round;
 
     final glowPaint = Paint()
-      ..color = const Color(0xFFFFD700).withAlpha(40)
-      ..strokeWidth = 8
+      ..color = GameColors.goldFrameMid.withAlpha(90)
+      ..strokeWidth = 30
       ..style = PaintingStyle.stroke
       ..strokeCap = StrokeCap.round
-      ..maskFilter = const MaskFilter.blur(BlurStyle.normal, 4);
+      ..maskFilter = const MaskFilter.blur(BlurStyle.normal, 10);
 
     final midY = size.height / 2;
-    final padding = 16.0;
+    const padding = 16.0;
     final usableWidth = size.width - padding * 2;
 
-    if (levelCount >= 2) {
-      // Horizontal curved line connecting nodes
-      final spacing = usableWidth / (levelCount + 1);
-      for (int i = 0; i < levelCount - 1; i++) {
-        final x1 = padding + spacing * (i + 1) + 32;
-        final x2 = padding + spacing * (i + 2) - 32;
-        final midX = (x1 + x2) / 2;
+    // Node center positions, matching _LevelNode column layout (110px wide).
+    // Row uses spaceEvenly so we approximate centers as equal slots.
+    double colCenter(int i) {
+      final slotWidth = usableWidth / levelCount;
+      return padding + slotWidth * (i + 0.5);
+    }
 
-        // Slight curve for natural path feel
+    // Draw 3 layered strokes for each segment
+    void drawStroke(Path p) {
+      canvas.drawPath(p, glowPaint);
+      canvas.drawPath(p, shadowPaint);
+      canvas.drawPath(p, outerPaint);
+      canvas.drawPath(p, midPaint);
+      canvas.drawPath(p, innerPaint);
+    }
+
+    // ── Horizontal connecting curve between nodes in this row ──
+    if (levelCount >= 2) {
+      for (int i = 0; i < levelCount - 1; i++) {
+        // Inset by node radius so the path tucks under the node
+        final x1 = colCenter(i) + 50;
+        final x2 = colCenter(i + 1) - 50;
+        final midX = (x1 + x2) / 2;
+        // Slight downward sag for organic feel
         final path = Path()
           ..moveTo(x1, midY)
-          ..quadraticBezierTo(midX, midY - 8, x2, midY);
-
-        canvas.drawPath(path, glowPaint);
-        canvas.drawPath(path, pathPaint);
+          ..quadraticBezierTo(midX, midY + 14, x2, midY);
+        drawStroke(path);
       }
     }
 
-    // Vertical connecting line to next row (below in scroll)
+    // ── Vertical connecting curve to the next row (below in scroll order) ──
     if (hasConnectionBelow) {
-      // The connection comes from the end of this row direction
+      // Snake direction: even rows end on the right, odd rows on the left.
+      // The next row (which is reversed) will start on the same side, so
+      // we draw a downward curve on that side.
       final isReversed = rowIndex.isOdd;
-      final spacing = usableWidth / (levelCount + 1);
-      final connectX = isReversed
-          ? padding + spacing * 1 // left side (first drawn element of reversed)
-          : padding + spacing * levelCount; // right side
-
-      // Curved vertical path going down
+      // The connection point is the *last* element in this row (which is the
+      // rightmost on even rows / leftmost on odd rows after reversal).
+      final connectIndex = isReversed ? 0 : levelCount - 1;
+      final connectX = colCenter(connectIndex);
       final path = Path()
-        ..moveTo(connectX, midY + 34)
+        ..moveTo(connectX, midY + 50)
         ..quadraticBezierTo(
-          connectX + (isReversed ? -12 : 12),
-          size.height - 8,
-          connectX,
-          size.height + 16,
+          connectX + (isReversed ? -22 : 22),
+          size.height + 4,
+          connectX + (isReversed ? -8 : 8),
+          size.height + 30,
         );
-
-      canvas.drawPath(path, glowPaint);
-      canvas.drawPath(path, pathPaint);
-
-      // Small decorative dot at connection point
-      final dotPaint = Paint()
-        ..color = const Color(0xFFFFD700).withAlpha(100);
-      canvas.drawCircle(Offset(connectX, size.height + 8), 3.5, dotPaint);
+      drawStroke(path);
     }
   }
 
@@ -985,146 +1128,193 @@ class _LevelNode extends StatelessWidget {
 
     return GestureDetector(
       onTap: isLocked ? null : onTap,
+      behavior: HitTestBehavior.opaque,
       child: AnimatedBuilder(
         animation: isCurrent ? pulseAnimation : const AlwaysStoppedAnimation(0),
         builder: (context, child) {
           final pulseVal = isCurrent ? pulseAnimation.value : 0.0;
-          final nodeSize = isCurrent ? 68.0 + pulseVal * 4 : 60.0;
-          final glowAlpha = isCurrent ? (120 + (100 * pulseVal)).toInt() : 0;
+          // BIG jewel sized node, like the reference (~95dp baseline, current pulses)
+          final nodeSize = isCurrent ? 100.0 + pulseVal * 4 : 92.0;
+          final glowAlpha = isCurrent ? (140 + (100 * pulseVal)).toInt() : 0;
 
           return SizedBox(
-            width: 84,
-            height: 100,
+            width: 110,
+            height: 130,
             child: Column(
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
-                // The circular node
+                // ── The jewel-like node ──
+                // Outer container = thick gold metallic frame (5-stop gradient)
+                // Inner container = colored gem center with top highlight
                 Container(
                   width: nodeSize,
                   height: nodeSize,
                   decoration: BoxDecoration(
                     shape: BoxShape.circle,
-                    gradient: _nodeGradient(state),
-                    border: Border.all(
-                      color: _borderColor(state),
-                      width: isCurrent ? 3.5 : isLocked ? 1.5 : 3,
+                    gradient: const LinearGradient(
+                      begin: Alignment.topCenter,
+                      end: Alignment.bottomCenter,
+                      colors: [
+                        GameColors.goldFrameBright,
+                        GameColors.goldHighlight,
+                        GameColors.goldFrameMid,
+                        GameColors.goldFrameDeep,
+                        GameColors.goldFrameMid,
+                        GameColors.goldFrameBright,
+                      ],
+                      stops: [0.0, 0.18, 0.4, 0.55, 0.8, 1.0],
                     ),
                     boxShadow: [
+                      // Drop shadow under jewel for depth
+                      BoxShadow(
+                        color: Colors.black.withAlpha(180),
+                        blurRadius: 14,
+                        offset: const Offset(0, 6),
+                      ),
+                      // Outer glow when current
                       if (isCurrent) ...[
                         BoxShadow(
-                          color: GameColors.goldFrame.withAlpha(glowAlpha),
-                          blurRadius: 24,
-                          spreadRadius: 6,
+                          color: GameColors.goldFrameBright.withAlpha(glowAlpha),
+                          blurRadius: 30,
+                          spreadRadius: 4,
                         ),
                         BoxShadow(
-                          color: GameColors.goldLight.withAlpha(
-                              (glowAlpha * 0.4).toInt()),
-                          blurRadius: 40,
+                          color: GameColors.goldFrameMid
+                              .withAlpha((glowAlpha * 0.6).toInt()),
+                          blurRadius: 50,
                           spreadRadius: 8,
                         ),
                       ],
-                      if (!isLocked)
-                        BoxShadow(
-                          color: Colors.black.withAlpha(80),
-                          blurRadius: 10,
-                          offset: const Offset(0, 4),
-                        ),
+                      // Subtle gold ambient glow always
+                      BoxShadow(
+                        color: GameColors.goldFrameMid.withAlpha(70),
+                        blurRadius: 12,
+                        spreadRadius: 1,
+                      ),
                     ],
                   ),
-                  child: Stack(
-                    alignment: Alignment.center,
-                    children: [
-                      // Top highlight (glass reflection)
-                      Positioned(
-                        top: 3,
-                        left: nodeSize * 0.18,
-                        right: nodeSize * 0.18,
-                        child: Container(
-                          height: nodeSize * 0.28,
-                          decoration: BoxDecoration(
-                            borderRadius: BorderRadius.circular(20),
-                            gradient: LinearGradient(
-                              begin: Alignment.topCenter,
-                              end: Alignment.bottomCenter,
-                              colors: [
-                                Colors.white.withAlpha(isLocked ? 8 : 50),
-                                Colors.white.withAlpha(0),
-                              ],
+                  // Frame thickness — bigger for current
+                  padding: EdgeInsets.all(isCurrent ? 5 : 4.5),
+                  child: Container(
+                    decoration: BoxDecoration(
+                      shape: BoxShape.circle,
+                      gradient: _nodeGradient(state),
+                      // Thin dark inner ring for separation
+                      border: Border.all(
+                        color: Colors.black.withAlpha(140),
+                        width: 1,
+                      ),
+                    ),
+                    child: Stack(
+                      alignment: Alignment.center,
+                      children: [
+                        // Glassy top highlight (light reflection)
+                        Positioned(
+                          top: nodeSize * 0.08,
+                          left: nodeSize * 0.18,
+                          right: nodeSize * 0.18,
+                          child: Container(
+                            height: nodeSize * 0.32,
+                            decoration: BoxDecoration(
+                              borderRadius:
+                                  BorderRadius.circular(nodeSize * 0.4),
+                              gradient: LinearGradient(
+                                begin: Alignment.topCenter,
+                                end: Alignment.bottomCenter,
+                                colors: [
+                                  Colors.white.withAlpha(isLocked ? 18 : 80),
+                                  Colors.white.withAlpha(0),
+                                ],
+                              ),
                             ),
                           ),
                         ),
-                      ),
 
-                      // Level number or lock
-                      if (isLocked)
-                        Container(
-                          width: nodeSize,
-                          height: nodeSize,
-                          decoration: BoxDecoration(
-                            shape: BoxShape.circle,
-                            color: Colors.black.withAlpha(80),
-                          ),
-                          child: Icon(
+                        // Level number / lock icon
+                        if (isLocked)
+                          Icon(
                             Icons.lock_rounded,
-                            color: Colors.white.withAlpha(60),
-                            size: 20,
-                          ),
-                        )
-                      else
-                        Text(
-                          '$level',
-                          style: TextStyle(
-                            fontSize: isCurrent ? 24 : 20,
-                            fontWeight: FontWeight.w900,
-                            color: isCurrent
-                                ? GameColors.goldLight
-                                : state == _LevelState.completed
-                                    ? Colors.white
-                                    : Colors.white.withAlpha(220),
+                            color: Colors.white.withAlpha(180),
+                            size: nodeSize * 0.36,
                             shadows: [
                               Shadow(
-                                color: isCurrent
-                                    ? GameColors.goldDark.withAlpha(200)
-                                    : Colors.black.withAlpha(150),
-                                blurRadius: 8,
+                                color: Colors.black.withAlpha(220),
+                                blurRadius: 6,
+                                offset: const Offset(0, 2),
                               ),
                             ],
+                          )
+                        else
+                          Text(
+                            '$level',
+                            style: TextStyle(
+                              fontSize: isCurrent ? 34 : 30,
+                              fontWeight: FontWeight.w900,
+                              color: Colors.white,
+                              height: 1,
+                              shadows: [
+                                Shadow(
+                                  color: Colors.black.withAlpha(220),
+                                  blurRadius: 6,
+                                  offset: const Offset(0, 2),
+                                ),
+                                Shadow(
+                                  color: isCurrent
+                                      ? GameColors.goldFrameDeep
+                                      : Colors.black.withAlpha(160),
+                                  blurRadius: 10,
+                                ),
+                              ],
+                            ),
                           ),
-                        ),
-                    ],
+                      ],
+                    ),
                   ),
                 ),
 
-                const SizedBox(height: 3),
+                const SizedBox(height: 4),
 
-                // Stars below the node
+                // ── Stars below the node ──
+                // Always reserve the row height so node stays vertically aligned;
+                // show 3 outline stars by default and gold stars when completed.
                 SizedBox(
-                  height: 16,
-                  child: state == _LevelState.completed
+                  height: 20,
+                  child: (state == _LevelState.completed ||
+                          state == _LevelState.current)
                       ? Row(
                           mainAxisAlignment: MainAxisAlignment.center,
                           children: List.generate(3, (i) {
                             final filled = i < stars;
                             return Padding(
                               padding:
-                                  const EdgeInsets.symmetric(horizontal: 0.5),
+                                  const EdgeInsets.symmetric(horizontal: 1),
                               child: Icon(
                                 filled
                                     ? Icons.star_rounded
-                                    : Icons.star_border_rounded,
-                                size: 15,
+                                    : Icons.star_outline_rounded,
+                                size: 18,
                                 color: filled
-                                    ? GameColors.goldFrame
-                                    : Colors.white.withAlpha(30),
+                                    ? GameColors.starGoldFilled
+                                    : Colors.white.withAlpha(120),
                                 shadows: filled
                                     ? [
-                                        BoxShadow(
-                                          color:
-                                              GameColors.goldFrame.withAlpha(80),
+                                        Shadow(
+                                          color: GameColors.goldFrameDeep
+                                              .withAlpha(200),
+                                          blurRadius: 6,
+                                        ),
+                                        const Shadow(
+                                          color: Colors.black54,
                                           blurRadius: 4,
                                         ),
                                       ]
-                                    : null,
+                                    : [
+                                        Shadow(
+                                          color:
+                                              Colors.black.withAlpha(180),
+                                          blurRadius: 3,
+                                        ),
+                                      ],
                               ),
                             );
                           }),
@@ -1142,51 +1332,51 @@ class _LevelNode extends StatelessWidget {
   LinearGradient _nodeGradient(_LevelState state) {
     switch (state) {
       case _LevelState.locked:
-        return LinearGradient(
+        // Mockup M1: dark circle with brown-purple wash, gold ring outside
+        return const LinearGradient(
           begin: Alignment.topCenter,
           end: Alignment.bottomCenter,
           colors: [
-            Colors.grey.shade700.withAlpha(140),
-            Colors.grey.shade900.withAlpha(200),
+            Color(0xFF3A2A1F),
+            Color(0xFF1F1410),
           ],
         );
       case _LevelState.current:
+        // Mockup M1 current: deep purple with gold ring
         return const LinearGradient(
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
-          colors: [Color(0xFF3D1A70), Color(0xFF1A0A40)],
+          colors: [
+            GameColors.panelPurpleLight,
+            GameColors.panelPurple,
+            GameColors.panelPurpleDark,
+          ],
         );
       case _LevelState.unlocked:
         return const LinearGradient(
           begin: Alignment.topCenter,
           end: Alignment.bottomCenter,
-          colors: [Color(0xFF2060C0), Color(0xFF103880)],
+          colors: [
+            GameColors.buttonBlue,
+            GameColors.buttonBlueDark,
+          ],
         );
       case _LevelState.completed:
         return const LinearGradient(
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
-          colors: [Color(0xFF208040), Color(0xFF105030)],
+          colors: [
+            GameColors.buttonGreen,
+            GameColors.buttonGreenDark,
+          ],
         );
     }
   }
 
-  Color _borderColor(_LevelState state) {
-    switch (state) {
-      case _LevelState.locked:
-        return Colors.grey.withAlpha(40);
-      case _LevelState.current:
-        return GameColors.goldFrame;
-      case _LevelState.unlocked:
-        return GameColors.blueLight.withAlpha(180);
-      case _LevelState.completed:
-        return GameColors.goldFrame.withAlpha(200);
-    }
-  }
 }
 
 // ---------------------------------------------------------------------------
-// DailyChallengeButton — floating on the left side
+// DailyChallengeButton — vertical red ribbon on left edge (mockup M1)
 // ---------------------------------------------------------------------------
 class _DailyChallengeButton extends StatelessWidget {
   final VoidCallback onTap;
@@ -1195,47 +1385,102 @@ class _DailyChallengeButton extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Padding(
-      padding: const EdgeInsets.only(left: 4),
+      padding: const EdgeInsets.only(left: 0, top: 100),
       child: GestureDetector(
         onTap: onTap,
         child: Container(
-          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 10),
+          // Outer gold frame wrapper (5-stop gradient)
           decoration: BoxDecoration(
-            gradient: const LinearGradient(
-              begin: Alignment.topLeft,
-              end: Alignment.bottomRight,
-              colors: [Color(0xFFFF6820), Color(0xFFFF4080)],
-            ),
             borderRadius: const BorderRadius.only(
-              topRight: Radius.circular(14),
-              bottomRight: Radius.circular(14),
+              topRight: Radius.circular(22),
+              bottomRight: Radius.circular(22),
+            ),
+            gradient: const LinearGradient(
+              begin: Alignment.topCenter,
+              end: Alignment.bottomCenter,
+              colors: [
+                GameColors.goldFrameBright,
+                GameColors.goldHighlight,
+                GameColors.goldFrameMid,
+                GameColors.goldFrameDeep,
+                GameColors.goldFrameMid,
+                GameColors.goldFrameBright,
+              ],
+              stops: [0.0, 0.2, 0.4, 0.55, 0.8, 1.0],
             ),
             boxShadow: [
               BoxShadow(
-                color: GameColors.orange.withAlpha(60),
-                blurRadius: 10,
-                offset: const Offset(2, 0),
+                color: GameColors.cherryRed.withAlpha(160),
+                blurRadius: 22,
+                offset: const Offset(4, 0),
+              ),
+              BoxShadow(
+                color: Colors.black.withAlpha(180),
+                blurRadius: 14,
+                offset: const Offset(3, 6),
               ),
             ],
           ),
-          child: const Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Text('\uD83C\uDFC6', style: TextStyle(fontSize: 18)),
-              SizedBox(height: 2),
-              RotatedBox(
-                quarterTurns: 1,
-                child: Text(
-                  'Gunluk',
-                  style: TextStyle(
-                    color: Colors.white,
-                    fontSize: 9,
-                    fontWeight: FontWeight.w700,
-                    letterSpacing: 0.5,
+          padding: const EdgeInsets.fromLTRB(0, 3, 3, 3),
+          child: Container(
+            // Cherry red interior
+            width: 60,
+            padding: const EdgeInsets.symmetric(vertical: 18),
+            decoration: const BoxDecoration(
+              borderRadius: BorderRadius.only(
+                topRight: Radius.circular(20),
+                bottomRight: Radius.circular(20),
+              ),
+              gradient: LinearGradient(
+                begin: Alignment.topCenter,
+                end: Alignment.bottomCenter,
+                colors: [
+                  GameColors.cherryRed,
+                  GameColors.cherryRedDark,
+                ],
+              ),
+            ),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Icon(
+                  Icons.emoji_events_rounded,
+                  color: GameColors.goldFrameBright,
+                  size: 30,
+                  shadows: [
+                    Shadow(
+                      color: Colors.black.withAlpha(220),
+                      blurRadius: 6,
+                      offset: const Offset(0, 2),
+                    ),
+                    const Shadow(
+                      color: GameColors.cherryRedDark,
+                      blurRadius: 8,
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 10),
+                const RotatedBox(
+                  quarterTurns: 1,
+                  child: Text(
+                    'Günlük',
+                    style: TextStyle(
+                      color: Colors.white,
+                      fontSize: 14,
+                      fontWeight: FontWeight.w900,
+                      letterSpacing: 1.5,
+                      shadows: [
+                        Shadow(
+                          color: Colors.black,
+                          blurRadius: 5,
+                          offset: Offset(0, 2),
+                        ),
+                      ],
+                    ),
                   ),
                 ),
-              ),
-            ],
+              ],
+            ),
           ),
         ),
       ),
@@ -1244,205 +1489,166 @@ class _DailyChallengeButton extends StatelessWidget {
 }
 
 // ---------------------------------------------------------------------------
-// BottomBar — Star milestones + nav
+// StarMilestoneBar — bottom region progress bar (mockup M1)
+// "Yıldız Ödülleri 15/60" + "Seviye 1-20" pill, gold-bordered purple panel
 // ---------------------------------------------------------------------------
-class _BottomBar extends StatelessWidget {
+class _StarMilestoneBar extends StatelessWidget {
   final int totalStars;
   final GameRegion region;
 
-  const _BottomBar({
+  const _StarMilestoneBar({
     required this.totalStars,
     required this.region,
   });
 
   @override
   Widget build(BuildContext context) {
-    // Star milestones: max stars for this region
-    final milestoneMax = ((region.endLevel) * 3);
+    // Stars within this region only (for the milestone bar)
+    final regionLevelCount = region.endLevel - region.startLevel + 1;
+    final milestoneMax = regionLevelCount * 3;
     final regionStars = totalStars.clamp(0, milestoneMax);
     final progress = milestoneMax > 0 ? regionStars / milestoneMax : 0.0;
 
     return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
+      padding: const EdgeInsets.fromLTRB(12, 4, 12, 4),
       child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
         decoration: BoxDecoration(
-          color: GameColors.bgDeep.withAlpha(220),
-          borderRadius: BorderRadius.circular(18),
-          border: Border.all(color: GameColors.purpleLight.withAlpha(40)),
+          borderRadius: BorderRadius.circular(22),
+          gradient: const LinearGradient(
+            colors: [
+              GameColors.goldFrameBright,
+              GameColors.goldFrameMid,
+              GameColors.goldFrameDeep,
+              GameColors.goldFrameMid,
+              GameColors.goldFrameBright,
+            ],
+            stops: [0.0, 0.25, 0.5, 0.75, 1.0],
+          ),
           boxShadow: [
             BoxShadow(
-              color: GameColors.bgDeep.withAlpha(160),
+              color: Colors.black.withAlpha(140),
               blurRadius: 12,
+              offset: const Offset(0, 4),
             ),
           ],
         ),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            // Star milestone bar
-            Row(
-              children: [
-                const Text('\u2B50', style: TextStyle(fontSize: 14)),
-                const SizedBox(width: 6),
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        'Yildiz Odulleri $totalStars/$milestoneMax',
-                        style: TextStyle(
-                          color: Colors.white.withAlpha(180),
-                          fontSize: 11,
-                          fontWeight: FontWeight.w600,
-                        ),
+        padding: const EdgeInsets.all(2.5),
+        child: Container(
+          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+          decoration: BoxDecoration(
+            borderRadius: BorderRadius.circular(20),
+            gradient: const LinearGradient(
+              begin: Alignment.topCenter,
+              end: Alignment.bottomCenter,
+              colors: [
+                GameColors.panelPurple,
+                GameColors.panelPurpleDark,
+              ],
+            ),
+          ),
+          child: Row(
+            children: [
+              const Icon(
+                Icons.star_rounded,
+                color: GameColors.starGoldFilled,
+                size: 22,
+                shadows: [
+                  Shadow(color: Colors.black54, blurRadius: 4),
+                ],
+              ),
+              const SizedBox(width: 8),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Text(
+                      'Yıldız Ödülleri $regionStars/$milestoneMax',
+                      style: TextStyle(
+                        color: Colors.white.withAlpha(220),
+                        fontSize: 12,
+                        fontWeight: FontWeight.w800,
+                        shadows: [
+                          Shadow(color: Colors.black54, blurRadius: 3),
+                        ],
                       ),
-                      const SizedBox(height: 3),
-                      ClipRRect(
-                        borderRadius: BorderRadius.circular(4),
-                        child: SizedBox(
-                          height: 6,
-                          child: Stack(
-                            children: [
-                              Container(color: Colors.white.withAlpha(20)),
-                              FractionallySizedBox(
-                                widthFactor: progress,
-                                child: Container(
-                                  decoration: const BoxDecoration(
-                                    gradient: LinearGradient(
-                                      colors: [
-                                        GameColors.goldFrame,
-                                        GameColors.goldLight,
-                                      ],
-                                    ),
+                    ),
+                    const SizedBox(height: 4),
+                    ClipRRect(
+                      borderRadius: BorderRadius.circular(6),
+                      child: SizedBox(
+                        height: 8,
+                        child: Stack(
+                          children: [
+                            Container(
+                                color: GameColors.panelPurpleDark
+                                    .withAlpha(220)),
+                            FractionallySizedBox(
+                              widthFactor: progress,
+                              child: Container(
+                                decoration: const BoxDecoration(
+                                  gradient: LinearGradient(
+                                    colors: [
+                                      GameColors.goldFrameBright,
+                                      GameColors.goldFrameMid,
+                                    ],
                                   ),
+                                  boxShadow: [
+                                    BoxShadow(
+                                      color: GameColors.goldFrameMid,
+                                      blurRadius: 6,
+                                    ),
+                                  ],
                                 ),
                               ),
-                            ],
-                          ),
+                            ),
+                          ],
                         ),
                       ),
+                    ),
+                  ],
+                ),
+              ),
+              const SizedBox(width: 10),
+              Container(
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                decoration: BoxDecoration(
+                  borderRadius: BorderRadius.circular(14),
+                  gradient: const LinearGradient(
+                    begin: Alignment.topCenter,
+                    end: Alignment.bottomCenter,
+                    colors: [
+                      GameColors.cherryRed,
+                      GameColors.cherryRedDark,
+                    ],
+                  ),
+                  border: Border.all(
+                    color: GameColors.goldFrameBright,
+                    width: 1.5,
+                  ),
+                  boxShadow: [
+                    BoxShadow(
+                      color: GameColors.cherryRed.withAlpha(120),
+                      blurRadius: 8,
+                    ),
+                  ],
+                ),
+                child: Text(
+                  'Seviye ${region.startLevel}-${region.endLevel}',
+                  style: TextStyle(
+                    color: Colors.white,
+                    fontSize: 11,
+                    fontWeight: FontWeight.w900,
+                    letterSpacing: 0.3,
+                    shadows: [
+                      Shadow(color: Colors.black.withAlpha(180), blurRadius: 3),
                     ],
                   ),
                 ),
-                const SizedBox(width: 8),
-                Container(
-                  padding:
-                      const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
-                  decoration: BoxDecoration(
-                    color: GameColors.goldDark.withAlpha(60),
-                    borderRadius: BorderRadius.circular(10),
-                    border:
-                        Border.all(color: GameColors.goldFrame.withAlpha(60)),
-                  ),
-                  child: Text(
-                    'Seviye ${region.startLevel}-${region.endLevel}',
-                    style: const TextStyle(
-                      color: GameColors.goldLight,
-                      fontSize: 10,
-                      fontWeight: FontWeight.w700,
-                    ),
-                  ),
-                ),
-              ],
-            ),
-
-            const SizedBox(height: 6),
-
-            // Navigation row
-            Row(
-              mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-              children: [
-                _NavButton(
-                  icon: Icons.home_rounded,
-                  label: 'Ana Sayfa',
-                  isActive: false,
-                  onTap: () {
-                    context.go('/menu');
-                  },
-                ),
-                _NavButton(
-                  icon: Icons.shopping_cart_rounded,
-                  label: 'Market',
-                  isActive: false,
-                  onTap: () {
-                    context.go('/shop');
-                  },
-                ),
-                _NavButton(
-                  icon: Icons.map_rounded,
-                  label: 'Harita',
-                  isActive: true,
-                  onTap: () {},
-                ),
-                _NavButton(
-                  icon: Icons.emoji_events_rounded,
-                  label: 'Basarimlar',
-                  isActive: false,
-                  onTap: () {
-                    context.go('/achievements');
-                  },
-                ),
-                _NavButton(
-                  icon: Icons.person_rounded,
-                  label: 'Profil',
-                  isActive: false,
-                  onTap: () {
-                    context.go('/profile');
-                  },
-                ),
-              ],
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-}
-
-class _NavButton extends StatelessWidget {
-  final IconData icon;
-  final String label;
-  final bool isActive;
-  final VoidCallback onTap;
-
-  const _NavButton({
-    required this.icon,
-    required this.label,
-    required this.isActive,
-    required this.onTap,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    return GestureDetector(
-      onTap: onTap,
-      child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-        decoration: isActive
-            ? BoxDecoration(
-                color: GameColors.neonCyan.withAlpha(30),
-                borderRadius: BorderRadius.circular(10),
-              )
-            : null,
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Icon(
-              icon,
-              color: isActive ? GameColors.neonCyan : Colors.white60,
-              size: 20,
-            ),
-            const SizedBox(height: 1),
-            Text(
-              label,
-              style: TextStyle(
-                fontSize: 9,
-                fontWeight: FontWeight.w600,
-                color: isActive ? GameColors.neonCyan : Colors.white38,
               ),
-            ),
-          ],
+            ],
+          ),
         ),
       ),
     );
