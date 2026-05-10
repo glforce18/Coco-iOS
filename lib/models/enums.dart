@@ -1,12 +1,13 @@
 import 'dart:ui';
 
 enum JellyType {
-  purple(Color(0xFF8B24DB)),
-  yellow(Color(0xFFFFD91A)),
-  blue(Color(0xFF338CFF)),
-  green(Color(0xFF33D973)),
-  pink(Color(0xFFFF4D80)),
-  orange(Color(0xFFFF801A));
+  purple(Color(0xFFE63946)),  // RED strawberry / red bird
+  yellow(Color(0xFFFFD91A)),  // YELLOW banana / yellow bird
+  blue(Color(0xFF338CFF)),    // BLUE blueberry / blue bird
+  green(Color(0xFF33D973)),   // GREEN lime / green bird
+  pink(Color(0xFFFF4D80)),    // PINK dragon fruit / pink bird
+  orange(Color(0xFFFF801A)),  // ORANGE orange / orange bird
+  black(Color(0xFF1A1A1A));   // BLACK raven (NEW — visually distinct from red+orange)
 
   final Color color;
   const JellyType(this.color);
@@ -51,9 +52,14 @@ enum GameState {
 }
 
 enum BoosterType {
-  hammer('Cekic', 100),
-  colorBlast('Renk Patlatma', 150),
-  extraMoves('+3 Hamle', 80);
+  // Cost balanced against ScoreCalculator.coinsForLevel:
+  //   mid-game (level 30-50) ≈ 100-200 coins/level
+  //   • ExtraMoves (recovery, +3 moves)        — ~1 mid-game level
+  //   • Hammer (single-tile remove)            — ~1.5 mid-game levels
+  //   • ColorBlast (wipe one whole color)      — ~2 mid-game levels (premium)
+  hammer('Çekiç', 150),
+  colorBlast('Renk Patlatma', 250),
+  extraMoves('+3 Hamle', 100);
 
   final String displayName;
   final int cost;

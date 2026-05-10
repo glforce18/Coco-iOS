@@ -1,18 +1,18 @@
-import 'dart:math';
-
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:in_app_purchase/in_app_purchase.dart';
 
 import 'package:patpat_game/billing/billing_manager.dart';
 import 'package:patpat_game/models/enums.dart';
 import 'package:patpat_game/providers/game_providers.dart';
-import 'package:patpat_game/theme/game_colors.dart';
-import 'package:patpat_game/widgets/shared/bottom_nav.dart';
-
-// ═══════════════════════════════════════════════════════════════════════════
-// ShopScreen — rich purchase UI with booster cards + IAP packages
-// ═══════════════════════════════════════════════════════════════════════════
+import 'package:patpat_game/theme/tropical_theme.dart';
+import 'package:patpat_game/widgets/coco_banner_ad.dart';
+import 'package:patpat_game/widgets/tropical/island_bottom_nav.dart';
+import 'package:patpat_game/widgets/tropical/island_button.dart';
+import 'package:patpat_game/widgets/tropical/island_chip.dart';
+import 'package:patpat_game/widgets/tropical/island_scaffold.dart';
+import 'package:patpat_game/widgets/tropical/island_top_bar.dart';
 
 class ShopScreen extends ConsumerStatefulWidget {
   const ShopScreen({super.key});
@@ -21,80 +21,43 @@ class ShopScreen extends ConsumerStatefulWidget {
   ConsumerState<ShopScreen> createState() => _ShopScreenState();
 }
 
-class _ShopScreenState extends ConsumerState<ShopScreen>
-    with TickerProviderStateMixin {
-  late final AnimationController _particleController;
-  late final AnimationController _pulseController;
-  late final Animation<double> _pulseAnim;
-
+class _ShopScreenState extends ConsumerState<ShopScreen> {
   final _billing = BillingManager.instance;
 
-  @override
-  void initState() {
-    super.initState();
-    _particleController = AnimationController(
-      vsync: this,
-      duration: const Duration(seconds: 12),
-    )..repeat();
-
-    _pulseController = AnimationController(
-      vsync: this,
-      duration: const Duration(milliseconds: 1600),
-    )..repeat(reverse: true);
-
-    _pulseAnim = Tween<double>(begin: 0.0, end: 1.0).animate(
-      CurvedAnimation(parent: _pulseController, curve: Curves.easeInOut),
-    );
-  }
-
-  @override
-  void dispose() {
-    _particleController.dispose();
-    _pulseController.dispose();
-    super.dispose();
-  }
-
-  // ── Buy booster with coins ───────────────────────────────────────────
   Future<void> _buyBooster(BoosterType type) async {
-    final progress = ref.read(playerProgressProvider);
-    if (progress.coins < type.cost) {
-      _showSnackBar('Yeterli altının yok!', GameColors.cherryRed);
+    final p = ref.read(playerProgressProvider);
+    if (p.coins < type.cost) {
+      _showSnack('Yeterli altının yok!', TT.coral);
       return;
     }
     await ref.read(playerProgressProvider.notifier).buyBooster(type);
-    if (mounted) {
-      _showSnackBar('${type.displayName} satın alındı!', GameColors.buttonGreen);
-    }
+    if (mounted) _showSnack('${type.displayName} satın alındı!', TT.palm);
   }
 
-  // ── Buy IAP product ──────────────────────────────────────────────────
   Future<void> _buyIAP(String productId) async {
     final product = _billing.productById(productId);
     if (product == null) return;
     await _billing.buyProduct(product);
   }
 
-  // ── Restore purchases ────────────────────────────────────────────────
   Future<void> _restore() async {
     await _billing.restorePurchases();
-    if (mounted) {
-      _showSnackBar('Satın alımlar geri yüklendi', GameColors.buttonBlue);
-    }
+    if (mounted) _showSnack('Satın alımlar geri yüklendi', TT.lagoon);
   }
 
-  void _showSnackBar(String msg, Color color) {
+  void _showSnack(String msg, Color color) {
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
         content: Text(
           msg,
           textAlign: TextAlign.center,
-          style: const TextStyle(fontWeight: FontWeight.w700, fontSize: 14),
+          style: const TextStyle(fontWeight: FontWeight.w800, fontSize: 14, color: Colors.white),
         ),
         duration: const Duration(seconds: 2),
-        backgroundColor: color.withAlpha(200),
+        backgroundColor: color.withAlpha(220),
         behavior: SnackBarBehavior.floating,
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
-        margin: const EdgeInsets.symmetric(horizontal: 40, vertical: 16),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+        margin: const EdgeInsets.symmetric(horizontal: 40, vertical: 24),
       ),
     );
   }
@@ -102,231 +65,188 @@ class _ShopScreenState extends ConsumerState<ShopScreen>
   @override
   Widget build(BuildContext context) {
     final progress = ref.watch(playerProgressProvider);
-
-    return Scaffold(
-      bottomNavigationBar: const PatPatBottomNav(
-        activeTab: BottomNavTab.market,
+    return IslandScaffold(
+      backgroundAsset: TA.shopBg,
+      overlayOpacity: 0.42,
+      bottomBar: IslandBottomNav(
+        activeIndex: 1,
+        tabs: [
+          IslandNavTab(icon: Icons.home_rounded, label: 'Ana Sayfa', onTap: () => context.go('/menu')),
+          IslandNavTab(icon: Icons.shopping_bag_rounded, label: 'Mağaza', onTap: () {}),
+          IslandNavTab(
+            icon: Icons.casino_rounded,
+            label: 'Çark',
+            onTap: () => context.push('/spin'),
+            isCenter: true,
+          ),
+          IslandNavTab(icon: Icons.egg_rounded, label: 'Yuva', onTap: () => context.push('/nest')),
+          IslandNavTab(icon: Icons.person_rounded, label: 'Profil', onTap: () => context.push('/profile')),
+        ],
       ),
-      body: Stack(
-        fit: StackFit.expand,
+      child: Column(
         children: [
-          // ── Deep purple gradient background ──
-          Container(
-            decoration: const BoxDecoration(
-              gradient: LinearGradient(
-                begin: Alignment.topCenter,
-                end: Alignment.bottomCenter,
-                colors: [
-                  Color(0xFF1A0660),
-                  Color(0xFF0D0235),
-                  Color(0xFF050120),
+          IslandTopBar(
+            stars: progress.totalStars,
+            coins: progress.coins,
+            hearts: progress.lives,
+            leading: IslandCircleButton(
+              icon: Icons.arrow_back_rounded,
+              onTap: () => context.go('/map'),
+            ),
+            trailing: [
+              IslandCircleButton(
+                icon: Icons.restore_rounded,
+                onTap: _restore,
+              ),
+            ],
+          ),
+          const SizedBox(height: 12),
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 14),
+            child: Container(
+              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+              decoration: BoxDecoration(
+                borderRadius: BorderRadius.circular(20),
+                gradient: TT.coralButtonGradient,
+                border: Border.all(color: TT.goldShine, width: 2),
+                boxShadow: [
+                  BoxShadow(color: TT.coral.withAlpha(160), blurRadius: 16, offset: const Offset(0, 4)),
+                  BoxShadow(color: Colors.black.withAlpha(140), blurRadius: 8, offset: const Offset(0, 3)),
                 ],
-                stops: [0.0, 0.5, 1.0],
               ),
-            ),
-          ),
-
-          // ── Animated floating particles ──
-          AnimatedBuilder(
-            animation: _particleController,
-            builder: (context, _) => CustomPaint(
-              painter: _SparkleParticlePainter(
-                progress: _particleController.value,
-              ),
-              size: Size.infinite,
-            ),
-          ),
-
-          // ── Main content ──
-          SafeArea(
-            child: Column(
-              children: [
-                _ShopHeader(
-                  coins: progress.coins,
-                  onBack: () {
-                    context.go('/map');
-                  },
-                ),
-                Expanded(
-                  child: SingleChildScrollView(
-                    physics: const BouncingScrollPhysics(),
-                    padding: const EdgeInsets.symmetric(
-                        horizontal: 16, vertical: 12),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        // ── Booster section ──
-                        _SectionHeader(
-                          title: 'Güçlendiriciler',
-                          icon: Icons.bolt,
-                          iconColor: GameColors.goldFrameMid,
-                        ),
-                        const SizedBox(height: 10),
-                        _BoosterCard(
-                          type: BoosterType.hammer,
-                          icon: Icons.gavel,
-                          iconColor: GameColors.orange,
-                          glowColor: GameColors.orangeDark,
-                          description: 'Tek bir jelliyi yok et',
-                          count: progress.hammerCount,
-                          coins: progress.coins,
-                          pulseAnim: _pulseAnim,
-                          onBuy: () => _buyBooster(BoosterType.hammer),
-                        ),
-                        const SizedBox(height: 10),
-                        _BoosterCard(
-                          type: BoosterType.colorBlast,
-                          icon: Icons.auto_awesome,
-                          iconColor: GameColors.buttonPurple,
-                          glowColor: GameColors.purpleDark,
-                          description: 'Aynı renk jellileri patlat',
-                          count: progress.colorBlastCount,
-                          coins: progress.coins,
-                          pulseAnim: _pulseAnim,
-                          onBuy: () => _buyBooster(BoosterType.colorBlast),
-                        ),
-                        const SizedBox(height: 10),
-                        _BoosterCard(
-                          type: BoosterType.extraMoves,
-                          icon: Icons.add_circle_outline,
-                          iconColor: GameColors.blueLight,
-                          glowColor: GameColors.blueDark,
-                          description: '+3 ekstra hamle kazan',
-                          count: progress.extraMovesCount,
-                          coins: progress.coins,
-                          pulseAnim: _pulseAnim,
-                          onBuy: () => _buyBooster(BoosterType.extraMoves),
-                        ),
-
-                        const SizedBox(height: 28),
-
-                        // ── Coin Packs section ──
-                        _SectionHeader(
-                          title: 'Altın Paketleri',
-                          icon: Icons.monetization_on,
-                          iconColor: GameColors.goldFrameMid,
-                        ),
-                        const SizedBox(height: 10),
-
-                        if (!_billing.isAvailable) ...[
-                          _StoreUnavailableBanner(),
-                          const SizedBox(height: 10),
-                        ],
-
-                        _CoinPackCard(
-                          amount: 500,
-                          productId: BillingManager.coinsSmallId,
-                          gradient: const [Color(0xFF1A5C2E), Color(0xFF0D3018)],
-                          borderColor: GameColors.greenLight,
-                          billing: _billing,
-                          onBuy: () => _buyIAP(BillingManager.coinsSmallId),
-                        ),
-                        const SizedBox(height: 10),
-                        _CoinPackCard(
-                          amount: 1500,
-                          productId: BillingManager.coinsMediumId,
-                          gradient: const [Color(0xFF1A3C6E), Color(0xFF0D1E40)],
-                          borderColor: GameColors.blueLight,
-                          billing: _billing,
-                          badgeText: 'Popüler',
-                          onBuy: () => _buyIAP(BillingManager.coinsMediumId),
-                        ),
-                        const SizedBox(height: 10),
-                        _CoinPackCard(
-                          amount: 5000,
-                          productId: BillingManager.coinsLargeId,
-                          gradient: const [Color(0xFF5C3A1A), Color(0xFF3D2510)],
-                          borderColor: GameColors.goldFrameMid,
-                          billing: _billing,
-                          badgeText: 'En Değerli',
-                          onBuy: () => _buyIAP(BillingManager.coinsLargeId),
-                        ),
-
-                        const SizedBox(height: 28),
-
-                        // ── Special offers section ──
-                        _SectionHeader(
-                          title: 'Özel Teklifler',
-                          icon: Icons.star,
-                          iconColor: GameColors.cherryRed,
-                        ),
-                        const SizedBox(height: 10),
-
-                        // Remove Ads
-                        _SpecialOfferCard(
-                          title: 'Reklam Kaldırma',
-                          description: 'Oyundaki tüm reklamları kaldır',
-                          icon: Icons.block,
-                          iconColor: GameColors.buttonBlue,
-                          gradient: const [Color(0xFF0D3A4A), Color(0xFF061E28)],
-                          borderColor: GameColors.buttonBlue,
-                          productId: BillingManager.removeAdsId,
-                          billing: _billing,
-                          isPurchased: progress.removeAdsPurchased,
-                          onBuy: () => _buyIAP(BillingManager.removeAdsId),
-                        ),
-                        const SizedBox(height: 10),
-
-                        // Starter Bundle
-                        _SpecialOfferCard(
-                          title: 'Başlangıç Paketi',
-                          description: '500 altın + 5 can + özel avantajlar',
-                          icon: Icons.card_giftcard,
-                          iconColor: GameColors.goldFrameMid,
-                          gradient: const [Color(0xFF4A3A0D), Color(0xFF2A2008)],
-                          borderColor: GameColors.goldFrameMid,
-                          productId: BillingManager.starterBundleId,
-                          billing: _billing,
-                          isPurchased: progress.starterBundleClaimed,
-                          onBuy: () => _buyIAP(BillingManager.starterBundleId),
-                        ),
-                        const SizedBox(height: 10),
-
-                        // VIP Monthly
-                        _SpecialOfferCard(
-                          title: 'VIP Üyelik',
-                          description: 'Aylık VIP avantajları ve özel içerik',
-                          icon: Icons.workspace_premium,
-                          iconColor: GameColors.cherryRed,
-                          gradient: const [Color(0xFF4A0D30), Color(0xFF2A0618)],
-                          borderColor: GameColors.cherryRed,
-                          productId: BillingManager.vipMonthlyId,
-                          billing: _billing,
-                          isPurchased: progress.vipActive,
-                          onBuy: () => _buyIAP(BillingManager.vipMonthlyId),
-                        ),
-
-                        const SizedBox(height: 24),
-
-                        // ── Restore button ──
-                        Center(
-                          child: GestureDetector(
-                            onTap: _restore,
-                            child: Container(
-                              padding: const EdgeInsets.symmetric(
-                                  horizontal: 24, vertical: 12),
-                              decoration: BoxDecoration(
-                                color: Colors.white.withAlpha(10),
-                                borderRadius: BorderRadius.circular(16),
-                                border: Border.all(
-                                    color: Colors.white.withAlpha(30)),
-                              ),
-                              child: const Text(
-                                'Satın Alımları Geri Yükle',
-                                style: TextStyle(
-                                  color: Colors.white54,
-                                  fontSize: 13,
-                                  fontWeight: FontWeight.w600,
-                                ),
-                              ),
-                            ),
-                          ),
-                        ),
-                        const SizedBox(height: 24),
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  const Icon(Icons.local_offer_rounded, color: TT.goldShine, size: 22),
+                  const SizedBox(width: 8),
+                  Text(
+                    'HAZİNE MAĞAZASI',
+                    style: TT.titleLarge.copyWith(
+                      color: TT.sandLight,
+                      letterSpacing: 1.5,
+                      shadows: [
+                        Shadow(color: Colors.black.withAlpha(220), blurRadius: 4, offset: const Offset(0, 2)),
                       ],
                     ),
                   ),
+                ],
+              ),
+            ),
+          ),
+          const SizedBox(height: 12),
+          Expanded(
+            child: ListView(
+              padding: const EdgeInsets.fromLTRB(14, 0, 14, 16),
+              children: [
+                // ─── Boosters ───
+                _SectionHeader(icon: Icons.bolt_rounded, title: 'Güçlendiriciler'),
+                const SizedBox(height: 8),
+                Row(
+                  children: [
+                    Expanded(child: _BoosterCard(
+                      type: BoosterType.hammer,
+                      asset: TA.boosterHammer,
+                      count: progress.hammerCount,
+                      coins: progress.coins,
+                      onBuy: () => _buyBooster(BoosterType.hammer),
+                    )),
+                    const SizedBox(width: 8),
+                    Expanded(child: _BoosterCard(
+                      type: BoosterType.colorBlast,
+                      asset: TA.boosterColorBlast,
+                      count: progress.colorBlastCount,
+                      coins: progress.coins,
+                      onBuy: () => _buyBooster(BoosterType.colorBlast),
+                    )),
+                    const SizedBox(width: 8),
+                    Expanded(child: _BoosterCard(
+                      type: BoosterType.extraMoves,
+                      asset: TA.boosterExtraMoves,
+                      count: progress.extraMovesCount,
+                      coins: progress.coins,
+                      onBuy: () => _buyBooster(BoosterType.extraMoves),
+                    )),
+                  ],
                 ),
+                const SizedBox(height: 18),
+
+                // ─── Coin Packs ───
+                _SectionHeader(icon: Icons.monetization_on_rounded, title: 'Altın Paketleri'),
+                const SizedBox(height: 8),
+                _CoinCard(
+                  productId: BillingManager.coinsSmallId,
+                  asset: TA.shopCoins500,
+                  amount: '500',
+                  subtitle: 'Küçük Sandık',
+                  onBuy: () => _buyIAP(BillingManager.coinsSmallId),
+                ),
+                const SizedBox(height: 8),
+                _CoinCard(
+                  productId: BillingManager.coinsMediumId,
+                  asset: TA.shopCoins1500,
+                  amount: '1.500',
+                  subtitle: 'Orta Sandık',
+                  badge: 'Popüler',
+                  onBuy: () => _buyIAP(BillingManager.coinsMediumId),
+                ),
+                const SizedBox(height: 8),
+                _CoinCard(
+                  productId: BillingManager.coinsLargeId,
+                  asset: TA.shopCoins5000,
+                  amount: '5.000',
+                  subtitle: 'Hazine Sandığı',
+                  badge: 'En İyi Değer',
+                  onBuy: () => _buyIAP(BillingManager.coinsLargeId),
+                ),
+                const SizedBox(height: 18),
+
+                // ─── Specials ───
+                _SectionHeader(icon: Icons.workspace_premium_rounded, title: 'Özel Teklifler'),
+                const SizedBox(height: 8),
+                // Remove Ads — top of the specials section so it's the
+                // first thing players see when ads start to feel intrusive.
+                if (!progress.removeAdsPurchased) ...[
+                  _PremiumCard(
+                    productId: BillingManager.removeAdsId,
+                    asset: TA.shopRemoveAds,
+                    title: 'Reklamları Kaldır',
+                    desc: 'Tek seferlik. Tüm banner + ara reklamlar kapanır. Ödüllü reklam (bonus için) seçimlik kalır.',
+                    isPurchased: progress.removeAdsPurchased,
+                    onBuy: () => _buyIAP(BillingManager.removeAdsId),
+                  ),
+                  const SizedBox(height: 8),
+                ],
+                _PremiumCard(
+                  productId: BillingManager.starterBundleId,
+                  asset: TA.shopStarter,
+                  title: 'Başlangıç Paketi',
+                  desc: 'Tüm güçlendiricilerden 5 + 1000 altın',
+                  isPurchased: false,
+                  onBuy: () => _buyIAP(BillingManager.starterBundleId),
+                ),
+                if (progress.removeAdsPurchased) ...[
+                  const SizedBox(height: 8),
+                  _PremiumCard(
+                    productId: BillingManager.removeAdsId,
+                    asset: TA.shopRemoveAds,
+                    title: 'Reklamları Kaldır',
+                    desc: 'Satın alındı — teşekkürler!',
+                    isPurchased: true,
+                    onBuy: () {},
+                  ),
+                ],
+                const SizedBox(height: 8),
+                _PremiumCard(
+                  productId: BillingManager.vipMonthlyId,
+                  asset: TA.shopVip,
+                  title: 'VIP Üyelik',
+                  desc: 'Sınırsız can + 2x altın + reklamsız',
+                  isPurchased: progress.vipActive,
+                  isVip: true,
+                  onBuy: () => _buyIAP(BillingManager.vipMonthlyId),
+                ),
+                const SizedBox(height: 16),
+                const Center(child: CocoBannerAd()),
               ],
             ),
           ),
@@ -336,362 +256,206 @@ class _ShopScreenState extends ConsumerState<ShopScreen>
   }
 }
 
-// ═══════════════════════════════════════════════════════════════════════════
-// Shop Header
-// ═══════════════════════════════════════════════════════════════════════════
-
-class _ShopHeader extends StatelessWidget {
-  final int coins;
-  final VoidCallback onBack;
-
-  const _ShopHeader({required this.coins, required this.onBack});
+// ─── Section header ──────────────────────────────────────────────────────
+class _SectionHeader extends StatelessWidget {
+  final IconData icon;
+  final String title;
+  const _SectionHeader({required this.icon, required this.title});
 
   @override
   Widget build(BuildContext context) {
-    return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-      child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 10),
-        decoration: BoxDecoration(
-          color: GameColors.panelPurpleDark.withAlpha(220),
-          borderRadius: BorderRadius.circular(20),
-          border: Border.all(color: GameColors.goldFrameMid.withAlpha(60)),
-          boxShadow: [
-            BoxShadow(
-              color: GameColors.goldFrameDeep.withAlpha(30),
-              blurRadius: 16,
-            ),
-          ],
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+      decoration: BoxDecoration(
+        borderRadius: BorderRadius.circular(18),
+        gradient: const LinearGradient(
+          begin: Alignment.topCenter,
+          end: Alignment.bottomCenter,
+          colors: [TT.driftWood, TT.driftWoodDark],
         ),
-        child: Row(
-          children: [
-            // Back button
-            GestureDetector(
-              onTap: onBack,
-              child: Container(
-                width: 40,
-                height: 40,
-                decoration: BoxDecoration(
-                  shape: BoxShape.circle,
-                  color: Colors.white.withAlpha(15),
-                  border: Border.all(color: Colors.white.withAlpha(50)),
-                ),
-                child: const Icon(
-                  Icons.arrow_back_rounded,
-                  color: Colors.white,
-                  size: 22,
-                ),
-              ),
+        border: Border.all(color: TT.gold, width: 2),
+        boxShadow: [
+          BoxShadow(color: Colors.black.withAlpha(140), blurRadius: 10, offset: const Offset(0, 3)),
+          BoxShadow(color: TT.gold.withAlpha(80), blurRadius: 14, spreadRadius: -1),
+        ],
+      ),
+      child: Row(
+        children: [
+          Icon(icon, color: TT.goldShine, size: 22, shadows: [
+            Shadow(color: Colors.black.withAlpha(220), blurRadius: 4, offset: const Offset(0, 1)),
+          ]),
+          const SizedBox(width: 8),
+          Text(
+            title,
+            style: TT.titleMedium.copyWith(
+              color: TT.sandLight,
+              shadows: [
+                Shadow(color: Colors.black.withAlpha(220), blurRadius: 4, offset: const Offset(0, 2)),
+              ],
             ),
-            const SizedBox(width: 12),
-
-            // Title
-            ShaderMask(
-              shaderCallback: (bounds) => const LinearGradient(
-                colors: [GameColors.goldFrameBright, GameColors.goldFrameMid],
-              ).createShader(bounds),
-              child: const Text(
-                'MAĞAZA',
-                style: TextStyle(
-                  fontSize: 26,
-                  fontWeight: FontWeight.w900,
-                  color: Colors.white,
-                  letterSpacing: 3,
-                ),
-              ),
-            ),
-
-            const Spacer(),
-
-            // Coin display
-            Container(
-              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-              decoration: BoxDecoration(
-                gradient: LinearGradient(
-                  colors: [
-                    GameColors.goldFrameDeep.withAlpha(120),
-                    GameColors.goldFrameDeep.withAlpha(60),
-                  ],
-                ),
-                borderRadius: BorderRadius.circular(16),
-                border:
-                    Border.all(color: GameColors.goldFrameMid.withAlpha(100)),
-                boxShadow: [
-                  BoxShadow(
-                    color: GameColors.goldFrameDeep.withAlpha(40),
-                    blurRadius: 8,
-                  ),
-                ],
-              ),
-              child: Row(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  const Text('\uD83E\uDE99',
-                      style: TextStyle(fontSize: 16)),
-                  const SizedBox(width: 6),
-                  Text(
-                    '$coins',
-                    style: const TextStyle(
-                      fontSize: 16,
-                      fontWeight: FontWeight.w800,
-                      color: GameColors.goldFrameBright,
-                    ),
-                  ),
-                ],
-              ),
-            ),
-          ],
-        ),
+          ),
+        ],
       ),
     );
   }
 }
 
-// ═══════════════════════════════════════════════════════════════════════════
-// Section Header
-// ═══════════════════════════════════════════════════════════════════════════
-
-class _SectionHeader extends StatelessWidget {
-  final String title;
-  final IconData icon;
-  final Color iconColor;
-
-  const _SectionHeader({
-    required this.title,
-    required this.icon,
-    required this.iconColor,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    return Row(
-      children: [
-        Container(
-          width: 32,
-          height: 32,
-          decoration: BoxDecoration(
-            shape: BoxShape.circle,
-            gradient: RadialGradient(
-              colors: [iconColor.withAlpha(180), iconColor.withAlpha(40)],
-            ),
-          ),
-          child: Icon(icon, color: Colors.white, size: 18),
-        ),
-        const SizedBox(width: 10),
-        Text(
-          title,
-          style: TextStyle(
-            fontSize: 18,
-            fontWeight: FontWeight.w800,
-            color: iconColor,
-            letterSpacing: 1.2,
-            shadows: [
-              Shadow(
-                color: iconColor.withAlpha(80),
-                blurRadius: 10,
-              ),
-            ],
-          ),
-        ),
-        const SizedBox(width: 10),
-        Expanded(
-          child: Container(
-            height: 1,
-            decoration: BoxDecoration(
-              gradient: LinearGradient(
-                colors: [
-                  iconColor.withAlpha(80),
-                  iconColor.withAlpha(0),
-                ],
-              ),
-            ),
-          ),
-        ),
-      ],
-    );
-  }
-}
-
-// ═══════════════════════════════════════════════════════════════════════════
-// Booster Card — purchase with coins
-// ═══════════════════════════════════════════════════════════════════════════
-
+// ─── Booster card ─────────────────────────────────────────────────────────
 class _BoosterCard extends StatelessWidget {
   final BoosterType type;
-  final IconData icon;
-  final Color iconColor;
-  final Color glowColor;
-  final String description;
+  final String asset;
   final int count;
   final int coins;
-  final Animation<double> pulseAnim;
   final VoidCallback onBuy;
 
   const _BoosterCard({
     required this.type,
-    required this.icon,
-    required this.iconColor,
-    required this.glowColor,
-    required this.description,
+    required this.asset,
     required this.count,
     required this.coins,
-    required this.pulseAnim,
     required this.onBuy,
   });
 
   @override
   Widget build(BuildContext context) {
     final canAfford = coins >= type.cost;
-
     return Container(
-      padding: const EdgeInsets.all(12),
+      padding: const EdgeInsets.all(2),
       decoration: BoxDecoration(
-        gradient: LinearGradient(
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-          colors: [
-            GameColors.panelPurple.withAlpha(220),
-            GameColors.panelPurpleDark.withAlpha(240),
-          ],
-        ),
-        borderRadius: BorderRadius.circular(18),
-        border: Border.all(
-          color: iconColor.withAlpha(80),
-          width: 1.5,
+        borderRadius: BorderRadius.circular(20),
+        gradient: const LinearGradient(
+          begin: Alignment.topCenter,
+          end: Alignment.bottomCenter,
+          colors: [TT.goldShine, TT.gold, TT.goldDeep],
         ),
         boxShadow: [
-          BoxShadow(
-            color: glowColor.withAlpha(30),
-            blurRadius: 12,
-            spreadRadius: 1,
-          ),
+          BoxShadow(color: Colors.black.withAlpha(140), blurRadius: 10, offset: const Offset(0, 4)),
         ],
       ),
+      child: Container(
+        padding: const EdgeInsets.fromLTRB(8, 12, 8, 8),
+        decoration: BoxDecoration(
+          borderRadius: BorderRadius.circular(18),
+          gradient: const LinearGradient(
+            begin: Alignment.topCenter,
+            end: Alignment.bottomCenter,
+            colors: [Color(0xFFFFF1D9), Color(0xFFF5DBA8)],
+          ),
+        ),
+        child: Column(
+          children: [
+            // count badge
+            Align(
+              alignment: Alignment.topRight,
+              child: Container(
+                padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                decoration: BoxDecoration(
+                  borderRadius: BorderRadius.circular(10),
+                  color: TT.coral,
+                  border: Border.all(color: TT.goldShine, width: 1.2),
+                ),
+                child: Text(
+                  'x$count',
+                  style: const TextStyle(fontSize: 11, fontWeight: FontWeight.w900, color: Colors.white),
+                ),
+              ),
+            ),
+            // image
+            SizedBox(
+              height: 64,
+              child: Image.asset(
+                asset,
+                fit: BoxFit.contain,
+                errorBuilder: (_, __, ___) => const Icon(Icons.bolt_rounded, color: TT.gold, size: 48),
+              ),
+            ),
+            const SizedBox(height: 4),
+            Text(
+              type.displayName,
+              style: TT.bodySmall.copyWith(fontWeight: FontWeight.w900, color: TT.driftWoodDark),
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+            ),
+            const SizedBox(height: 6),
+            IslandButton(
+              text: '${type.cost}',
+              icon: Icons.monetization_on_rounded,
+              color: canAfford ? IslandButtonColor.gold : IslandButtonColor.bamboo,
+              size: IslandButtonSize.small,
+              fullWidth: true,
+              onPressed: canAfford ? onBuy : null,
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+// ─── Coin card ────────────────────────────────────────────────────────────
+class _CoinCard extends StatelessWidget {
+  final String productId;
+  final String asset;
+  final String amount;
+  final String subtitle;
+  final String? badge;
+  final VoidCallback onBuy;
+
+  const _CoinCard({
+    required this.productId,
+    required this.asset,
+    required this.amount,
+    required this.subtitle,
+    this.badge,
+    required this.onBuy,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final billing = BillingManager.instance;
+    final ProductDetails? product = billing.productById(productId);
+    final price = product?.price ?? '—';
+    return IslandSurface(
+      padding: const EdgeInsets.all(12),
       child: Row(
         children: [
-          // Icon circle with glow
-          AnimatedBuilder(
-            animation: pulseAnim,
-            builder: (context, child) {
-              final pulse = pulseAnim.value;
-              return Container(
-                width: 64,
-                height: 64,
-                decoration: BoxDecoration(
-                  shape: BoxShape.circle,
-                  gradient: RadialGradient(
-                    colors: [
-                      iconColor.withAlpha(180),
-                      iconColor.withAlpha(60),
-                      glowColor.withAlpha(20),
-                    ],
-                    stops: const [0.0, 0.6, 1.0],
-                  ),
-                  border: Border.all(
-                    color: iconColor.withAlpha(160),
-                    width: 2,
-                  ),
-                  boxShadow: [
-                    BoxShadow(
-                      color: iconColor.withAlpha((40 + 30 * pulse).toInt()),
-                      blurRadius: 16 + 4 * pulse,
-                      spreadRadius: 1 + pulse,
-                    ),
-                  ],
-                ),
-                child: Icon(icon, color: Colors.white, size: 28),
-              );
-            },
+          SizedBox(
+            width: 70,
+            height: 70,
+            child: Image.asset(
+              asset,
+              fit: BoxFit.contain,
+              errorBuilder: (_, __, ___) => const Icon(Icons.savings_rounded, color: TT.gold, size: 56),
+            ),
           ),
-          const SizedBox(width: 14),
-
-          // Name + description + count
+          const SizedBox(width: 12),
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(
-                  type.displayName,
-                  style: TextStyle(
-                    fontSize: 16,
-                    fontWeight: FontWeight.w800,
-                    color: iconColor,
-                  ),
+                Row(
+                  children: [
+                    Text(
+                      amount,
+                      style: TT.titleLarge.copyWith(color: TT.goldDeep, fontSize: 22),
+                    ),
+                    const SizedBox(width: 4),
+                    const Icon(Icons.monetization_on_rounded, color: TT.gold, size: 22),
+                    if (badge != null) ...[
+                      const SizedBox(width: 6),
+                      IslandRibbon(text: badge!),
+                    ],
+                  ],
                 ),
-                const SizedBox(height: 3),
-                Text(
-                  description,
-                  style: TextStyle(
-                    fontSize: 12,
-                    color: Colors.white.withAlpha(140),
-                    fontWeight: FontWeight.w400,
-                  ),
-                ),
-                const SizedBox(height: 4),
-                Text(
-                  'Mevcut: $count',
-                  style: TextStyle(
-                    fontSize: 11,
-                    color: Colors.white.withAlpha(100),
-                    fontWeight: FontWeight.w600,
-                  ),
-                ),
+                Text(subtitle, style: TT.bodySmall),
               ],
             ),
           ),
-
-          // Buy button
-          GestureDetector(
-            onTap: canAfford ? onBuy : null,
-            child: Container(
-              padding:
-                  const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
-              decoration: BoxDecoration(
-                gradient: LinearGradient(
-                  begin: Alignment.topCenter,
-                  end: Alignment.bottomCenter,
-                  colors: canAfford
-                      ? [
-                          const Color(0xFF2ECC40),
-                          const Color(0xFF1A8028),
-                        ]
-                      : [
-                          Colors.grey.shade700,
-                          Colors.grey.shade800,
-                        ],
-                ),
-                borderRadius: BorderRadius.circular(14),
-                border: Border.all(
-                  color: canAfford
-                      ? GameColors.buttonGreen.withAlpha(120)
-                      : Colors.grey.withAlpha(40),
-                ),
-                boxShadow: canAfford
-                    ? [
-                        BoxShadow(
-                          color: GameColors.buttonGreen.withAlpha(40),
-                          blurRadius: 8,
-                        ),
-                      ]
-                    : null,
-              ),
-              child: Row(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  const Text('\uD83E\uDE99',
-                      style: TextStyle(fontSize: 13)),
-                  const SizedBox(width: 4),
-                  Text(
-                    '${type.cost}',
-                    style: TextStyle(
-                      fontSize: 14,
-                      fontWeight: FontWeight.w800,
-                      color: canAfford ? Colors.white : Colors.white38,
-                    ),
-                  ),
-                ],
-              ),
-            ),
+          IslandButton(
+            text: price,
+            color: IslandButtonColor.palm,
+            size: IslandButtonSize.small,
+            onPressed: product == null ? null : onBuy,
           ),
         ],
       ),
@@ -699,430 +463,152 @@ class _BoosterCard extends StatelessWidget {
   }
 }
 
-// ═══════════════════════════════════════════════════════════════════════════
-// Coin Pack Card — IAP
-// ═══════════════════════════════════════════════════════════════════════════
-
-class _CoinPackCard extends StatelessWidget {
-  final int amount;
+// ─── Premium card ────────────────────────────────────────────────────────
+class _PremiumCard extends StatelessWidget {
   final String productId;
-  final List<Color> gradient;
-  final Color borderColor;
-  final BillingManager billing;
-  final String? badgeText;
-  final VoidCallback onBuy;
-
-  const _CoinPackCard({
-    required this.amount,
-    required this.productId,
-    required this.gradient,
-    required this.borderColor,
-    required this.billing,
-    this.badgeText,
-    required this.onBuy,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    final product = billing.productById(productId);
-    final priceText = product?.price ?? '--';
-    final available = billing.isAvailable && product != null;
-
-    return Stack(
-      clipBehavior: Clip.none,
-      children: [
-        GestureDetector(
-          onTap: available ? onBuy : null,
-          child: Container(
-            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
-            decoration: BoxDecoration(
-              gradient: LinearGradient(
-                begin: Alignment.topLeft,
-                end: Alignment.bottomRight,
-                colors: gradient,
-              ),
-              borderRadius: BorderRadius.circular(18),
-              border: Border.all(color: borderColor.withAlpha(80), width: 1.5),
-              boxShadow: [
-                BoxShadow(
-                  color: borderColor.withAlpha(20),
-                  blurRadius: 12,
-                  spreadRadius: 1,
-                ),
-              ],
-            ),
-            child: Row(
-              children: [
-                // Coin stack icon
-                Container(
-                  width: 50,
-                  height: 50,
-                  decoration: BoxDecoration(
-                    shape: BoxShape.circle,
-                    gradient: const RadialGradient(
-                      colors: [
-                        GameColors.goldFrameMid,
-                        GameColors.goldFrameDeep,
-                      ],
-                    ),
-                    boxShadow: [
-                      BoxShadow(
-                        color: GameColors.goldFrameMid.withAlpha(60),
-                        blurRadius: 12,
-                      ),
-                    ],
-                  ),
-                  child: const Center(
-                    child: Text(
-                      '\uD83E\uDE99',
-                      style: TextStyle(fontSize: 24),
-                    ),
-                  ),
-                ),
-                const SizedBox(width: 14),
-
-                // Amount
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        '$amount Altın',
-                        style: const TextStyle(
-                          fontSize: 18,
-                          fontWeight: FontWeight.w800,
-                          color: GameColors.goldFrameBright,
-                        ),
-                      ),
-                      if (!available)
-                        Text(
-                          'Mağaza yüklenemedi',
-                          style: TextStyle(
-                            fontSize: 11,
-                            color: Colors.white.withAlpha(80),
-                          ),
-                        ),
-                    ],
-                  ),
-                ),
-
-                // Price button
-                Container(
-                  padding: const EdgeInsets.symmetric(
-                      horizontal: 16, vertical: 10),
-                  decoration: BoxDecoration(
-                    gradient: LinearGradient(
-                      begin: Alignment.topCenter,
-                      end: Alignment.bottomCenter,
-                      colors: available
-                          ? [const Color(0xFF2ECC40), const Color(0xFF1A8028)]
-                          : [Colors.grey.shade700, Colors.grey.shade800],
-                    ),
-                    borderRadius: BorderRadius.circular(14),
-                    border: Border.all(
-                      color: available
-                          ? GameColors.buttonGreen.withAlpha(100)
-                          : Colors.grey.withAlpha(30),
-                    ),
-                  ),
-                  child: Text(
-                    priceText,
-                    style: TextStyle(
-                      fontSize: 14,
-                      fontWeight: FontWeight.w800,
-                      color: available ? Colors.white : Colors.white38,
-                    ),
-                  ),
-                ),
-              ],
-            ),
-          ),
-        ),
-
-        // Badge
-        if (badgeText != null)
-          Positioned(
-            top: -6,
-            right: 16,
-            child: Container(
-              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 3),
-              decoration: BoxDecoration(
-                gradient: const LinearGradient(
-                  colors: [GameColors.cherryRed, GameColors.pinkDark],
-                ),
-                borderRadius: BorderRadius.circular(10),
-                boxShadow: [
-                  BoxShadow(
-                    color: GameColors.cherryRed.withAlpha(80),
-                    blurRadius: 8,
-                  ),
-                ],
-              ),
-              child: Text(
-                badgeText!,
-                style: const TextStyle(
-                  fontSize: 10,
-                  fontWeight: FontWeight.w800,
-                  color: Colors.white,
-                ),
-              ),
-            ),
-          ),
-      ],
-    );
-  }
-}
-
-// ═══════════════════════════════════════════════════════════════════════════
-// Special Offer Card — remove ads, starter bundle, VIP
-// ═══════════════════════════════════════════════════════════════════════════
-
-class _SpecialOfferCard extends StatelessWidget {
+  final String asset;
   final String title;
-  final String description;
-  final IconData icon;
-  final Color iconColor;
-  final List<Color> gradient;
-  final Color borderColor;
-  final String productId;
-  final BillingManager billing;
+  final String desc;
   final bool isPurchased;
+  final bool isVip;
   final VoidCallback onBuy;
 
-  const _SpecialOfferCard({
-    required this.title,
-    required this.description,
-    required this.icon,
-    required this.iconColor,
-    required this.gradient,
-    required this.borderColor,
+  const _PremiumCard({
     required this.productId,
-    required this.billing,
+    required this.asset,
+    required this.title,
+    required this.desc,
     required this.isPurchased,
+    this.isVip = false,
     required this.onBuy,
   });
 
   @override
   Widget build(BuildContext context) {
-    final product = billing.productById(productId);
-    final priceText = product?.price ?? '--';
-    final available = billing.isAvailable && product != null && !isPurchased;
-
-    return GestureDetector(
-      onTap: available ? onBuy : null,
+    final billing = BillingManager.instance;
+    final ProductDetails? product = billing.productById(productId);
+    final price = product?.price ?? '—';
+    return Container(
+      padding: const EdgeInsets.all(2.5),
+      decoration: BoxDecoration(
+        borderRadius: BorderRadius.circular(22),
+        gradient: isVip
+            ? const LinearGradient(
+                begin: Alignment.topCenter,
+                end: Alignment.bottomCenter,
+                colors: [TT.goldShine, TT.goldBright, TT.gold, TT.goldDeep, TT.gold],
+                stops: [0.0, 0.2, 0.5, 0.8, 1.0],
+              )
+            : const LinearGradient(
+                begin: Alignment.topCenter,
+                end: Alignment.bottomCenter,
+                colors: [TT.goldShine, TT.gold, TT.goldDeep],
+              ),
+        boxShadow: [
+          BoxShadow(color: Colors.black.withAlpha(140), blurRadius: 12, offset: const Offset(0, 4)),
+          if (isVip)
+            BoxShadow(color: TT.gold.withAlpha(180), blurRadius: 22, spreadRadius: 2),
+        ],
+      ),
       child: Container(
-        padding: const EdgeInsets.all(14),
+        padding: const EdgeInsets.all(12),
         decoration: BoxDecoration(
-          gradient: LinearGradient(
-            begin: Alignment.topLeft,
-            end: Alignment.bottomRight,
-            colors: gradient,
-          ),
-          borderRadius: BorderRadius.circular(18),
-          border: Border.all(
-            color: isPurchased
-                ? GameColors.buttonGreen.withAlpha(120)
-                : borderColor.withAlpha(80),
-            width: 1.5,
-          ),
-          boxShadow: [
-            BoxShadow(
-              color: (isPurchased ? GameColors.buttonGreen : borderColor)
-                  .withAlpha(20),
-              blurRadius: 12,
-            ),
-          ],
+          borderRadius: BorderRadius.circular(20),
+          gradient: isVip
+              ? const LinearGradient(
+                  begin: Alignment.topCenter,
+                  end: Alignment.bottomCenter,
+                  colors: [Color(0xFFFFF7D6), Color(0xFFFFE8A0)],
+                )
+              : const LinearGradient(
+                  begin: Alignment.topCenter,
+                  end: Alignment.bottomCenter,
+                  colors: [Color(0xFFFFF1D9), Color(0xFFF5DBA8)],
+                ),
         ),
         child: Row(
           children: [
-            // Icon
-            Container(
-              width: 56,
-              height: 56,
-              decoration: BoxDecoration(
-                shape: BoxShape.circle,
-                gradient: RadialGradient(
-                  colors: [
-                    iconColor.withAlpha(160),
-                    iconColor.withAlpha(40),
-                  ],
+            SizedBox(
+              width: 64,
+              height: 64,
+              child: Image.asset(
+                asset,
+                fit: BoxFit.contain,
+                errorBuilder: (_, __, ___) => Icon(
+                  isVip ? Icons.workspace_premium_rounded : Icons.card_giftcard_rounded,
+                  color: TT.gold,
+                  size: 56,
                 ),
-                border: Border.all(color: iconColor.withAlpha(120)),
-                boxShadow: [
-                  BoxShadow(
-                    color: iconColor.withAlpha(40),
-                    blurRadius: 12,
-                  ),
-                ],
               ),
-              child: isPurchased
-                  ? const Icon(Icons.check, color: GameColors.buttonGreen, size: 28)
-                  : Icon(icon, color: Colors.white, size: 26),
             ),
-            const SizedBox(width: 14),
-
-            // Text
+            const SizedBox(width: 12),
             Expanded(
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
+                mainAxisSize: MainAxisSize.min,
                 children: [
-                  Text(
-                    title,
-                    style: TextStyle(
-                      fontSize: 16,
-                      fontWeight: FontWeight.w800,
-                      color: isPurchased ? GameColors.buttonGreen : iconColor,
-                    ),
+                  Row(
+                    children: [
+                      Flexible(
+                        child: Text(
+                          title,
+                          style: TT.titleMedium.copyWith(
+                            color: TT.goldDeep,
+                            fontSize: 15,
+                            fontWeight: FontWeight.w900,
+                          ),
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                      ),
+                      if (isVip) ...[
+                        const SizedBox(width: 4),
+                        const IslandChip(
+                          text: 'VIP',
+                          icon: Icons.diamond_rounded,
+                          fontSize: 9,
+                          padding: EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                        ),
+                      ],
+                    ],
                   ),
-                  const SizedBox(height: 3),
+                  const SizedBox(height: 2),
                   Text(
-                    isPurchased ? 'Aktif' : description,
-                    style: TextStyle(
-                      fontSize: 12,
-                      color: isPurchased
-                          ? GameColors.buttonGreen.withAlpha(160)
-                          : Colors.white.withAlpha(140),
-                    ),
+                    desc,
+                    style: TT.bodySmall.copyWith(fontSize: 11, height: 1.2),
+                    maxLines: 3,
+                    overflow: TextOverflow.ellipsis,
                   ),
                 ],
               ),
             ),
-
-            // Price / purchased badge
-            if (isPurchased)
-              Container(
-                padding:
-                    const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-                decoration: BoxDecoration(
-                  color: GameColors.buttonGreen.withAlpha(30),
-                  borderRadius: BorderRadius.circular(14),
-                  border: Border.all(
-                      color: GameColors.buttonGreen.withAlpha(80)),
-                ),
-                child: const Text(
-                  'Alındı',
-                  style: TextStyle(
-                    fontSize: 13,
-                    fontWeight: FontWeight.w700,
-                    color: GameColors.buttonGreen,
+            const SizedBox(width: 10),
+            isPurchased
+                ? Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                    decoration: BoxDecoration(
+                      borderRadius: BorderRadius.circular(20),
+                      gradient: TT.palmButtonGradient,
+                    ),
+                    child: const Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Icon(Icons.check_rounded, color: Colors.white, size: 18),
+                        SizedBox(width: 4),
+                        Text('Aktif',
+                            style: TextStyle(color: Colors.white, fontWeight: FontWeight.w900, fontSize: 13)),
+                      ],
+                    ),
+                  )
+                : IslandButton(
+                    text: price,
+                    color: isVip ? IslandButtonColor.gold : IslandButtonColor.coral,
+                    size: IslandButtonSize.small,
+                    onPressed: product == null ? null : onBuy,
                   ),
-                ),
-              )
-            else
-              Container(
-                padding:
-                    const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
-                decoration: BoxDecoration(
-                  gradient: LinearGradient(
-                    begin: Alignment.topCenter,
-                    end: Alignment.bottomCenter,
-                    colors: available
-                        ? [const Color(0xFF2ECC40), const Color(0xFF1A8028)]
-                        : [Colors.grey.shade700, Colors.grey.shade800],
-                  ),
-                  borderRadius: BorderRadius.circular(14),
-                  border: Border.all(
-                    color: available
-                        ? GameColors.buttonGreen.withAlpha(100)
-                        : Colors.grey.withAlpha(30),
-                  ),
-                ),
-                child: Text(
-                  priceText,
-                  style: TextStyle(
-                    fontSize: 14,
-                    fontWeight: FontWeight.w800,
-                    color: available ? Colors.white : Colors.white38,
-                  ),
-                ),
-              ),
           ],
         ),
       ),
     );
   }
-}
-
-// ═══════════════════════════════════════════════════════════════════════════
-// Store Unavailable Banner
-// ═══════════════════════════════════════════════════════════════════════════
-
-class _StoreUnavailableBanner extends StatelessWidget {
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
-      decoration: BoxDecoration(
-        color: GameColors.orangeDark.withAlpha(30),
-        borderRadius: BorderRadius.circular(14),
-        border: Border.all(color: GameColors.orange.withAlpha(60)),
-      ),
-      child: Row(
-        children: [
-          Icon(Icons.info_outline,
-              color: GameColors.orange.withAlpha(180), size: 20),
-          const SizedBox(width: 10),
-          Expanded(
-            child: Text(
-              'Mağaza yüklenemedi. Gerçek alımlar cihazda denenir.',
-              style: TextStyle(
-                fontSize: 12,
-                color: GameColors.orange.withAlpha(200),
-                fontWeight: FontWeight.w500,
-              ),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-}
-
-// ═══════════════════════════════════════════════════════════════════════════
-// Sparkle Particle Painter — animated floating dots
-// ═══════════════════════════════════════════════════════════════════════════
-
-class _SparkleParticlePainter extends CustomPainter {
-  final double progress;
-
-  _SparkleParticlePainter({required this.progress});
-
-  @override
-  void paint(Canvas canvas, Size size) {
-    final rng = Random(42); // deterministic seed
-    const count = 30;
-    final paint = Paint()..style = PaintingStyle.fill;
-
-    for (int i = 0; i < count; i++) {
-      final baseX = rng.nextDouble() * size.width;
-      final baseY = rng.nextDouble() * size.height;
-      final speed = 0.3 + rng.nextDouble() * 0.7;
-      final phase = rng.nextDouble();
-      final radius = 1.0 + rng.nextDouble() * 2.5;
-
-      // Oscillation
-      final t = (progress * speed + phase) % 1.0;
-      final yOffset = sin(t * 2 * pi) * 20;
-      final xOffset = cos(t * 2 * pi * 0.7) * 10;
-
-      // Alpha pulsation
-      final alpha = (0.15 + 0.2 * sin(t * 2 * pi)).clamp(0.0, 1.0);
-
-      paint.color = Color.lerp(
-        GameColors.goldFrameBright,
-        GameColors.goldFrameMid,
-        rng.nextDouble(),
-      )!
-          .withAlpha((alpha * 255).toInt());
-
-      canvas.drawCircle(
-        Offset(baseX + xOffset, baseY + yOffset),
-        radius,
-        paint,
-      );
-    }
-  }
-
-  @override
-  bool shouldRepaint(covariant _SparkleParticlePainter old) => true;
 }

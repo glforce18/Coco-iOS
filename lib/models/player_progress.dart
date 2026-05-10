@@ -1,3 +1,22 @@
+/// One incubating egg slot. Cracks and opens at preset level milestones
+/// (see EggSlot.crackLevels / openLevels), not based on accumulated heat.
+class EggSlot {
+  /// Whether the player has already tapped to hatch this slot (so it shows
+  /// the hatched bird instead of the ready-to-tap egg).
+  bool hatched;
+  EggSlot({this.hatched = false});
+
+  /// Level at which each egg starts to crack (slot 1 / 2 / 3).
+  static const List<int> crackLevels = [10, 50, 150];
+
+  /// Level at which each egg is fully ready to hatch (player taps to open).
+  static const List<int> openLevels = [25, 75, 175];
+
+  Map<String, dynamic> toMap() => {'hatched': hatched};
+  static EggSlot fromMap(Map<String, dynamic> m) =>
+      EggSlot(hatched: (m['hatched'] as bool?) ?? false);
+}
+
 class PlayerProgress {
   int currentLevel;
   Map<int, int> stars; // level -> stars (0-3)
@@ -22,6 +41,12 @@ class PlayerProgress {
   Set<String> decorations;
   bool tutorialCompleted;
 
+  // ─── Egg incubator (Yuva) ────────────────────────────────────────────
+  /// 3 incubating egg slots. Each level completion adds heat.
+  List<EggSlot> eggSlots;
+  /// IDs of all hatched birds (e.g. 'jelly_purple', 'rare_gold').
+  Set<String> hatchedBirds;
+
   // Spin wheel
   int lastSpinTime; // milliseconds epoch (0 = never spun)
 
@@ -37,6 +62,29 @@ class PlayerProgress {
   int totalSpecialsCreated;
   bool shopVisited;
   bool wheelSpun;
+
+  // ─── Notifications ────────────────────────────────────────────────
+  /// Master toggle. False = no notifs at all, regardless of sub-prefs.
+  bool notifsEnabled;
+  bool notifsLifeFull;
+  bool notifsDaily;
+  bool notifsEgg;
+  bool notifsDailyReward;
+  bool notifsCampaign;
+  /// Epoch ms when we first showed the OS permission popup. 0 = never asked.
+  int notifsAskedAt;
+  /// Last FCM token POSTed to backend (so we don't re-send unchanged).
+  String fcmToken;
+
+  // ─── Premium promo (auto-popup pacing) ────────────────────────────
+  /// Epoch ms when the auto premium popup was last shown to the user.
+  int lastPremiumPromoShownAt;
+
+  // ─── Update banner (in-app version check) ─────────────────────────
+  /// The latest version string we already nudged the user about. Used
+  /// to suppress the "new version" banner for repeated launches with
+  /// the same target version.
+  String lastSeenUpdateVersion;
 
   PlayerProgress({
     this.currentLevel = 1,
@@ -61,6 +109,8 @@ class PlayerProgress {
     Set<String>? achievements,
     Set<String>? decorations,
     this.tutorialCompleted = false,
+    List<EggSlot>? eggSlots,
+    Set<String>? hatchedBirds,
     this.lastSpinTime = 0,
     this.lastEventWeek = 0,
     Map<String, int>? eventProgress,
@@ -71,11 +121,23 @@ class PlayerProgress {
     this.totalSpecialsCreated = 0,
     this.shopVisited = false,
     this.wheelSpun = false,
+    this.notifsEnabled = true,
+    this.notifsLifeFull = true,
+    this.notifsDaily = true,
+    this.notifsEgg = true,
+    this.notifsDailyReward = true,
+    this.notifsCampaign = true,
+    this.notifsAskedAt = 0,
+    this.fcmToken = '',
+    this.lastPremiumPromoShownAt = 0,
+    this.lastSeenUpdateVersion = '',
   })  : stars = stars ?? {},
         highScores = highScores ?? {},
         achievements = achievements ?? {},
         decorations = decorations ?? {},
-        eventProgress = eventProgress ?? {};
+        eventProgress = eventProgress ?? {},
+        eggSlots = eggSlots ?? [EggSlot(), EggSlot(), EggSlot()],
+        hatchedBirds = hatchedBirds ?? {};
 
   int get totalStars => stars.values.fold(0, (a, b) => a + b);
 
@@ -84,8 +146,11 @@ class PlayerProgress {
   int starsForLevel(int level) => stars[level] ?? 0;
 
   bool isLevelUnlocked(int level) {
-    if (level <= 1) return true;
-    return starsForLevel(level - 1) > 0; // Previous level completed
+    // PRODUCTION GATING — level 1 always open; each subsequent level needs
+    // the previous one to have earned at least 1 star.
+    if (level < 1 || level > 240) return false;
+    if (level == 1) return true;
+    return starsForLevel(level - 1) > 0;
   }
 
   void completeLevel(int level, int newStars, int score, int coinsEarned) {

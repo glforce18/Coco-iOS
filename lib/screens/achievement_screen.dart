@@ -1,10 +1,14 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+
 import 'package:patpat_game/models/achievement.dart';
 import 'package:patpat_game/providers/game_providers.dart';
-import 'package:patpat_game/theme/game_colors.dart';
-import 'package:patpat_game/widgets/shared/bottom_nav.dart';
+import 'package:patpat_game/theme/tropical_theme.dart';
+import 'package:patpat_game/widgets/tropical/island_bottom_nav.dart';
+import 'package:patpat_game/widgets/tropical/island_chip.dart';
+import 'package:patpat_game/widgets/tropical/island_scaffold.dart';
+import 'package:patpat_game/widgets/tropical/island_top_bar.dart';
 
 class AchievementScreen extends ConsumerWidget {
   const AchievementScreen({super.key});
@@ -12,190 +16,260 @@ class AchievementScreen extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final progress = ref.watch(playerProgressProvider);
-    final earnedIds = progress.achievements;
-    final earned =
-        Achievement.values.where((a) => earnedIds.contains(a.id)).toList();
-    final locked =
-        Achievement.values.where((a) => !earnedIds.contains(a.id)).toList();
-    final totalReward =
-        earned.fold<int>(0, (sum, a) => sum + a.coinReward);
+    final unlocked = progress.achievements.toSet();
+    final total = Achievement.values.length;
+    final earned = unlocked.length;
+    final progressFraction = (earned / total).clamp(0.0, 1.0);
 
-    return Scaffold(
-      bottomNavigationBar: const PatPatBottomNav(
-        activeTab: BottomNavTab.achievements,
+    return IslandScaffold(
+      backgroundAsset: TA.achievementBg,
+      overlayOpacity: 0.42,
+      bottomBar: IslandBottomNav(
+        activeIndex: -1,
+        tabs: [
+          IslandNavTab(icon: Icons.home_rounded, label: 'Ana Sayfa', onTap: () => context.go('/menu')),
+          IslandNavTab(icon: Icons.shopping_bag_rounded, label: 'Mağaza', onTap: () => context.push('/shop')),
+          IslandNavTab(
+            icon: Icons.casino_rounded,
+            label: 'Çark',
+            onTap: () => context.push('/spin'),
+            isCenter: true,
+          ),
+          IslandNavTab(icon: Icons.egg_rounded, label: 'Yuva', onTap: () => context.push('/nest')),
+          IslandNavTab(icon: Icons.person_rounded, label: 'Profil', onTap: () => context.push('/profile')),
+        ],
       ),
-      body: Container(
-        width: double.infinity,
-        height: double.infinity,
-        decoration: const BoxDecoration(
-          gradient: LinearGradient(
-            begin: Alignment.topCenter,
-            end: Alignment.bottomCenter,
-            colors: [
-              Color(0xFF1A0660),
-              Color(0xFF0D0235),
-              Color(0xFF050120),
-            ],
+      child: Column(
+        children: [
+          IslandTopBar(
+            stars: progress.totalStars,
+            coins: progress.coins,
+            hearts: progress.lives,
+            leading: IslandCircleButton(icon: Icons.arrow_back_rounded, onTap: () => context.go('/map')),
           ),
-        ),
-        child: SafeArea(
-          child: Column(
-            children: [
-              // Header
-              _AchievementHeader(
-                earned: earned.length,
-                total: Achievement.values.length,
-                totalReward: totalReward,
-                onBack: () {
-                  context.go('/map');
-                },
+          const SizedBox(height: 10),
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 14),
+            child: Container(
+              padding: const EdgeInsets.fromLTRB(16, 12, 16, 14),
+              decoration: BoxDecoration(
+                borderRadius: BorderRadius.circular(20),
+                gradient: TT.coralButtonGradient,
+                border: Border.all(color: TT.goldShine, width: 2),
+                boxShadow: [
+                  BoxShadow(color: TT.coral.withAlpha(160), blurRadius: 16, offset: const Offset(0, 4)),
+                  BoxShadow(color: Colors.black.withAlpha(140), blurRadius: 8, offset: const Offset(0, 3)),
+                ],
               ),
-
-              // Progress bar
-              Padding(
-                padding:
-                    const EdgeInsets.symmetric(horizontal: 24, vertical: 8),
-                child: _ProgressBar(
-                  value: earned.length / Achievement.values.length,
-                  label:
-                      '${earned.length} / ${Achievement.values.length}',
-                ),
-              ),
-
-              const SizedBox(height: 8),
-
-              // Achievement list
-              Expanded(
-                child: ListView(
-                  padding:
-                      const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
-                  children: [
-                    // Earned section
-                    if (earned.isNotEmpty) ...[
-                      _SectionHeader(
-                        label: 'KAZANILAN',
-                        color: GameColors.buttonGreen,
-                        count: earned.length,
+              child: Column(
+                children: [
+                  Row(
+                    children: [
+                      const Icon(Icons.emoji_events_rounded, color: TT.goldShine, size: 26),
+                      const SizedBox(width: 8),
+                      Text(
+                        'BAŞARIMLAR',
+                        style: TT.titleLarge.copyWith(
+                          color: TT.sandLight,
+                          letterSpacing: 1.4,
+                          shadows: [
+                            Shadow(color: Colors.black.withAlpha(220), blurRadius: 4, offset: const Offset(0, 2)),
+                          ],
+                        ),
                       ),
-                      const SizedBox(height: 8),
-                      ...earned.map((a) => _AchievementCard(
-                            achievement: a,
-                            isEarned: true,
-                          )),
-                      const SizedBox(height: 16),
-                    ],
-
-                    // Locked section
-                    if (locked.isNotEmpty) ...[
-                      _SectionHeader(
-                        label: 'KİLİTLİ',
-                        color: Colors.white38,
-                        count: locked.length,
+                      const Spacer(),
+                      IslandChip(
+                        text: '$earned / $total',
+                        bg: TT.gold,
+                        fontSize: 13,
+                        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 5),
                       ),
-                      const SizedBox(height: 8),
-                      ...locked.map((a) => _AchievementCard(
-                            achievement: a,
-                            isEarned: false,
-                          )),
                     ],
-
-                    const SizedBox(height: 24),
-                  ],
-                ),
+                  ),
+                  const SizedBox(height: 10),
+                  ClipRRect(
+                    borderRadius: BorderRadius.circular(8),
+                    child: SizedBox(
+                      height: 10,
+                      child: Stack(
+                        children: [
+                          Container(color: TT.coralDark.withAlpha(180)),
+                          FractionallySizedBox(
+                            alignment: Alignment.centerLeft,
+                            widthFactor: progressFraction,
+                            child: Container(
+                              decoration: const BoxDecoration(
+                                gradient: LinearGradient(
+                                  begin: Alignment.topCenter,
+                                  end: Alignment.bottomCenter,
+                                  colors: [TT.goldShine, TT.gold, TT.goldDeep],
+                                ),
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+                ],
               ),
-            ],
+            ),
           ),
-        ),
+          const SizedBox(height: 12),
+          Expanded(
+            child: GridView.builder(
+              padding: const EdgeInsets.fromLTRB(14, 0, 14, 16),
+              gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+                crossAxisCount: 2,
+                mainAxisSpacing: 10,
+                crossAxisSpacing: 10,
+                childAspectRatio: 0.82,
+              ),
+              itemCount: Achievement.values.length,
+              itemBuilder: (_, i) {
+                final ach = Achievement.values[i];
+                return _AchievementCard(achievement: ach, unlocked: unlocked.contains(ach.id));
+              },
+            ),
+          ),
+        ],
       ),
     );
   }
 }
 
-// ---------------------------------------------------------------------------
-// Header
-// ---------------------------------------------------------------------------
-class _AchievementHeader extends StatelessWidget {
-  final int earned;
-  final int total;
-  final int totalReward;
-  final VoidCallback onBack;
-
-  const _AchievementHeader({
-    required this.earned,
-    required this.total,
-    required this.totalReward,
-    required this.onBack,
-  });
+class _AchievementCard extends StatelessWidget {
+  final Achievement achievement;
+  final bool unlocked;
+  const _AchievementCard({required this.achievement, required this.unlocked});
 
   @override
   Widget build(BuildContext context) {
-    return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+    return Container(
+      padding: const EdgeInsets.all(2.5),
+      decoration: BoxDecoration(
+        borderRadius: BorderRadius.circular(20),
+        gradient: unlocked
+            ? const LinearGradient(
+                begin: Alignment.topCenter,
+                end: Alignment.bottomCenter,
+                colors: [TT.goldShine, TT.goldBright, TT.gold, TT.goldDeep],
+              )
+            : LinearGradient(
+                begin: Alignment.topCenter,
+                end: Alignment.bottomCenter,
+                colors: [TT.bambooLight.withAlpha(160), TT.bamboo.withAlpha(120), TT.bambooDark.withAlpha(120)],
+              ),
+        boxShadow: [
+          BoxShadow(color: Colors.black.withAlpha(140), blurRadius: 10, offset: const Offset(0, 4)),
+          if (unlocked)
+            BoxShadow(color: TT.gold.withAlpha(160), blurRadius: 18, spreadRadius: 1),
+        ],
+      ),
       child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 10),
+        padding: const EdgeInsets.all(10),
         decoration: BoxDecoration(
-          color: GameColors.panelPurpleDark.withAlpha(200),
-          borderRadius: BorderRadius.circular(20),
-          border: Border.all(color: GameColors.purpleLight.withAlpha(50)),
-          boxShadow: [
-            BoxShadow(
-              color: GameColors.panelPurpleDark.withAlpha(140),
-              blurRadius: 12,
-            ),
-          ],
+          borderRadius: BorderRadius.circular(18),
+          gradient: unlocked
+              ? const LinearGradient(
+                  begin: Alignment.topCenter,
+                  end: Alignment.bottomCenter,
+                  colors: [Color(0xFFFFF1D9), Color(0xFFF5DBA8)],
+                )
+              : LinearGradient(
+                  begin: Alignment.topCenter,
+                  end: Alignment.bottomCenter,
+                  colors: [TT.bambooLight.withAlpha(180), TT.sandDark.withAlpha(180)],
+                ),
         ),
-        child: Row(
+        child: Column(
           children: [
-            GestureDetector(
-              onTap: onBack,
-              child: Container(
-                width: 38,
-                height: 38,
-                decoration: BoxDecoration(
-                  shape: BoxShape.circle,
-                  color: Colors.white.withAlpha(20),
-                  border: Border.all(color: Colors.white.withAlpha(60)),
+            Stack(
+              alignment: Alignment.center,
+              children: [
+                ColorFiltered(
+                  colorFilter: unlocked
+                      ? const ColorFilter.mode(Colors.transparent, BlendMode.dst)
+                      : const ColorFilter.matrix(<double>[
+                          0.33, 0.33, 0.33, 0, 0,
+                          0.33, 0.33, 0.33, 0, 0,
+                          0.33, 0.33, 0.33, 0, 0,
+                          0, 0, 0, 0.7, 0,
+                        ]),
+                  child: SizedBox(
+                    height: 68,
+                    width: 68,
+                    child: Image.asset(
+                      'assets/tropical/achievements/ach_${_iconSlug(achievement)}.png',
+                      fit: BoxFit.contain,
+                      errorBuilder: (_, __, ___) => Center(
+                        child: Text(achievement.emoji, style: const TextStyle(fontSize: 50)),
+                      ),
+                    ),
+                  ),
                 ),
-                child: const Icon(Icons.arrow_back_rounded,
-                    color: Colors.white, size: 20),
+                if (!unlocked)
+                  Container(
+                    width: 32,
+                    height: 32,
+                    decoration: BoxDecoration(
+                      shape: BoxShape.circle,
+                      color: TT.driftWoodDark.withAlpha(200),
+                      border: Border.all(color: TT.bamboo, width: 1.5),
+                    ),
+                    child: const Icon(Icons.lock_rounded, color: TT.sandLight, size: 18),
+                  ),
+              ],
+            ),
+            const SizedBox(height: 6),
+            Text(
+              achievement.title,
+              textAlign: TextAlign.center,
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+              style: TT.titleSmall.copyWith(
+                color: unlocked ? TT.goldDeep : TT.driftWoodDark,
+                fontSize: 13,
               ),
             ),
-            const SizedBox(width: 12),
-            const Expanded(
+            const SizedBox(height: 2),
+            Expanded(
               child: Text(
-                'BAŞARIMLAR',
-                style: TextStyle(
-                  fontSize: 20,
-                  fontWeight: FontWeight.w900,
-                  color: GameColors.goldFrameBright,
-                  letterSpacing: 2,
-                  shadows: [
-                    Shadow(color: GameColors.goldFrameDeep, blurRadius: 8),
-                  ],
+                achievement.description,
+                textAlign: TextAlign.center,
+                maxLines: 2,
+                overflow: TextOverflow.ellipsis,
+                style: TT.bodySmall.copyWith(
+                  fontSize: 10,
+                  color: unlocked ? TT.driftWoodDark : TT.driftWoodDark.withAlpha(180),
                 ),
               ),
             ),
+            const SizedBox(height: 4),
             Container(
-              padding:
-                  const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
               decoration: BoxDecoration(
-                color: GameColors.goldFrameDeep.withAlpha(80),
-                borderRadius: BorderRadius.circular(12),
-                border:
-                    Border.all(color: GameColors.goldFrameMid.withAlpha(60)),
+                borderRadius: BorderRadius.circular(10),
+                gradient: unlocked
+                    ? TT.palmButtonGradient
+                    : LinearGradient(
+                        begin: Alignment.topCenter,
+                        end: Alignment.bottomCenter,
+                        colors: [TT.bamboo.withAlpha(180), TT.bambooDark.withAlpha(180)],
+                      ),
+                border: Border.all(color: TT.goldShine, width: 1),
               ),
               child: Row(
                 mainAxisSize: MainAxisSize.min,
                 children: [
-                  const Text('\uD83C\uDFC6',
-                      style: TextStyle(fontSize: 14)),
-                  const SizedBox(width: 4),
+                  const Icon(Icons.monetization_on_rounded, color: TT.goldShine, size: 12),
+                  const SizedBox(width: 3),
                   Text(
-                    '$earned/$total',
+                    '${achievement.coinReward}',
                     style: const TextStyle(
-                      fontSize: 14,
-                      fontWeight: FontWeight.w700,
-                      color: GameColors.goldFrameBright,
+                      fontSize: 11,
+                      fontWeight: FontWeight.w900,
+                      color: Colors.white,
                     ),
                   ),
                 ],
@@ -206,269 +280,35 @@ class _AchievementHeader extends StatelessWidget {
       ),
     );
   }
-}
 
-// ---------------------------------------------------------------------------
-// Progress bar
-// ---------------------------------------------------------------------------
-class _ProgressBar extends StatelessWidget {
-  final double value;
-  final String label;
-
-  const _ProgressBar({required this.value, required this.label});
-
-  @override
-  Widget build(BuildContext context) {
-    return Column(
-      children: [
-        ClipRRect(
-          borderRadius: BorderRadius.circular(8),
-          child: SizedBox(
-            height: 14,
-            child: Stack(
-              children: [
-                // Background
-                Container(
-                  decoration: BoxDecoration(
-                    color: Colors.white.withAlpha(20),
-                    borderRadius: BorderRadius.circular(8),
-                  ),
-                ),
-                // Fill
-                FractionallySizedBox(
-                  widthFactor: value.clamp(0.0, 1.0),
-                  child: Container(
-                    decoration: BoxDecoration(
-                      borderRadius: BorderRadius.circular(8),
-                      gradient: const LinearGradient(
-                        colors: [
-                          GameColors.goldFrameDeep,
-                          GameColors.goldFrameMid,
-                          GameColors.goldFrameBright,
-                        ],
-                      ),
-                      boxShadow: [
-                        BoxShadow(
-                          color: GameColors.goldFrameMid.withAlpha(80),
-                          blurRadius: 6,
-                        ),
-                      ],
-                    ),
-                  ),
-                ),
-                // Label
-                Center(
-                  child: Text(
-                    label,
-                    style: TextStyle(
-                      fontSize: 10,
-                      fontWeight: FontWeight.w700,
-                      color: Colors.white.withAlpha(220),
-                      shadows: const [
-                        Shadow(color: Colors.black87, blurRadius: 4),
-                      ],
-                    ),
-                  ),
-                ),
-              ],
-            ),
-          ),
-        ),
-      ],
-    );
-  }
-}
-
-// ---------------------------------------------------------------------------
-// Section header
-// ---------------------------------------------------------------------------
-class _SectionHeader extends StatelessWidget {
-  final String label;
-  final Color color;
-  final int count;
-
-  const _SectionHeader({
-    required this.label,
-    required this.color,
-    required this.count,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    return Row(
-      children: [
-        Container(width: 3, height: 18, color: color),
-        const SizedBox(width: 8),
-        Text(
-          '$label ($count)',
-          style: TextStyle(
-            fontSize: 13,
-            fontWeight: FontWeight.w800,
-            color: color,
-            letterSpacing: 1.5,
-          ),
-        ),
-      ],
-    );
-  }
-}
-
-// ---------------------------------------------------------------------------
-// Achievement card
-// ---------------------------------------------------------------------------
-class _AchievementCard extends StatelessWidget {
-  final Achievement achievement;
-  final bool isEarned;
-
-  const _AchievementCard({
-    required this.achievement,
-    required this.isEarned,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    return Padding(
-      padding: const EdgeInsets.only(bottom: 8),
-      child: Container(
-        padding: const EdgeInsets.all(12),
-        decoration: BoxDecoration(
-          borderRadius: BorderRadius.circular(16),
-          gradient: LinearGradient(
-            begin: Alignment.centerLeft,
-            end: Alignment.centerRight,
-            colors: isEarned
-                ? [
-                    GameColors.greenDark.withAlpha(60),
-                    GameColors.panelPurple.withAlpha(120),
-                  ]
-                : [
-                    Colors.grey.shade900.withAlpha(80),
-                    GameColors.panelPurpleDark.withAlpha(120),
-                  ],
-          ),
-          border: Border.all(
-            color: isEarned
-                ? GameColors.buttonGreen.withAlpha(80)
-                : Colors.white.withAlpha(20),
-          ),
-          boxShadow: isEarned
-              ? [
-                  BoxShadow(
-                    color: GameColors.buttonGreen.withAlpha(20),
-                    blurRadius: 8,
-                  ),
-                ]
-              : null,
-        ),
-        child: Row(
-          children: [
-            // Emoji circle
-            Container(
-              width: 48,
-              height: 48,
-              decoration: BoxDecoration(
-                shape: BoxShape.circle,
-                color: isEarned
-                    ? GameColors.greenDark.withAlpha(120)
-                    : Colors.grey.shade800.withAlpha(120),
-                border: Border.all(
-                  color: isEarned
-                      ? GameColors.buttonGreen.withAlpha(100)
-                      : Colors.white.withAlpha(30),
-                ),
-                boxShadow: isEarned
-                    ? [
-                        BoxShadow(
-                          color: GameColors.buttonGreen.withAlpha(40),
-                          blurRadius: 8,
-                        ),
-                      ]
-                    : null,
-              ),
-              child: Center(
-                child: Text(
-                  achievement.emoji,
-                  style: TextStyle(
-                    fontSize: 22,
-                    color: isEarned ? null : Colors.white38,
-                  ),
-                ),
-              ),
-            ),
-            const SizedBox(width: 12),
-
-            // Title + Description
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    achievement.title,
-                    style: TextStyle(
-                      fontSize: 15,
-                      fontWeight: FontWeight.w700,
-                      color: isEarned ? Colors.white : Colors.white60,
-                    ),
-                  ),
-                  const SizedBox(height: 2),
-                  Text(
-                    achievement.description,
-                    style: TextStyle(
-                      fontSize: 12,
-                      color: isEarned
-                          ? Colors.white.withAlpha(140)
-                          : Colors.white.withAlpha(80),
-                    ),
-                  ),
-                ],
-              ),
-            ),
-
-            // Reward or checkmark
-            if (isEarned)
-              Container(
-                padding:
-                    const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                decoration: BoxDecoration(
-                  color: GameColors.buttonGreen.withAlpha(40),
-                  borderRadius: BorderRadius.circular(10),
-                ),
-                child: const Icon(
-                  Icons.check_circle,
-                  color: GameColors.buttonGreen,
-                  size: 22,
-                ),
-              )
-            else
-              Container(
-                padding:
-                    const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-                decoration: BoxDecoration(
-                  color: GameColors.goldFrameDeep.withAlpha(60),
-                  borderRadius: BorderRadius.circular(10),
-                  border: Border.all(
-                      color: GameColors.goldFrameMid.withAlpha(40)),
-                ),
-                child: Row(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    const Text('\uD83E\uDE99',
-                        style: TextStyle(fontSize: 12)),
-                    const SizedBox(width: 3),
-                    Text(
-                      '${achievement.coinReward}',
-                      style: const TextStyle(
-                        fontSize: 13,
-                        fontWeight: FontWeight.w700,
-                        color: GameColors.goldFrameBright,
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-          ],
-        ),
-      ),
-    );
+  String _iconSlug(Achievement a) {
+    const map = <String, String>{
+      'first_match': 'first_match',
+      'combo_5': 'first_combo',
+      'combo_10': 'combo_master',
+      'stars_50': '3stars_50',
+      'stars_100': 'score_100k',
+      'stars_200': 'score_1m',
+      'level_10': 'tutorial_done',
+      'level_30': 'level_50',
+      'level_60': 'level_100',
+      'level_100': 'level_100',
+      'level_240': 'level_240',
+      'coins_1000': 'money_saver',
+      'coins_5000': 'big_spender',
+      'daily_7': 'daily_streak_7',
+      'daily_30': 'daily_streak_30',
+      'perfect_level': 'perfect_run',
+      'perfect_10': '3stars_50',
+      'booster_user': 'bomb_user',
+      'shop_visitor': 'first_purchase',
+      'spin_wheel': 'event_winner',
+      'first_special': 'rainbow_user',
+      'ice_breaker': 'lightning_user',
+      'chocolate_lover': 'rocket_user',
+      'speed_runner': 'speed_demon',
+      'collector': 'vip_member',
+    };
+    return map[a.id] ?? 'first_match';
   }
 }

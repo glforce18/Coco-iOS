@@ -1,0 +1,36 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+	<key>CLIENT_ID</key>
+	<string>530378510356-nnc2oh4t2j50abgsq96koscp6tb9m7ol.apps.googleusercontent.com</string>
+	<key>REVERSED_CLIENT_ID</key>
+	<string>com.googleusercontent.apps.530378510356-nnc2oh4t2j50abgsq96koscp6tb9m7ol</string>
+	<key>ANDROID_CLIENT_ID</key>
+	<string>530378510356-l3gvgcnpjarcc7cbe8vlr71s6c41cuap.apps.googleusercontent.com</string>
+	<key>API_KEY</key>
+	<string>AIzaSyDMSHrKhL-ZszZN0oc8JJdGZAjnoBFXjlI</string>
+	<key>GCM_SENDER_ID</key>
+	<string>530378510356</string>
+	<key>PLIST_VERSION</key>
+	<string>1</string>
+	<key>BUNDLE_ID</key>
+	<string>com.patpat.patpatGame</string>
+	<key>PROJECT_ID</key>
+	<string>coco-befb1</string>
+	<key>STORAGE_BUCKET</key>
+	<string>coco-befb1.firebasestorage.app</string>
+	<key>IS_ADS_ENABLED</key>
+	<false></false>
+	<key>IS_ANALYTICS_ENABLED</key>
+	<false></false>
+	<key>IS_APPINVITE_ENABLED</key>
+	<true></true>
+	<key>IS_GCM_ENABLED</key>
+	<true></true>
+	<key>IS_SIGNIN_ENABLED</key>
+	<true></true>
+	<key>GOOGLE_APP_ID</key>
+	<string>1:530378510356:ios:6189f074772392802d5701</string>
+</dict>
+</plist>

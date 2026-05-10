@@ -43,3 +43,21 @@ app.*.map.json
 /android/app/debug
 /android/app/profile
 /android/app/release
+
+# Python venv
+.venv-rembg/
+__pycache__/
+*.pyc
+
+# Generated graphs
+graphify-out/
+
+# OS
+.DS_Store
+
+# Build secrets (never commit)
+*.p8
+*.pem
+*.cer
+*.mobileprovision
+

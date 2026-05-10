@@ -44,6 +44,18 @@ class ProgressStorage {
         totalSpecialsCreated: map['totalSpecialsCreated'] ?? 0,
         shopVisited: map['shopVisited'] ?? false,
         wheelSpun: map['wheelSpun'] ?? false,
+        eggSlots: _decodeEggSlots(map['eggSlots']),
+        hatchedBirds: Set<String>.from(map['hatchedBirds'] ?? []),
+        notifsEnabled: map['notifsEnabled'] ?? true,
+        notifsLifeFull: map['notifsLifeFull'] ?? true,
+        notifsDaily: map['notifsDaily'] ?? true,
+        notifsEgg: map['notifsEgg'] ?? true,
+        notifsDailyReward: map['notifsDailyReward'] ?? true,
+        notifsCampaign: map['notifsCampaign'] ?? true,
+        notifsAskedAt: map['notifsAskedAt'] ?? 0,
+        fcmToken: map['fcmToken'] ?? '',
+        lastPremiumPromoShownAt: map['lastPremiumPromoShownAt'] ?? 0,
+        lastSeenUpdateVersion: map['lastSeenUpdateVersion'] ?? '',
       );
       progress.regenerateLives();
       return progress;
@@ -87,6 +99,18 @@ class ProgressStorage {
       'totalSpecialsCreated': p.totalSpecialsCreated,
       'shopVisited': p.shopVisited,
       'wheelSpun': p.wheelSpun,
+      'eggSlots': p.eggSlots.map((e) => e.toMap()).toList(),
+      'hatchedBirds': p.hatchedBirds.toList(),
+      'notifsEnabled': p.notifsEnabled,
+      'notifsLifeFull': p.notifsLifeFull,
+      'notifsDaily': p.notifsDaily,
+      'notifsEgg': p.notifsEgg,
+      'notifsDailyReward': p.notifsDailyReward,
+      'notifsCampaign': p.notifsCampaign,
+      'notifsAskedAt': p.notifsAskedAt,
+      'fcmToken': p.fcmToken,
+      'lastPremiumPromoShownAt': p.lastPremiumPromoShownAt,
+      'lastSeenUpdateVersion': p.lastSeenUpdateVersion,
     };
     await prefs.setString(_prefsKey, jsonEncode(map));
   }
@@ -105,5 +129,10 @@ class ProgressStorage {
     if (raw == null) return {};
     final map = raw as Map<String, dynamic>;
     return map.map((k, v) => MapEntry(k, v as int));
+  }
+
+  static List<EggSlot> _decodeEggSlots(dynamic raw) {
+    if (raw == null) return [EggSlot(), EggSlot(), EggSlot()];
+    return (raw as List).map((m) => EggSlot.fromMap(m as Map<String, dynamic>)).toList();
   }
 }

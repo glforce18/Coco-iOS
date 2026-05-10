@@ -19,6 +19,8 @@ extension JellyTypeDisplay on JellyType {
         return GameColors.pinkLight;
       case JellyType.orange:
         return GameColors.orangeLight;
+      case JellyType.black:
+        return const Color(0xFF4A4A6E); // dark slate w/ blue tint
     }
   }
 
@@ -36,6 +38,8 @@ extension JellyTypeDisplay on JellyType {
         return GameColors.pinkDark;
       case JellyType.orange:
         return GameColors.orangeDark;
+      case JellyType.black:
+        return const Color(0xFF0E0E1E); // near-black
     }
   }
 }

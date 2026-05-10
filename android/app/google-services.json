@@ -1,0 +1,54 @@
+{
+  "project_info": {
+    "project_number": "530378510356",
+    "project_id": "coco-befb1",
+    "storage_bucket": "coco-befb1.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:530378510356:android:e62534f73783885d2d5701",
+        "android_client_info": {
+          "package_name": "com.patpat.game"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "530378510356-l3gvgcnpjarcc7cbe8vlr71s6c41cuap.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.patpat.game",
+            "certificate_hash": "a38e759afbe25f7be5f37e8ba9e979acd2a2f0a7"
+          }
+        },
+        {
+          "client_id": "530378510356-7jloshib5ntabh6ekdfg388vm2ijfouk.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyCu9-EFp_XAjW2BBjckb68FSfIRB2z6YC0"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "530378510356-7jloshib5ntabh6ekdfg388vm2ijfouk.apps.googleusercontent.com",
+              "client_type": 3
+            },
+            {
+              "client_id": "530378510356-nnc2oh4t2j50abgsq96koscp6tb9m7ol.apps.googleusercontent.com",
+              "client_type": 2,
+              "ios_info": {
+                "bundle_id": "com.patpat.patpatGame"
+              }
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

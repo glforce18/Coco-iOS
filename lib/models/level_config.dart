@@ -25,25 +25,26 @@ class LevelGoal {
 }
 
 enum GameRegion {
-  candyGarden('Şeker Bahçesi', 1, 20, 0),
-  colorHill('Renk Tepesi', 21, 40, 15),
-  balloonValley('Balon Vadisi', 41, 60, 40),
-  sparkleForest('Işıltılı Orman', 61, 80, 75),
-  funLand('Eğlence Ülkesi', 81, 100, 120),
-  dreamWorld('Rüya Dünyası', 101, 120, 180),
-  crystalCave('Kristal Mağara', 121, 140, 250),
-  stormPeak('Fırtına Zirvesi', 141, 160, 320),
-  lavaIsland('Lav Adası', 161, 180, 400),
-  frozenKingdom('Buz Krallığı', 181, 200, 480),
-  shadowRealm('Gölge Diyarı', 201, 220, 560),
-  celestialTower('Göksel Kule', 221, 240, 650);
+  candyGarden('Mercan Plajı', 'coral_beach', 1, 20, 0),
+  colorHill('Hindistan Cevizi Adası', 'coconut_island', 21, 40, 15),
+  balloonValley('Lagün Sarayı', 'lagoon_palace', 41, 60, 40),
+  sparkleForest('Palmiye Vadisi', 'palm_valley', 61, 80, 75),
+  funLand('Yelken Limanı', 'sailor_harbor', 81, 100, 120),
+  dreamWorld('Hazine Mağarası', 'treasure_cave', 101, 120, 180),
+  crystalCave('Volkan Adası', 'volcano_island', 121, 140, 250),
+  stormPeak('Buz Adası', 'ice_isle', 141, 160, 320),
+  lavaIsland('Mercan Resifi', 'coral_reef', 161, 180, 400),
+  frozenKingdom('Gizli Tapınak', 'hidden_temple', 181, 200, 480),
+  shadowRealm('Çağlayan Cenneti', 'waterfall_paradise', 201, 220, 560),
+  celestialTower('Kayıp Şehir', 'lost_city', 221, 240, 650);
 
   final String displayName;
+  final String assetSlug;
   final int startLevel;
   final int endLevel;
   final int starsRequired;
-  const GameRegion(
-      this.displayName, this.startLevel, this.endLevel, this.starsRequired);
+  const GameRegion(this.displayName, this.assetSlug, this.startLevel,
+      this.endLevel, this.starsRequired);
 
   static GameRegion forLevel(int level) {
     for (final region in values) {
@@ -51,6 +52,12 @@ enum GameRegion {
     }
     return candyGarden;
   }
+
+  /// Asset path for region background (vertical scroll BG).
+  String get backgroundAsset => 'assets/tropical/backgrounds/region_$assetSlug.png';
+
+  /// Asset path for small region pill icon (selector).
+  String get pillAsset => 'assets/tropical/nodes/rpill_$assetSlug.png';
 }
 
 class LevelConfig {

@@ -3,6 +3,7 @@ import 'dart:math';
 
 import 'package:flutter/foundation.dart';
 
+import 'package:patpat_game/audio/sound_manager.dart';
 import 'package:patpat_game/engine/hint_engine.dart';
 import 'package:patpat_game/engine/match_engine.dart';
 import 'package:patpat_game/engine/obstacle_engine.dart';
@@ -50,6 +51,20 @@ class GameController extends ChangeNotifier {
   Timer? _countdownTimer;
   ActiveBoosterMode _boosterMode = ActiveBoosterMode.none;
   List<LevelGoal> _goals = [];
+
+  /// Fired when a booster's effect actually applies to the board (or, in the
+  /// case of extraMoves, when activated). The screen layer wires this to
+  /// PlayerProgressNotifier.consumeBooster so the user's count decrements.
+  void Function(BoosterType type)? onBoosterUsed;
+
+  /// Fired whenever score increases. Game screen renders floating "+N"
+  /// labels at the centroid of the affected positions.
+  /// [center] is in row/col grid space — board widget translates to pixels.
+  void Function(int delta, Position center)? onScorePopup;
+
+  /// Fired on visually impactful events that warrant a screen shake.
+  /// [intensity] in 0..1 scale (0.3 = small combo, 1.0 = big bomb).
+  void Function(double intensity)? onScreenShake;
 
   // ─── Public getters ──────────────────────────────────────────────
   GameGrid get grid => _grid;
@@ -118,6 +133,7 @@ class GameController extends ChangeNotifier {
     }
 
     animator.clearAll();
+    animator.endSkipMode();
     _state = GameState.idle;
     _resetHintTimer();
     notifyListeners();
@@ -211,6 +227,7 @@ class GameController extends ChangeNotifier {
     notifyListeners();
 
     // Animate the swap visually BEFORE modifying the grid
+    SoundManager.instance.play(SoundManager.swap, volume: 0.5);
     await animator.animateSwap(pos1, pos2, _cellSize, _cellGap, durationMs: 200);
     MatchEngine.swap(_grid, pos1, pos2);
     notifyListeners();
@@ -244,7 +261,17 @@ class GameController extends ChangeNotifier {
     // If a special was activated, play the spectacular overlay effect,
     // then run gravity + fill so cleared cells don't leave empty holes.
     if (specialEffects != null && specialEffects.isNotEmpty) {
-      _score += specialEffects.length * 15;
+      final specialScore = specialEffects.length * 15;
+      _score += specialScore;
+      onScorePopup?.call(specialScore, effectOrigin);
+      // Big shake for any special activation — bombs and rainbows shouldn't
+      // feel like a swap.
+      onScreenShake?.call(
+        effectType == SpecialEffectType.bombBlast ||
+                effectType == SpecialEffectType.megaBomb
+            ? 0.5
+            : 0.3,
+      );
 
       final targetPositions =
           specialEffects.map((e) => e.position).toList();
@@ -320,10 +347,24 @@ class GameController extends ChangeNotifier {
                 pow(1.5, _comboCount - 1))
             .toInt();
         _score += matchScore;
+        // Centroid for floating "+N" popup.
+        final cx = match.positions.fold<double>(0, (a, p) => a + p.col) /
+            match.positions.length;
+        final cy = match.positions.fold<double>(0, (a, p) => a + p.row) /
+            match.positions.length;
+        onScorePopup?.call(matchScore, Position(cy.round(), cx.round()));
 
         // Mega match bonus
         if (match.positions.length >= 7) {
-          _score += 50 * (match.positions.length - 6);
+          final bonus = 50 * (match.positions.length - 6);
+          _score += bonus;
+          onScorePopup?.call(bonus, Position(cy.round(), cx.round()));
+        }
+
+        // Only the biggest match shakes; 4-match no longer triggers any
+        // shake (was too jittery on cascade boards).
+        if (match.positions.length >= 5) {
+          onScreenShake?.call(0.35);
         }
       }
 
@@ -343,13 +384,26 @@ class GameController extends ChangeNotifier {
         }
       }
       notifyListeners();
+      // Brief pre-destroy golden flash so the player sees what's matching.
+      // Skip for the very first chain after a swap to avoid double-flashing
+      // the swap-to-match transition.
+      if (_comboCount > 1 || swapPos == null) {
+        await animator.animatePreMatchGlow(explosionPositions, durationMs: 65);
+      }
+      // Play match SFX — combo tone for chains, regular pop otherwise.
+      if (_comboCount >= 2) {
+        SoundManager.instance.play(SoundManager.combo, volume: 0.6);
+      } else {
+        SoundManager.instance.play(SoundManager.pop, volume: 0.55);
+      }
       await animator.animateDestroy(explosionPositions, durationMs: 200);
 
       MatchEngine.removeMatches(_grid, matches, swapPos);
       _updateGoalsFromMatches(matches);
 
-      // Animate the newly spawned specials with a pop-in effect
+      // Animate + sound when a new special is spawned (4/5/6+ matches).
       if (spawnPositions.isNotEmpty) {
+        SoundManager.instance.play(SoundManager.special, volume: 0.7);
         notifyListeners();
         await animator.animateSpecialSpawn(spawnPositions.toList(), durationMs: 300);
       }
@@ -465,6 +519,7 @@ class GameController extends ChangeNotifier {
       _state = GameState.levelComplete;
       _countdownTimer?.cancel();
       _countdownTimer = null;
+      SoundManager.instance.play(SoundManager.success, volume: 0.8);
       return;
     }
 
@@ -472,10 +527,18 @@ class GameController extends ChangeNotifier {
       _state = GameState.gameOver;
       _countdownTimer?.cancel();
       _countdownTimer = null;
+      SoundManager.instance.play(SoundManager.fail, volume: 0.7);
       return;
     }
 
     _state = GameState.idle;
+    animator.endSkipMode();
+  }
+
+  /// Tell the animator to fast-forward all running + pending animations.
+  /// The cascade resolves logically the same way, just visually instantly.
+  void skipCascade() {
+    animator.requestSkip();
   }
 
   // ─── 9b. addExtraMoves (from rewarded ad) ──────────────────────
@@ -509,6 +572,7 @@ class GameController extends ChangeNotifier {
     switch (type) {
       case BoosterType.extraMoves:
         _movesLeft += 3;
+        onBoosterUsed?.call(BoosterType.extraMoves);
         notifyListeners();
       case BoosterType.hammer:
         _boosterMode = ActiveBoosterMode.hammerSelect;
@@ -552,7 +616,17 @@ class GameController extends ChangeNotifier {
   Future<void> _useHammer(Position pos) async {
     _boosterMode = ActiveBoosterMode.none;
     _state = GameState.destroying;
+    onBoosterUsed?.call(BoosterType.hammer);
     notifyListeners();
+
+    // Realistic hammer animation: swing in from top-left + impact burst at
+    // tap target. Wait for the swing to land before clearing the cell.
+    await animator.playSpecialEffect(SpecialEffect(
+      type: SpecialEffectType.hammerSmash,
+      origin: pos,
+      targets: const [],
+      durationMs: 650,
+    ));
 
     final cell = _grid.get(pos.row, pos.col);
     _grid.set(
@@ -565,6 +639,7 @@ class GameController extends ChangeNotifier {
       ),
     );
     _score += 20;
+    onScorePopup?.call(20, pos);
     _grid.bumpVersion();
     notifyListeners();
 
@@ -580,26 +655,49 @@ class GameController extends ChangeNotifier {
   Future<void> _useColorBlast(JellyType type) async {
     _boosterMode = ActiveBoosterMode.none;
     _state = GameState.destroying;
+    onBoosterUsed?.call(BoosterType.colorBlast);
     notifyListeners();
 
-    int count = 0;
+    // Collect all targets first (cells of the selected color), play a
+    // radial sweep animation, THEN clear them. Origin = tapped cell of
+    // that color (use first found as fallback).
+    final targets = <Position>[];
+    Position? origin;
     for (int r = 0; r < _grid.rows; r++) {
       for (int c = 0; c < _grid.cols; c++) {
-        final cell = _grid.get(r, c);
-        if (cell.jellyType == type) {
-          _grid.set(
-            r,
-            c,
-            cell.copyWith(
-              clearJelly: true,
-              specialType: SpecialType.none,
-            ),
-          );
-          count++;
+        if (_grid.get(r, c).jellyType == type) {
+          final pos = Position(r, c);
+          targets.add(pos);
+          origin ??= pos;
         }
       }
     }
-    _score += count * 15;
+    if (origin != null) {
+      await animator.playSpecialEffect(SpecialEffect(
+        type: SpecialEffectType.colorSweep,
+        origin: origin,
+        targets: targets,
+        targetColor: type,
+        durationMs: 750,
+      ));
+    }
+
+    int count = 0;
+    for (final pos in targets) {
+      final cell = _grid.get(pos.row, pos.col);
+      _grid.set(
+        pos.row,
+        pos.col,
+        cell.copyWith(clearJelly: true, specialType: SpecialType.none),
+      );
+      count++;
+    }
+    final blastScore = count * 15;
+    _score += blastScore;
+    if (count > 0) {
+      onScorePopup?.call(blastScore, Position(_grid.rows ~/ 2, _grid.cols ~/ 2));
+      onScreenShake?.call(0.4);
+    }
     _grid.bumpVersion();
     notifyListeners();
 

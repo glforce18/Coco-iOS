@@ -16,10 +16,14 @@ class CloudSyncManager {
 
     try {
       final db = FirebaseFirestore.instance;
-      await db.collection('players').doc(accountId).set({
-        'progress_json': jsonEncode(_progressToMap(progress)),
-        'updated_at': FieldValue.serverTimestamp(),
-      }, SetOptions(merge: true));
+      await db
+          .collection('players')
+          .doc(accountId)
+          .set({
+            'progress_json': jsonEncode(_progressToMap(progress)),
+            'updated_at': FieldValue.serverTimestamp(),
+          }, SetOptions(merge: true))
+          .timeout(const Duration(seconds: 6), onTimeout: () => throw 'timeout');
     } catch (_) {
       // Silently fail — local progress is authoritative
     }
@@ -33,7 +37,14 @@ class CloudSyncManager {
 
     try {
       final db = FirebaseFirestore.instance;
-      final doc = await db.collection('players').doc(accountId).get();
+      // Hard timeout — Firestore can otherwise hang the sign-in flow if
+      // the project's Cloud Firestore DB hasn't been provisioned yet, or
+      // network is flaky. Falling back to local progress is fine.
+      final doc = await db
+          .collection('players')
+          .doc(accountId)
+          .get()
+          .timeout(const Duration(seconds: 6), onTimeout: () => throw 'timeout');
       if (!doc.exists) return null;
 
       final json = doc.data()?['progress_json'] as String?;

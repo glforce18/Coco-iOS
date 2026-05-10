@@ -193,10 +193,12 @@ class MatchEngine {
       case MatchShape.line3:
         return SpecialType.none;
       case MatchShape.line4:
+        // 4-match → ROCKET (line clear, perpendicular to match direction).
         return match.direction == MatchDirection.horizontal
             ? SpecialType.rocketVertical
             : SpecialType.rocketHorizontal;
       case MatchShape.line5:
+        // 5-match → RAINBOW (color blast — wipes one whole color).
         return SpecialType.rainbow;
       case MatchShape.tShape:
         return match.positions.length >= 6

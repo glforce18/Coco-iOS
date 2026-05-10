@@ -1,18 +1,16 @@
 import 'package:flutter/material.dart';
-
+import 'package:patpat_game/models/enums.dart';
 import 'package:patpat_game/models/level_config.dart';
-import 'package:patpat_game/theme/game_colors.dart';
+import 'package:patpat_game/theme/tropical_theme.dart';
 
-/// Top-of-screen heads-up display matching original game design:
-/// Left: mascot + "Hedef" goal panel
-/// Center: Level badge
-/// Right: "Hamle" moves counter
+/// Fully transparent top HUD — only floating chips, no panel background.
+/// Layout: [back-circle] [score-pill] [BÖLÜM red] [HAMLE green] [pause]
 class GameHud extends StatelessWidget {
   final int level;
   final int movesLeft;
   final int score;
   final int timeLeft;
-  final List<LevelGoal> goals;
+  final List<LevelGoal> goals; // unused but keep API stable
   final VoidCallback onPause;
   final VoidCallback onBack;
 
@@ -29,231 +27,76 @@ class GameHud extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      margin: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
-      decoration: BoxDecoration(
-        borderRadius: BorderRadius.circular(24),
-        gradient: const LinearGradient(
-          begin: Alignment.topCenter,
-          end: Alignment.bottomCenter,
-          colors: [
-            GameColors.goldHighlight,
-            GameColors.goldFrameBright,
-            GameColors.goldFrameMid,
-            GameColors.goldFrameDeep,
-            GameColors.goldFrameMid,
-            GameColors.goldFrameBright,
-            GameColors.goldHighlight,
-          ],
-          stops: [0.0, 0.15, 0.35, 0.5, 0.65, 0.85, 1.0],
-        ),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withAlpha(180),
-            blurRadius: 16,
-            offset: const Offset(0, 6),
-          ),
-          BoxShadow(
-            color: GameColors.goldFrameMid.withAlpha(120),
-            blurRadius: 22,
-            spreadRadius: 1,
-          ),
-        ],
-      ),
-      padding: const EdgeInsets.all(3.5),
-      child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 8),
-        decoration: BoxDecoration(
-          borderRadius: BorderRadius.circular(20),
-          gradient: const LinearGradient(
-            begin: Alignment.topCenter,
-            end: Alignment.bottomCenter,
-            colors: [
-              GameColors.panelPurpleLight,
-              GameColors.panelPurple,
-              GameColors.panelPurpleDark,
+    return Column(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        Padding(
+          padding: const EdgeInsets.fromLTRB(8, 2, 8, 0),
+          child: Row(
+            children: [
+              _CircleBtn(icon: Icons.arrow_back_rounded, onTap: onBack),
+              const SizedBox(width: 6),
+              Expanded(
+                child: _CountPill(
+                  icon: Icons.local_fire_department_rounded,
+                  iconColor: TT.coralLight,
+                  value: '$score',
+                ),
+              ),
+              const SizedBox(width: 5),
+              _BadgePill(
+                label: 'BÖLÜM',
+                value: '$level',
+                bgGradient: const LinearGradient(
+                  begin: Alignment.topCenter,
+                  end: Alignment.bottomCenter,
+                  colors: [TT.coralLight, TT.coral, TT.coralDark],
+                ),
+              ),
+              const SizedBox(width: 5),
+              _BadgePill(
+                label: timeLeft > 0 ? 'SÜRE' : 'HAMLE',
+                value: timeLeft > 0 ? '$timeLeft' : '$movesLeft',
+                bgGradient: const LinearGradient(
+                  begin: Alignment.topCenter,
+                  end: Alignment.bottomCenter,
+                  colors: [TT.palmLight, TT.palm, TT.palmDark],
+                ),
+              ),
+              const SizedBox(width: 6),
+              _CircleBtn(icon: Icons.pause_rounded, onTap: onPause),
             ],
           ),
         ),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            // Top row: Back + Goals | Level | Timer + Moves + Pause
-            Row(
-              children: [
-                _GoldCircleButton(
-                  icon: Icons.arrow_back_rounded,
-                  onTap: onBack,
-                  size: 32,
-                ),
-                const SizedBox(width: 6),
-                Expanded(
-                  flex: 3,
-                  child: _GoalsPanel(goals: goals),
-                ),
-                const SizedBox(width: 6),
-                _LevelBadge(level: level),
-                const SizedBox(width: 6),
-                Expanded(
-                  flex: 2,
-                  child: Row(
-                    mainAxisAlignment: MainAxisAlignment.end,
-                    children: [
-                      if (timeLeft > 0) ...[
-                        _TimerChip(timeLeft: timeLeft),
-                        const SizedBox(width: 6),
-                      ],
-                      _MovesCounter(movesLeft: movesLeft),
-                    ],
-                  ),
-                ),
-                const SizedBox(width: 6),
-                _GoldCircleButton(
-                  icon: Icons.pause_rounded,
-                  onTap: onPause,
-                  size: 32,
-                ),
-              ],
-            ),
-
-            const SizedBox(height: 6),
-
-            // Score display
-            Container(
-              padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 3),
-              decoration: BoxDecoration(
-                borderRadius: BorderRadius.circular(14),
-                gradient: const LinearGradient(
-                  colors: [
-                    GameColors.goldFrameBright,
-                    GameColors.goldFrameMid,
-                    GameColors.goldFrameBright,
-                  ],
-                ),
-                boxShadow: [
-                  BoxShadow(
-                    color: GameColors.goldFrameMid.withAlpha(120),
-                    blurRadius: 10,
-                  ),
-                ],
-              ),
-              child: Text(
-                '$score',
-                style: TextStyle(
-                  color: GameColors.panelPurpleDark,
-                  fontSize: 18,
-                  fontWeight: FontWeight.w900,
-                  letterSpacing: 1,
-                  shadows: [
-                    Shadow(
-                      color: Colors.white.withAlpha(120),
-                      blurRadius: 2,
-                      offset: const Offset(0, 1),
-                    ),
-                  ],
-                ),
-              ),
-            ),
-          ],
-        ),
-      ),
+        // Compact goals strip — current/total per goal as floating chips.
+        if (goals.isNotEmpty)
+          Padding(
+            padding: const EdgeInsets.fromLTRB(8, 4, 8, 0),
+            child: _GoalsStrip(goals: goals),
+          ),
+      ],
     );
   }
 }
 
-// ─────────────────────────────────────────────────────────────────────────────
-// Level Badge — ornate circle with level number
-// ─────────────────────────────────────────────────────────────────────────────
-
-class _LevelBadge extends StatelessWidget {
-  final int level;
-  const _LevelBadge({required this.level});
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      decoration: BoxDecoration(
-        shape: BoxShape.circle,
-        gradient: const LinearGradient(
-          colors: [
-            GameColors.goldFrameBright,
-            GameColors.goldFrameMid,
-            GameColors.goldFrameDeep,
-            GameColors.goldFrameMid,
-            GameColors.goldFrameBright,
-          ],
-          stops: [0.0, 0.25, 0.5, 0.75, 1.0],
-        ),
-        boxShadow: [
-          BoxShadow(
-            color: GameColors.goldFrameMid.withAlpha(120),
-            blurRadius: 12,
-            spreadRadius: 1,
-          ),
-        ],
-      ),
-      padding: const EdgeInsets.all(2.5),
-      child: Container(
-        width: 46,
-        height: 46,
-        decoration: const BoxDecoration(
-          shape: BoxShape.circle,
-          gradient: LinearGradient(
-            begin: Alignment.topCenter,
-            end: Alignment.bottomCenter,
-            colors: [
-              GameColors.panelPurple,
-              GameColors.panelPurpleDark,
-            ],
-          ),
-        ),
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Text(
-              'Lv',
-              style: TextStyle(
-                color: Colors.white.withAlpha(200),
-                fontSize: 9,
-                fontWeight: FontWeight.w800,
-                height: 1,
-                letterSpacing: 0.5,
-              ),
-            ),
-            const SizedBox(height: 1),
-            Text(
-              '$level',
-              style: const TextStyle(
-                color: GameColors.goldFrameBright,
-                fontSize: 17,
-                fontWeight: FontWeight.w900,
-                height: 1,
-                shadows: [
-                  Shadow(color: Colors.black54, blurRadius: 4),
-                ],
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-}
-
-// ─────────────────────────────────────────────────────────────────────────────
-// Goals Panel — "Hedef" label + goal chips
-// ─────────────────────────────────────────────────────────────────────────────
-
-class _GoalsPanel extends StatelessWidget {
+/// Live goals strip shown below the HUD — each goal is a small chip with
+/// the jelly sprite + remaining count. Updates as the player collects.
+class _GoalsStrip extends StatelessWidget {
   final List<LevelGoal> goals;
-  const _GoalsPanel({required this.goals});
+  const _GoalsStrip({required this.goals});
 
   @override
   Widget build(BuildContext context) {
-    return Wrap(
-      spacing: 4,
-      runSpacing: 4,
-      children: goals.map((g) => _GoalChip(goal: g)).toList(),
+    final collectGoals = goals.where((g) => g.goalType == GoalType.collectJelly).take(4).toList();
+    if (collectGoals.isEmpty) return const SizedBox.shrink();
+    return Row(
+      mainAxisAlignment: MainAxisAlignment.center,
+      children: [
+        for (int i = 0; i < collectGoals.length; i++) ...[
+          if (i > 0) const SizedBox(width: 6),
+          _GoalChip(goal: collectGoals[i]),
+        ],
+      ],
     );
   }
 }
@@ -264,319 +107,316 @@ class _GoalChip extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final complete = goal.isComplete;
+    final remaining = (goal.count - goal.collected).clamp(0, goal.count);
+    final done = remaining == 0;
     return Container(
+      padding: const EdgeInsets.fromLTRB(3, 2, 8, 2),
       decoration: BoxDecoration(
         borderRadius: BorderRadius.circular(14),
-        gradient: const LinearGradient(
-          colors: [
-            GameColors.goldFrameBright,
-            GameColors.goldFrameMid,
-            GameColors.goldFrameDeep,
-            GameColors.goldFrameMid,
-            GameColors.goldFrameBright,
-          ],
-          stops: [0.0, 0.25, 0.5, 0.75, 1.0],
+        color: Colors.black.withAlpha(160),
+        border: Border.all(
+          color: done ? TT.palm : TT.gold.withAlpha(180),
+          width: 1.2,
         ),
         boxShadow: [
-          BoxShadow(
-            color: Colors.black.withAlpha(120),
-            blurRadius: 6,
-            offset: const Offset(0, 2),
+          BoxShadow(color: Colors.black.withAlpha(120), blurRadius: 4, offset: const Offset(0, 2)),
+          if (done) BoxShadow(color: TT.palm.withAlpha(140), blurRadius: 8, spreadRadius: -1),
+        ],
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Container(
+            width: 22,
+            height: 22,
+            decoration: const BoxDecoration(
+              shape: BoxShape.circle,
+              color: Colors.white12,
+            ),
+            padding: const EdgeInsets.all(1),
+            child: Image.asset(
+              'assets/sprites/jelly_${goal.jellyType.name}.png',
+              fit: BoxFit.contain,
+              errorBuilder: (_, __, ___) => const Icon(Icons.help_outline, color: Colors.white, size: 14),
+            ),
+          ),
+          const SizedBox(width: 4),
+          Text(
+            done ? '✓' : '$remaining',
+            style: TextStyle(
+              color: done ? TT.palm : Colors.white,
+              fontSize: 13,
+              fontWeight: FontWeight.w900,
+              shadows: [Shadow(color: Colors.black.withAlpha(220), blurRadius: 2, offset: const Offset(0, 1))],
+            ),
           ),
         ],
       ),
-      padding: const EdgeInsets.all(2),
-      child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-        decoration: BoxDecoration(
-          borderRadius: BorderRadius.circular(12),
-          gradient: LinearGradient(
-            begin: Alignment.topCenter,
-            end: Alignment.bottomCenter,
-            colors: complete
-                ? [
-                    GameColors.buttonGreen,
-                    GameColors.buttonGreenDark,
-                  ]
-                : const [
-                    GameColors.panelPurple,
-                    GameColors.panelPurpleDark,
-                  ],
-          ),
-        ),
-        child: Row(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Container(
-              width: 14,
-              height: 14,
-              decoration: BoxDecoration(
-                shape: BoxShape.circle,
-                color: goal.jellyType.color,
-                border: Border.all(color: Colors.white24, width: 1),
-                boxShadow: [
+    );
+  }
+}
+
+class _CountPill extends StatefulWidget {
+  final IconData icon;
+  final Color iconColor;
+  final String value;
+  const _CountPill({required this.icon, required this.iconColor, required this.value});
+
+  @override
+  State<_CountPill> createState() => _CountPillState();
+}
+
+class _CountPillState extends State<_CountPill>
+    with SingleTickerProviderStateMixin {
+  late final AnimationController _ctrl;
+  int? _displayedValue;
+  int? _fromValue;
+  int? _toValue;
+  // Pulse on increase (separate from numeric tween).
+  late final AnimationController _pulse;
+
+  int? _parse(String v) => int.tryParse(v.replaceAll(RegExp(r'\D'), ''));
+
+  @override
+  void initState() {
+    super.initState();
+    _ctrl = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 280),
+    );
+    _ctrl.addListener(() {
+      if (_fromValue != null && _toValue != null) {
+        final t = Curves.easeOutCubic.transform(_ctrl.value);
+        final v = (_fromValue! + (_toValue! - _fromValue!) * t).round();
+        if (v != _displayedValue) setState(() => _displayedValue = v);
+      }
+    });
+    _pulse = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 320),
+    );
+    _displayedValue = _parse(widget.value);
+  }
+
+  @override
+  void didUpdateWidget(covariant _CountPill old) {
+    super.didUpdateWidget(old);
+    final newN = _parse(widget.value);
+    if (newN == null) return;
+    if (_displayedValue == null) {
+      _displayedValue = newN;
+      return;
+    }
+    if (newN == _displayedValue) return;
+    // Snap-tween from current shown value to new target.
+    _fromValue = _displayedValue;
+    _toValue = newN;
+    _ctrl.forward(from: 0);
+    if (newN > (_fromValue ?? 0)) _pulse.forward(from: 0);
+  }
+
+  @override
+  void dispose() {
+    _ctrl.dispose();
+    _pulse.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final shown = _displayedValue?.toString() ?? widget.value;
+    return AnimatedBuilder(
+      animation: _pulse,
+      builder: (_, __) {
+        final pt = _pulse.value;
+        final scale = 1.0 +
+            (pt < 0.4
+                ? (pt / 0.4) * 0.10
+                : (1 - (pt - 0.4) / 0.6) * 0.10);
+        return Transform.scale(
+          scale: scale,
+          child: Container(
+            height: 34,
+            decoration: BoxDecoration(
+              borderRadius: BorderRadius.circular(17),
+              gradient: const LinearGradient(
+                begin: Alignment.topCenter,
+                end: Alignment.bottomCenter,
+                colors: [TT.goldShine, TT.gold, TT.goldDeep],
+              ),
+              boxShadow: [
+                BoxShadow(color: Colors.black.withAlpha(150), blurRadius: 6, offset: const Offset(0, 2)),
+                if (pt > 0)
                   BoxShadow(
-                    color: goal.jellyType.color.withAlpha(160),
-                    blurRadius: 4,
+                    color: TT.goldShine.withAlpha((180 * (1 - pt)).toInt()),
+                    blurRadius: 18,
+                    spreadRadius: 2,
+                  ),
+              ],
+            ),
+            padding: const EdgeInsets.all(1.5),
+            child: Container(
+              padding: const EdgeInsets.symmetric(horizontal: 8),
+              decoration: BoxDecoration(
+                borderRadius: BorderRadius.circular(15),
+                gradient: const LinearGradient(
+                  begin: Alignment.topCenter,
+                  end: Alignment.bottomCenter,
+                  colors: [Color(0xFFFFE6B0), Color(0xFFC79A52)],
+                ),
+              ),
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Icon(widget.icon, color: widget.iconColor, size: 18, shadows: [
+                    Shadow(color: Colors.black.withAlpha(160), blurRadius: 3, offset: const Offset(0, 1)),
+                  ]),
+                  const SizedBox(width: 4),
+                  Flexible(
+                    child: Text(
+                      shown,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: TextStyle(
+                        color: TT.driftWoodDark,
+                        fontSize: 15,
+                        fontWeight: FontWeight.w900,
+                        shadows: [
+                          Shadow(color: Colors.white.withAlpha(160), blurRadius: 1, offset: const Offset(0, 1)),
+                        ],
+                      ),
+                    ),
                   ),
                 ],
               ),
             ),
-            const SizedBox(width: 5),
-            Text(
-              '${goal.collected}/${goal.count}',
-              style: TextStyle(
-                color: Colors.white,
-                fontSize: 12,
-                fontWeight: FontWeight.w900,
-                shadows: [
-                  Shadow(color: Colors.black.withAlpha(180), blurRadius: 3),
-                ],
-              ),
-            ),
-            if (complete) ...[
-              const SizedBox(width: 3),
-              const Icon(
-                Icons.check_circle_rounded,
-                color: Colors.white,
-                size: 13,
-              ),
-            ],
-          ],
-        ),
-      ),
+          ),
+        );
+      },
     );
   }
 }
 
-// ─────────────────────────────────────────────────────────────────────────────
-// Moves Counter — styled circle like original
-// ─────────────────────────────────────────────────────────────────────────────
-
-class _MovesCounter extends StatelessWidget {
-  final int movesLeft;
-  const _MovesCounter({required this.movesLeft});
+class _BadgePill extends StatelessWidget {
+  final String label;
+  final String value;
+  final LinearGradient bgGradient;
+  const _BadgePill({required this.label, required this.value, required this.bgGradient});
 
   @override
   Widget build(BuildContext context) {
-    final isLow = movesLeft <= 3;
-
     return Container(
+      width: 56,
+      height: 34,
       decoration: BoxDecoration(
-        borderRadius: BorderRadius.circular(18),
+        borderRadius: BorderRadius.circular(11),
         gradient: const LinearGradient(
-          colors: [
-            GameColors.goldFrameBright,
-            GameColors.goldFrameMid,
-            GameColors.goldFrameDeep,
-            GameColors.goldFrameMid,
-            GameColors.goldFrameBright,
-          ],
-          stops: [0.0, 0.25, 0.5, 0.75, 1.0],
+          begin: Alignment.topCenter,
+          end: Alignment.bottomCenter,
+          colors: [TT.goldShine, TT.gold, TT.goldDeep],
         ),
         boxShadow: [
-          BoxShadow(
-            color: Colors.black.withAlpha(120),
-            blurRadius: 6,
-            offset: const Offset(0, 2),
-          ),
+          BoxShadow(color: Colors.black.withAlpha(150), blurRadius: 6, offset: const Offset(0, 2)),
+          BoxShadow(color: TT.gold.withAlpha(100), blurRadius: 12, spreadRadius: -2),
         ],
       ),
-      padding: const EdgeInsets.all(2),
-      child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-        decoration: BoxDecoration(
-          borderRadius: BorderRadius.circular(16),
-          gradient: LinearGradient(
-            begin: Alignment.topCenter,
-            end: Alignment.bottomCenter,
-            colors: isLow
-                ? const [
-                    GameColors.cherryRed,
-                    GameColors.cherryRedDark,
-                  ]
-                : const [
-                    GameColors.panelPurple,
-                    GameColors.panelPurpleDark,
-                  ],
-          ),
-        ),
-        child: Row(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Icon(
-              Icons.swap_horiz_rounded,
-              color: Colors.white,
-              size: 16,
-              shadows: [
-                Shadow(color: Colors.black.withAlpha(180), blurRadius: 3),
-              ],
-            ),
-            const SizedBox(width: 4),
-            Text(
-              '$movesLeft',
-              style: TextStyle(
-                color: Colors.white,
-                fontSize: 16,
-                fontWeight: FontWeight.w900,
-                shadows: [
-                  Shadow(color: Colors.black.withAlpha(200), blurRadius: 4),
+      padding: const EdgeInsets.all(1.5),
+      child: Stack(
+        children: [
+          Positioned.fill(
+            child: Container(
+              decoration: BoxDecoration(
+                borderRadius: BorderRadius.circular(9),
+                gradient: bgGradient,
+              ),
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Text(
+                    label,
+                    style: TextStyle(
+                      fontSize: 8,
+                      fontWeight: FontWeight.w900,
+                      color: TT.goldShine,
+                      letterSpacing: 0.5,
+                      height: 1,
+                      shadows: [Shadow(color: Colors.black.withAlpha(220), blurRadius: 2, offset: const Offset(0, 1))],
+                    ),
+                  ),
+                  Text(
+                    value,
+                    style: const TextStyle(
+                      fontSize: 15,
+                      fontWeight: FontWeight.w900,
+                      color: Colors.white,
+                      height: 1.05,
+                      shadows: [Shadow(color: Color(0xCC000000), blurRadius: 3, offset: Offset(0, 1))],
+                    ),
+                  ),
                 ],
               ),
             ),
-          ],
-        ),
+          ),
+          // top inner highlight band (gloss)
+          Positioned(
+            top: 1,
+            left: 4,
+            right: 4,
+            child: Container(
+              height: 8,
+              decoration: BoxDecoration(
+                borderRadius: BorderRadius.circular(8),
+                gradient: LinearGradient(
+                  begin: Alignment.topCenter,
+                  end: Alignment.bottomCenter,
+                  colors: [
+                    Colors.white.withAlpha(120),
+                    Colors.white.withAlpha(0),
+                  ],
+                ),
+              ),
+            ),
+          ),
+        ],
       ),
     );
   }
 }
 
-// ─────────────────────────────────────────────────────────────────────────────
-// Timer Chip
-// ─────────────────────────────────────────────────────────────────────────────
-
-class _TimerChip extends StatelessWidget {
-  final int timeLeft;
-  const _TimerChip({required this.timeLeft});
-
-  @override
-  Widget build(BuildContext context) {
-    final isLow = timeLeft <= 10;
-    return Container(
-      decoration: BoxDecoration(
-        borderRadius: BorderRadius.circular(14),
-        gradient: const LinearGradient(
-          colors: [
-            GameColors.goldFrameBright,
-            GameColors.goldFrameMid,
-            GameColors.goldFrameDeep,
-            GameColors.goldFrameMid,
-            GameColors.goldFrameBright,
-          ],
-          stops: [0.0, 0.25, 0.5, 0.75, 1.0],
-        ),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withAlpha(120),
-            blurRadius: 6,
-            offset: const Offset(0, 2),
-          ),
-        ],
-      ),
-      padding: const EdgeInsets.all(2),
-      child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
-        decoration: BoxDecoration(
-          borderRadius: BorderRadius.circular(12),
-          gradient: LinearGradient(
-            begin: Alignment.topCenter,
-            end: Alignment.bottomCenter,
-            colors: isLow
-                ? const [
-                    GameColors.cherryRed,
-                    GameColors.cherryRedDark,
-                  ]
-                : const [
-                    GameColors.panelPurple,
-                    GameColors.panelPurpleDark,
-                  ],
-          ),
-        ),
-        child: Row(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            const Icon(
-              Icons.timer_rounded,
-              color: Colors.white,
-              size: 14,
-              shadows: [
-                Shadow(color: Colors.black54, blurRadius: 3),
-              ],
-            ),
-            const SizedBox(width: 3),
-            Text(
-              '$timeLeft',
-              style: TextStyle(
-                color: Colors.white,
-                fontSize: 13,
-                fontWeight: FontWeight.w900,
-                shadows: [
-                  Shadow(color: Colors.black.withAlpha(200), blurRadius: 3),
-                ],
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-}
-
-// ─────────────────────────────────────────────────────────────────────────────
-// Gold Circle Button
-// ─────────────────────────────────────────────────────────────────────────────
-
-class _GoldCircleButton extends StatelessWidget {
+class _CircleBtn extends StatelessWidget {
   final IconData icon;
   final VoidCallback onTap;
-  final double size;
-
-  const _GoldCircleButton({
-    required this.icon,
-    required this.onTap,
-    this.size = 32,
-  });
+  const _CircleBtn({required this.icon, required this.onTap});
 
   @override
   Widget build(BuildContext context) {
     return GestureDetector(
       onTap: onTap,
       child: Container(
-        width: size,
-        height: size,
+        width: 34,
+        height: 34,
         decoration: BoxDecoration(
           shape: BoxShape.circle,
           gradient: const LinearGradient(
-            colors: [
-              GameColors.goldFrameBright,
-              GameColors.goldFrameMid,
-              GameColors.goldFrameDeep,
-              GameColors.goldFrameMid,
-              GameColors.goldFrameBright,
-            ],
-            stops: [0.0, 0.25, 0.5, 0.75, 1.0],
+            begin: Alignment.topCenter,
+            end: Alignment.bottomCenter,
+            colors: [TT.goldShine, TT.gold, TT.goldDeep],
           ),
           boxShadow: [
-            BoxShadow(
-              color: Colors.black.withAlpha(140),
-              blurRadius: 6,
-              offset: const Offset(0, 2),
-            ),
+            BoxShadow(color: Colors.black.withAlpha(150), blurRadius: 6, offset: const Offset(0, 2)),
           ],
         ),
-        padding: const EdgeInsets.all(2),
+        padding: const EdgeInsets.all(1.5),
         child: Container(
-          decoration: const BoxDecoration(
+          decoration: BoxDecoration(
             shape: BoxShape.circle,
-            gradient: LinearGradient(
+            gradient: const LinearGradient(
               begin: Alignment.topCenter,
               end: Alignment.bottomCenter,
-              colors: [
-                GameColors.panelPurple,
-                GameColors.panelPurpleDark,
-              ],
+              colors: [Color(0xFFFFE6B0), Color(0xFFC79A52)],
             ),
           ),
-          alignment: Alignment.center,
-          child: Icon(
-            icon,
-            color: Colors.white,
-            size: size * 0.55,
-            shadows: [
-              Shadow(color: Colors.black.withAlpha(180), blurRadius: 3),
-            ],
-          ),
+          child: Icon(icon, color: TT.driftWoodDark, size: 18),
         ),
       ),
     );

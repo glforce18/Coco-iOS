@@ -1,16 +1,109 @@
+import 'dart:math';
+
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:patpat_game/audio/sound_manager.dart';
 import 'package:patpat_game/billing/billing_manager.dart';
 import 'package:patpat_game/models/achievement.dart';
 import 'package:patpat_game/models/enums.dart';
 import 'package:patpat_game/models/player_progress.dart';
 import 'package:patpat_game/data/progress_storage.dart';
 import 'package:patpat_game/data/cloud_sync_manager.dart';
+import 'package:patpat_game/notifications/notification_manager.dart';
+import 'package:patpat_game/notifications/achievement_bus.dart';
+
+/// Display state of a Yuva egg slot — derived from completed levels +
+/// hatched flag in PlayerProgress.
+///  - intact:   not yet at this slot's crackLevel
+///  - cracked:  reached crackLevel, hasn't reached openLevel yet (eye candy)
+///  - open:     reached openLevel, player can tap to hatch
+///  - hatched:  player already hatched it (shown as the hatched bird)
+enum EggDisplayState { intact, cracked, open, hatched }
 
 class PlayerProgressNotifier extends StateNotifier<PlayerProgress> {
   PlayerProgressNotifier() : super(PlayerProgress());
 
   Future<void> load() async {
     state = await ProgressStorage.load();
+    // Sync persisted audio prefs to live SoundManager on startup.
+    SoundManager.instance.enabled = state.soundEnabled;
+    SoundManager.instance.ambienceEnabled = state.musicEnabled;
+    // Reschedule any active local notifications based on persisted state.
+    await _syncNotifications();
+  }
+
+  /// Push the current notification preferences + scheduled notifs into
+  /// NotificationManager. Call after any state mutation that may affect
+  /// life regen, egg heat, daily reward, or notif toggles.
+  Future<void> _syncNotifications() async {
+    final n = NotificationManager.instance;
+    n.masterEnabled = state.notifsEnabled;
+    n.lifeFullEnabled = state.notifsLifeFull;
+    n.dailyEnabled = state.notifsDaily;
+    n.eggEnabled = state.notifsEgg;
+    n.dailyRewardEnabled = state.notifsDailyReward;
+
+    if (!state.notifsEnabled) {
+      await n.cancelAll();
+      return;
+    }
+
+    // ─ Life full
+    final fullAt = _lifeFullAt();
+    if (state.notifsLifeFull && fullAt != null) {
+      await n.scheduleLifeFull(fullAt);
+    } else {
+      await n.cancelLifeFull();
+    }
+
+    // ─ Daily reminder (always for tomorrow 19:00)
+    if (state.notifsDaily) {
+      await n.scheduleDailyReminder();
+    } else {
+      await n.cancelDaily();
+    }
+
+    // ─ Egg ready (any slot reached its openLevel and is unhatched) or
+    //   close to ready (within 5 levels of its openLevel).
+    final completed = state.currentLevel - 1;
+    bool nearReady = false;
+    for (int i = 0; i < state.eggSlots.length; i++) {
+      if (state.eggSlots[i].hatched) continue;
+      final openLvl = EggSlot.openLevels[i];
+      if (completed >= openLvl - 5) {
+        nearReady = true;
+        break;
+      }
+    }
+    if (state.notifsEgg && nearReady) {
+      // Fire next day at 09:30 — if user comes back & hatches, sync will cancel.
+      final now = DateTime.now();
+      final at = DateTime(now.year, now.month, now.day, 9, 30).add(const Duration(days: 1));
+      await n.scheduleEggReady(at);
+    } else {
+      await n.cancelEgg();
+    }
+
+    // ─ Daily reward — only if NOT collected today
+    if (state.notifsDailyReward) {
+      final today = DateTime.now().millisecondsSinceEpoch ~/ (1000 * 60 * 60 * 24);
+      if (state.lastDailyRewardDay < today) {
+        await n.scheduleDailyRewardReady();
+      } else {
+        await n.cancelDailyReward();
+      }
+    } else {
+      await n.cancelDailyReward();
+    }
+  }
+
+  /// When all 5 lives are full, returns null. Otherwise the absolute time
+  /// at which lives will reach 5 again. Mirrors regenerateLives() math.
+  DateTime? _lifeFullAt() {
+    if (state.lives >= 5 || state.lastLifeLostTime == 0) return null;
+    final regenIntervalMs = state.vipActive ? 20 * 60 * 1000 : 30 * 60 * 1000;
+    final missing = 5 - state.lives;
+    final ts = state.lastLifeLostTime + missing * regenIntervalMs;
+    return DateTime.fromMillisecondsSinceEpoch(ts);
   }
 
   /// Creates a new PlayerProgress with all fields copied from current state,
@@ -38,6 +131,8 @@ class PlayerProgressNotifier extends StateNotifier<PlayerProgress> {
       piggyBankCoins: state.piggyBankCoins,
       achievements: Set<String>.from(state.achievements),
       decorations: Set<String>.from(state.decorations),
+      eggSlots: state.eggSlots.map((e) => EggSlot(hatched: e.hatched)).toList(),
+      hatchedBirds: Set<String>.from(state.hatchedBirds),
       tutorialCompleted: state.tutorialCompleted,
       lastSpinTime: state.lastSpinTime,
       lastEventWeek: state.lastEventWeek,
@@ -49,19 +144,77 @@ class PlayerProgressNotifier extends StateNotifier<PlayerProgress> {
       totalSpecialsCreated: state.totalSpecialsCreated,
       shopVisited: state.shopVisited,
       wheelSpun: state.wheelSpun,
+      notifsEnabled: state.notifsEnabled,
+      notifsLifeFull: state.notifsLifeFull,
+      notifsDaily: state.notifsDaily,
+      notifsEgg: state.notifsEgg,
+      notifsDailyReward: state.notifsDailyReward,
+      notifsCampaign: state.notifsCampaign,
+      notifsAskedAt: state.notifsAskedAt,
+      fcmToken: state.fcmToken,
+      lastPremiumPromoShownAt: state.lastPremiumPromoShownAt,
+      lastSeenUpdateVersion: state.lastSeenUpdateVersion,
     );
   }
 
   Future<void> completeLevel(int level, int stars, int score, int coins) async {
     state.completeLevel(level, stars, score, coins);
+    // Egg progression is purely level-based now — no heat to distribute.
+    // Each slot cracks / opens at preset levels (10/25, 50/75, 150/175).
     state = _copyState();
     await ProgressStorage.save(state);
+    await _syncNotifications();
+    // Surface any achievements that were tipped over by this level.
+    await checkAchievements();
+  }
+
+  /// Display state of an egg slot, derived from currentLevel + hatched flag.
+  EggDisplayState eggStateFor(int slotIndex) {
+    if (slotIndex < 0 || slotIndex >= state.eggSlots.length) {
+      return EggDisplayState.intact;
+    }
+    if (state.eggSlots[slotIndex].hatched) return EggDisplayState.hatched;
+    final completed = state.currentLevel - 1;
+    final crackLvl = EggSlot.crackLevels[slotIndex];
+    final openLvl = EggSlot.openLevels[slotIndex];
+    if (completed >= openLvl) return EggDisplayState.open;
+    if (completed >= crackLvl) return EggDisplayState.cracked;
+    return EggDisplayState.intact;
+  }
+
+  /// All bird IDs that can hatch — 7 common + 5 rare.
+  static const commonBirds = <String>[
+    'jelly_purple', 'jelly_yellow', 'jelly_blue', 'jelly_green',
+    'jelly_pink', 'jelly_orange', 'jelly_black',
+  ];
+  static const rareBirds = <String>[
+    'rare_gold', 'rare_iridescent', 'rare_fire', 'rare_ice', 'rare_neon',
+  ];
+  static List<String> get allBirds => [...commonBirds, ...rareBirds];
+
+  /// Hatch an egg slot — only succeeds if the slot is in the OPEN state
+  /// (player reached its openLevel and hasn't hatched it yet). Picks a
+  /// random bird with 15% rare drop rate, marks the slot hatched, returns
+  /// the newly hatched bird ID.
+  Future<String?> hatchEgg(int slotIndex) async {
+    if (eggStateFor(slotIndex) != EggDisplayState.open) return null;
+    final rng = Random(DateTime.now().microsecondsSinceEpoch);
+    final isRare = rng.nextDouble() < 0.15;
+    final pool = isRare ? rareBirds : commonBirds;
+    final birdId = pool[rng.nextInt(pool.length)];
+    state.eggSlots[slotIndex] = EggSlot(hatched: true);
+    state.hatchedBirds.add(birdId);
+    state = _copyState();
+    await ProgressStorage.save(state);
+    await _syncNotifications();
+    return birdId;
   }
 
   Future<void> useLife() async {
     state.useLife();
     state = _copyState();
     await ProgressStorage.save(state);
+    await _syncNotifications();
   }
 
   /// Merge cloud progress with local. Keep whichever is more advanced.
@@ -139,6 +292,24 @@ class PlayerProgressNotifier extends StateNotifier<PlayerProgress> {
     await CloudSyncManager.instance.push(state);
   }
 
+  /// Decrement a booster after the player actually used it in-game.
+  /// Hammer/colorBlast: called when the booster's effect fires (cell tapped /
+  /// color picked). ExtraMoves: called immediately on activation since +3
+  /// moves applies instantly.
+  Future<void> consumeBooster(BoosterType type) async {
+    switch (type) {
+      case BoosterType.hammer:
+        if (state.hammerCount > 0) state.hammerCount--;
+      case BoosterType.colorBlast:
+        if (state.colorBlastCount > 0) state.colorBlastCount--;
+      case BoosterType.extraMoves:
+        if (state.extraMovesCount > 0) state.extraMovesCount--;
+    }
+    state.totalBoostersUsed++;
+    state = _copyState();
+    await ProgressStorage.save(state);
+  }
+
   /// Buy a booster with coins.
   Future<void> buyBooster(BoosterType type) async {
     if (state.coins < type.cost) return;
@@ -185,6 +356,13 @@ class PlayerProgressNotifier extends StateNotifier<PlayerProgress> {
     if (sound != null) state.soundEnabled = sound;
     if (music != null) state.musicEnabled = music;
     if (vibration != null) state.vibrationEnabled = vibration;
+    // Propagate to live audio system — sound flag controls SFX, music flag
+    // controls ambience loop. Music off → stop running loop immediately.
+    SoundManager.instance.enabled = state.soundEnabled;
+    SoundManager.instance.ambienceEnabled = state.musicEnabled;
+    if (!state.musicEnabled) {
+      await SoundManager.instance.stopLoop();
+    }
     state = _copyState();
     await ProgressStorage.save(state);
   }
@@ -237,7 +415,83 @@ class PlayerProgressNotifier extends StateNotifier<PlayerProgress> {
 
     state = _copyState();
     await ProgressStorage.save(state);
+    await _syncNotifications();
     return reward;
+  }
+
+  /// True when we should auto-show the premium promo modal: user has not
+  /// purchased ads removal / VIP, has reached at least level 5, and we
+  /// haven't shown the promo in the last 24 hours. completeLevel only
+  /// surfaces this every ~10 levels to avoid feeling like begging.
+  bool shouldShowPremiumPromo(int completedLevel) {
+    if (state.removeAdsPurchased || state.vipActive) return false;
+    if (completedLevel < 5) return false;
+    if (completedLevel % 10 != 0) return false;
+    final now = DateTime.now().millisecondsSinceEpoch;
+    final last = state.lastPremiumPromoShownAt;
+    const day = 24 * 60 * 60 * 1000;
+    return now - last >= day;
+  }
+
+  /// Mark the premium promo as just shown so we honor the 24h cooldown.
+  Future<void> markPremiumPromoShown() async {
+    state.lastPremiumPromoShownAt = DateTime.now().millisecondsSinceEpoch;
+    state = _copyState();
+    await ProgressStorage.save(state);
+  }
+
+  /// Mark a target update version as "seen" so we don't keep nagging the
+  /// user about the same release banner.
+  Future<void> markUpdateBannerSeen(String version) async {
+    if (state.lastSeenUpdateVersion == version) return;
+    state.lastSeenUpdateVersion = version;
+    state = _copyState();
+    await ProgressStorage.save(state);
+  }
+
+  /// Add a fixed amount of coins (used by rewarded-ad bonuses, e.g. the
+  /// "watch ad to double daily reward" flow).
+  Future<void> addBonusCoins(int coins) async {
+    if (coins <= 0) return;
+    state.coins += coins;
+    state = _copyState();
+    await ProgressStorage.save(state);
+  }
+
+  /// Update notification preferences. Pass nulls for unchanged fields.
+  /// Persists + reschedules / cancels notifications accordingly.
+  Future<void> updateNotifPrefs({
+    bool? master,
+    bool? lifeFull,
+    bool? daily,
+    bool? egg,
+    bool? dailyReward,
+    bool? campaign,
+  }) async {
+    if (master != null) state.notifsEnabled = master;
+    if (lifeFull != null) state.notifsLifeFull = lifeFull;
+    if (daily != null) state.notifsDaily = daily;
+    if (egg != null) state.notifsEgg = egg;
+    if (dailyReward != null) state.notifsDailyReward = dailyReward;
+    if (campaign != null) state.notifsCampaign = campaign;
+    state = _copyState();
+    await ProgressStorage.save(state);
+    await _syncNotifications();
+  }
+
+  /// Mark that we've shown the OS permission popup so we don't ask again.
+  Future<void> markNotifsAsked() async {
+    state.notifsAskedAt = DateTime.now().millisecondsSinceEpoch;
+    state = _copyState();
+    await ProgressStorage.save(state);
+  }
+
+  /// Persist the current FCM token (set by main.dart after registration).
+  Future<void> setFcmToken(String token) async {
+    if (state.fcmToken == token) return;
+    state.fcmToken = token;
+    state = _copyState();
+    await ProgressStorage.save(state);
   }
 
   static int _dayOfYear(DateTime d) {
@@ -315,6 +569,7 @@ class PlayerProgressNotifier extends StateNotifier<PlayerProgress> {
         state.achievements.add(a.id);
         state.coins += a.coinReward;
         newlyUnlocked.add(a);
+        AchievementBus.instance.emit(a);
       }
     }
 

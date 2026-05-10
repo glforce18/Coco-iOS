@@ -64,33 +64,32 @@ class LevelGenerator {
     bool isBoss,
     bool isMiniBoss,
   ) {
+    // Smoother kolay→zor curve: super forgiving early, gradually tighter.
     double base;
-    if (level <= 3) {
-      base = 28;
-    } else if (level <= 8) {
-      base = 26;
+    if (level <= 5) {
+      base = 35; // super easy intro
     } else if (level <= 15) {
-      base = 24;
+      base = 32;
     } else if (level <= 25) {
-      base = 22 - difficulty * 2;
+      base = 28;
     } else if (level <= 40) {
-      base = 21 - difficulty * 3;
+      base = 26 - difficulty * 2;
     } else if (level <= 60) {
-      base = 19 - difficulty * 3;
+      base = 24 - difficulty * 3;
     } else if (level <= 80) {
-      base = 18 - difficulty * 3;
+      base = 22 - difficulty * 3;
     } else if (level <= 100) {
-      base = 17 - difficulty * 3;
+      base = 20 - difficulty * 3;
     } else if (level <= 120) {
-      base = 16 - difficulty * 3;
+      base = 18 - difficulty * 3;
     } else if (level <= 140) {
-      base = 18 - difficulty * 2;
+      base = 17 - difficulty * 3;
     } else if (level <= 160) {
-      base = 17 - difficulty * 2;
-    } else if (level <= 180) {
       base = 16 - difficulty * 2;
-    } else if (level <= 200) {
+    } else if (level <= 180) {
       base = 15 - difficulty * 2;
+    } else if (level <= 200) {
+      base = 14 - difficulty * 2;
     } else if (level <= 220) {
       base = 14 - difficulty * 2;
     } else {
@@ -169,32 +168,51 @@ class LevelGenerator {
   // Available jelly colors
   // ---------------------------------------------------------------------------
 
+  /// Pick available colors for a level. Critical color rules:
+  /// - RED (purple slot) is NEVER paired with PINK (visually too close).
+  /// - RED is NEVER paired with ORANGE (also visually too close).
+  /// - BLACK is fine with anything (very distinct silhouette).
+  ///
+  /// So a level either has RED + (yellow/blue/green/black) — no pink, no
+  /// orange — or has PINK + ORANGE + (yellow/blue/green/black). Black is
+  /// added independently with ~40% chance.
   static List<JellyType> _availableColors(int level) {
     if (level <= 2) {
+      // Easy intro — 4 base colors, no special rules.
       return const [
-        JellyType.purple,
+        JellyType.purple, // RED
         JellyType.yellow,
         JellyType.blue,
         JellyType.green,
       ];
     }
     if (level <= 15) {
-      return const [
-        JellyType.purple,
+      // Levels 3-15: alternate red-bias vs pink-bias rosters by parity.
+      final useRed = level.isOdd;
+      return [
+        if (useRed) JellyType.purple else JellyType.pink,
         JellyType.yellow,
         JellyType.blue,
         JellyType.green,
-        JellyType.pink,
+        if (!useRed) JellyType.orange,
       ];
     }
-    return const [
-      JellyType.purple,
+    // Mid+ levels: deterministic but varied per level.
+    final rng = Random(level * 7919);
+    final useRed = rng.nextBool(); // RED or (PINK+ORANGE), never together
+    final includeBlack = rng.nextDouble() < 0.4; // ~40% chance — black ok everywhere
+    final colors = <JellyType>[
       JellyType.yellow,
       JellyType.blue,
       JellyType.green,
-      JellyType.pink,
-      JellyType.orange,
+      if (useRed) JellyType.purple
+      else ...[
+        JellyType.pink,
+        JellyType.orange,
+      ],
     ];
+    if (includeBlack) colors.add(JellyType.black);
+    return colors;
   }
 
   // ---------------------------------------------------------------------------

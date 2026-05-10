@@ -2,9 +2,10 @@ import 'dart:math';
 
 import 'package:flutter/material.dart';
 
-import 'package:patpat_game/theme/game_colors.dart';
+import 'package:patpat_game/theme/tropical_theme.dart';
 
-/// Horizontal progress bar showing score vs target with star markers.
+/// Slim transparent star progress bar — no panel, just a thin track + fill +
+/// 3 floating star markers. Sits between HUD and board.
 class ScoreProgressBar extends StatelessWidget {
   final int score;
   final int targetScore;
@@ -19,63 +20,50 @@ class ScoreProgressBar extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final progress =
-        targetScore > 0 ? (score / targetScore).clamp(0.0, 1.0) : 0.0;
+    final progress = targetScore > 0 ? (score / targetScore).clamp(0.0, 1.0) : 0.0;
 
     return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
+      padding: const EdgeInsets.fromLTRB(20, 0, 20, 2),
       child: SizedBox(
-        height: 20,
+        height: 18,
         child: LayoutBuilder(
-          builder: (context, constraints) {
+          builder: (_, constraints) {
             final barWidth = constraints.maxWidth;
             return Stack(
               clipBehavior: Clip.none,
               children: [
-                // Track
+                // Slim track — black with thin gold outline
                 Container(
-                  height: 10,
+                  height: 7,
                   margin: const EdgeInsets.only(top: 5),
                   decoration: BoxDecoration(
-                    color: Colors.white.withAlpha(20),
                     borderRadius: BorderRadius.circular(5),
+                    color: Colors.black.withAlpha(140),
+                    border: Border.all(color: TT.gold.withAlpha(180), width: 1.2),
                   ),
                 ),
-                // Fill
+                // Fill — palm green to gold gradient
                 Container(
-                  height: 10,
+                  height: 7,
                   width: barWidth * progress,
                   margin: const EdgeInsets.only(top: 5),
                   decoration: BoxDecoration(
-                    gradient: const LinearGradient(
-                      colors: [
-                        GameColors.purple,
-                        GameColors.cherryRed,
-                        GameColors.goldFrameMid,
-                      ],
-                    ),
                     borderRadius: BorderRadius.circular(5),
+                    gradient: const LinearGradient(
+                      begin: Alignment.centerLeft,
+                      end: Alignment.centerRight,
+                      colors: [TT.palm, TT.palmLight, TT.gold, TT.goldShine],
+                      stops: [0.0, 0.4, 0.75, 1.0],
+                    ),
                     boxShadow: [
-                      BoxShadow(
-                        color: GameColors.cherryRed.withAlpha(80),
-                        blurRadius: 6,
-                      ),
+                      BoxShadow(color: TT.palm.withAlpha(140), blurRadius: 6),
                     ],
                   ),
                 ),
-                // Star markers at 50%, 75%, 100%
-                _StarMarker(
-                  offset: barWidth * 0.5,
-                  filled: stars >= 1,
-                ),
-                _StarMarker(
-                  offset: barWidth * 0.75,
-                  filled: stars >= 2,
-                ),
-                _StarMarker(
-                  offset: min(barWidth - 10, barWidth * 1.0),
-                  filled: stars >= 3,
-                ),
+                // Floating star markers
+                _Marker(left: barWidth * 0.5 - 10, filled: stars >= 1),
+                _Marker(left: barWidth * 0.75 - 10, filled: stars >= 2),
+                _Marker(left: min(barWidth - 20, barWidth - 10), filled: stars >= 3),
               ],
             );
           },
@@ -85,21 +73,48 @@ class ScoreProgressBar extends StatelessWidget {
   }
 }
 
-class _StarMarker extends StatelessWidget {
-  final double offset;
+class _Marker extends StatelessWidget {
+  final double left;
   final bool filled;
-
-  const _StarMarker({required this.offset, required this.filled});
+  const _Marker({required this.left, required this.filled});
 
   @override
   Widget build(BuildContext context) {
     return Positioned(
-      left: offset - 7,
+      left: left,
       top: 0,
-      child: Icon(
-        filled ? Icons.star : Icons.star_border,
-        size: 18,
-        color: filled ? GameColors.goldFrameMid : Colors.white38,
+      child: Container(
+        width: 20,
+        height: 20,
+        decoration: BoxDecoration(
+          shape: BoxShape.circle,
+          gradient: filled
+              ? const LinearGradient(
+                  begin: Alignment.topCenter,
+                  end: Alignment.bottomCenter,
+                  colors: [TT.goldShine, TT.gold, TT.goldDeep],
+                )
+              : LinearGradient(
+                  begin: Alignment.topCenter,
+                  end: Alignment.bottomCenter,
+                  colors: [Colors.black.withAlpha(180), Colors.black.withAlpha(220)],
+                ),
+          border: Border.all(
+            color: filled ? Colors.white : TT.gold.withAlpha(180),
+            width: 1.5,
+          ),
+          boxShadow: filled
+              ? [BoxShadow(color: TT.gold.withAlpha(160), blurRadius: 8)]
+              : [BoxShadow(color: Colors.black.withAlpha(140), blurRadius: 4)],
+        ),
+        child: Icon(
+          filled ? Icons.star_rounded : Icons.star_outline_rounded,
+          color: filled ? Colors.white : TT.gold.withAlpha(220),
+          size: 13,
+          shadows: filled
+              ? [Shadow(color: Colors.black.withAlpha(180), blurRadius: 2, offset: const Offset(0, 1))]
+              : null,
+        ),
       ),
     );
   }

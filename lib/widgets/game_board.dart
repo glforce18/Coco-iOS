@@ -8,6 +8,7 @@ import 'package:patpat_game/models/enums.dart';
 import 'package:patpat_game/models/game_grid.dart';
 import 'package:patpat_game/models/position.dart';
 import 'package:patpat_game/theme/game_colors.dart';
+import 'package:patpat_game/theme/tropical_theme.dart';
 import 'package:patpat_game/widgets/special_effects_overlay.dart';
 
 /// Sprite asset path for a [JellyType].
@@ -25,6 +26,8 @@ String _jellySpritePath(JellyType type) {
       return 'assets/sprites/jelly_pink.png';
     case JellyType.orange:
       return 'assets/sprites/jelly_orange.png';
+    case JellyType.black:
+      return 'assets/sprites/jelly_black.png';
   }
 }
 
@@ -259,8 +262,11 @@ class _GameBoardState extends State<GameBoard>
     final scale = anim?.currentScale ?? 1.0;
     final opacity = anim?.currentOpacity ?? 1.0;
 
+    final cellData = widget.grid.get(r, c);
+    final JellyType? jellyType = cellData.jellyType;
+
     Widget cell = _JellyCell(
-      cell: widget.grid.get(r, c),
+      cell: cellData,
       cellSize: cellSize,
       isSelected: widget.selectedCell != null &&
           widget.selectedCell!.row == r &&
@@ -273,7 +279,6 @@ class _GameBoardState extends State<GameBoard>
       pulseValue: pulseValue,
     );
 
-    // Apply scale and opacity only when animating (avoid unnecessary wrapping)
     if (anim != null) {
       if (scale != 1.0 || opacity != 1.0) {
         cell = Opacity(
@@ -284,6 +289,108 @@ class _GameBoardState extends State<GameBoard>
           ),
         );
       }
+    }
+
+    // Swap dust trail — small particles falling behind a tile sliding
+    // sideways via animateSwap. We distinguish swap from fall by checking
+    // that the non-zero displacement lives in offsetEnd (swap) rather
+    // than offsetStart (fall).
+    if (anim != null &&
+        anim.type == AnimType.move &&
+        anim.offsetEnd != Offset.zero &&
+        jellyType != null) {
+      cell = Stack(
+        clipBehavior: Clip.none,
+        children: [
+          Positioned(
+            left: -cellSize * 0.5,
+            top: -cellSize * 0.5,
+            width: cellSize * 2,
+            height: cellSize * 2,
+            child: IgnorePointer(
+              child: CustomPaint(
+                painter: _SwapDustPainter(
+                  jellyType: jellyType,
+                  progress: anim.curvedProgress,
+                  travel: anim.offsetEnd,
+                  cellSize: cellSize,
+                ),
+              ),
+            ),
+          ),
+          cell,
+        ],
+      );
+    }
+
+    // Tropical destroy particles — colored burst per product type when matched.
+    final isDestroying = anim?.type == AnimType.destroy;
+    if (isDestroying && jellyType != null) {
+      cell = Stack(
+        clipBehavior: Clip.none,
+        children: [
+          Positioned(
+            left: -cellSize * 0.3,
+            top: -cellSize * 0.3,
+            width: cellSize * 1.6,
+            height: cellSize * 1.6,
+            child: IgnorePointer(
+              child: CustomPaint(
+                painter: _TropicalBurstPainter(
+                  jellyType: jellyType,
+                  progress: anim!.curvedProgress,
+                ),
+              ),
+            ),
+          ),
+          cell,
+        ],
+      );
+    }
+
+    // Pre-match golden glow — fires for ~120ms BEFORE destroy so the player
+    // sees what's about to pop. Brightens, scales up to 1.08, then hands off.
+    final isFlashing = anim?.type == AnimType.flash;
+    if (isFlashing && jellyType != null) {
+      final t = anim!.curvedProgress;
+      final scale = 1.0 + 0.08 * (1 - (1 - t) * (1 - t));
+      cell = Stack(
+        clipBehavior: Clip.none,
+        children: [
+          Positioned(
+            left: -cellSize * 0.25,
+            top: -cellSize * 0.25,
+            width: cellSize * 1.5,
+            height: cellSize * 1.5,
+            child: IgnorePointer(
+              child: CustomPaint(painter: _PreMatchGlowPainter(progress: t)),
+            ),
+          ),
+          Transform.scale(scale: scale, child: cell),
+        ],
+      );
+    }
+
+    // Special spawn — dramatic rainbow ring + shockwave + sparkles.
+    final isSpecialSpawning = anim?.type == AnimType.specialSpawn;
+    if (isSpecialSpawning) {
+      cell = Stack(
+        clipBehavior: Clip.none,
+        children: [
+          Positioned(
+            left: -cellSize * 0.6,
+            top: -cellSize * 0.6,
+            width: cellSize * 2.2,
+            height: cellSize * 2.2,
+            child: IgnorePointer(
+              child: CustomPaint(
+                painter: _SpecialSpawnPainter(progress: anim!.curvedProgress),
+              ),
+            ),
+          ),
+          cell,
+        ],
+      );
     }
 
     return Positioned(
@@ -325,16 +432,19 @@ class _JellyCell extends StatelessWidget {
     return Stack(
       clipBehavior: Clip.none,
       children: [
-        // 1. Cell background tile
+        // 1. Cell tile — subtle slot inside the navy board interior.
+        // Each cell is a faint lighter blue tile so the grid is visible
+        // (mockup-style) but unobtrusive.
         Positioned.fill(
           child: Container(
             decoration: BoxDecoration(
-              color: const Color(0xFF1A0550),
               borderRadius: BorderRadius.circular(8),
-              border: Border.all(
-                color: const Color(0xFF2A1570).withAlpha(120),
-                width: 0.5,
+              gradient: const LinearGradient(
+                begin: Alignment.topCenter,
+                end: Alignment.bottomCenter,
+                colors: [Color(0x33FFFFFF), Color(0x14FFFFFF)],
               ),
+              border: Border.all(color: const Color(0x33FFFFFF), width: 0.6),
             ),
           ),
         ),
@@ -465,35 +575,58 @@ class _RocketJelly extends StatelessWidget {
     return Stack(
       clipBehavior: Clip.none,
       children: [
-        // 1. Pulsing glow background
+        // 1. Outer pulsing glow halo behind the whole rocket — wider so
+        // the rocket "leaks" past its tile boundaries.
         Positioned.fill(
           child: Container(
             decoration: BoxDecoration(
               borderRadius: BorderRadius.circular(8),
               boxShadow: [
                 BoxShadow(
-                  color: const Color(0xFF2196F3)
-                      .withAlpha((60 + pulseValue * 60).toInt()),
-                  blurRadius: 10 + pulseValue * 6,
-                  spreadRadius: 1 + pulseValue * 2,
+                  color: TT.coral.withAlpha((100 + pulseValue * 70).toInt()),
+                  blurRadius: 20 + pulseValue * 10,
+                  spreadRadius: 2 + pulseValue * 3,
+                ),
+                BoxShadow(
+                  color: TT.gold.withAlpha((90 + pulseValue * 50).toInt()),
+                  blurRadius: 14,
+                  spreadRadius: 1,
                 ),
               ],
             ),
           ),
         ),
-        // 2. Dimmed base jelly sprite
+        // 2. The rocket capsule itself — silhouette with nose cone, body,
+        // tail fins, and an animated exhaust flame.
         Positioned.fill(
-          child: Opacity(
-            opacity: 0.55,
+          child: CustomPaint(
+            painter: _RocketCapsulePainter(
+              horizontal: horizontal,
+              pulseValue: pulseValue,
+              jellyColor: type.color,
+            ),
+          ),
+        ),
+        // 3. The bird's head peeking from a small cockpit window in the
+        // upper part of the capsule. We center & shrink the sprite so it
+        // reads as a passenger, not the whole tile.
+        Positioned.fill(
+          child: FractionallySizedBox(
+            widthFactor: 0.50,
+            heightFactor: 0.50,
+            alignment: horizontal
+                ? const Alignment(-0.10, -0.05)
+                : const Alignment(0.0, -0.32),
             child: Image.asset(
               _jellySpritePath(type),
               fit: BoxFit.contain,
               filterQuality: FilterQuality.medium,
-              errorBuilder: (_, __, ___) => _FallbackJelly(type: type),
+              errorBuilder: (_, __, ___) => const SizedBox.shrink(),
             ),
           ),
         ),
-        // 3. CustomPainter: glowing arrow lines through center
+        // 4. Direction chevrons — bright animated arrows pointing the
+        // way the rocket will fire.
         Positioned.fill(
           child: CustomPaint(
             painter: _RocketArrowPainter(
@@ -503,19 +636,204 @@ class _RocketJelly extends StatelessWidget {
             ),
           ),
         ),
-        // 4. Directional streak lines
-        Positioned.fill(
-          child: CustomPaint(
-            painter: _RocketStreakPainter(
-              horizontal: horizontal,
-              pulseValue: pulseValue,
-              color: const Color(0xFF64B5F6),
-            ),
-          ),
-        ),
       ],
     );
   }
+}
+
+/// Paints a chibi rocket capsule that fills the cell:
+///   • Nose cone (gold tipped)
+///   • Body (gold/sand with the jelly's accent stripe)
+///   • Tail fins
+///   • Animated flame at the exhaust end
+class _RocketCapsulePainter extends CustomPainter {
+  final bool horizontal;
+  final double pulseValue;
+  final Color jellyColor;
+
+  _RocketCapsulePainter({
+    required this.horizontal,
+    required this.pulseValue,
+    required this.jellyColor,
+  });
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    final w = size.width;
+    final h = size.height;
+    canvas.save();
+    // Orient the rocket — vertical version is the natural form. For
+    // horizontal rockets we rotate the canvas 90° so the same shapes
+    // are reused.
+    canvas.translate(w / 2, h / 2);
+    if (horizontal) canvas.rotate(-pi / 2);
+    canvas.translate(-w / 2, -h / 2);
+
+    // Drop shadow under the body.
+    final shadow = Paint()
+      ..color = Colors.black.withAlpha(120)
+      ..maskFilter = const MaskFilter.blur(BlurStyle.normal, 4);
+
+    // ─── Body: rounded rectangle ───
+    final bodyRect = Rect.fromLTWH(w * 0.30, h * 0.18, w * 0.40, h * 0.55);
+    final bodyR = RRect.fromRectAndRadius(bodyRect, Radius.circular(w * 0.16));
+    canvas.drawRRect(bodyR.shift(const Offset(0, 2.5)), shadow);
+    canvas.drawRRect(
+      bodyR,
+      Paint()
+        ..shader = const LinearGradient(
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+          colors: [TT.goldShine, TT.gold, TT.goldDeep],
+        ).createShader(bodyRect),
+    );
+    // Color stripe — visible "racing band" derived from the jelly color.
+    final stripeRect = Rect.fromLTWH(w * 0.30, h * 0.50, w * 0.40, h * 0.10);
+    canvas.drawRect(
+      stripeRect,
+      Paint()
+        ..shader = LinearGradient(
+          begin: Alignment.topCenter,
+          end: Alignment.bottomCenter,
+          colors: [
+            Color.lerp(jellyColor, Colors.white, 0.35)!,
+            jellyColor,
+          ],
+        ).createShader(stripeRect),
+    );
+    // Body outline.
+    canvas.drawRRect(
+      bodyR,
+      Paint()
+        ..style = PaintingStyle.stroke
+        ..strokeWidth = 2
+        ..color = TT.goldDeep,
+    );
+
+    // ─── Cockpit window (where the bird peeks out) ───
+    final windowCenter = Offset(w * 0.50, h * 0.32);
+    final windowR = w * 0.13;
+    canvas.drawCircle(
+      windowCenter,
+      windowR,
+      Paint()
+        ..shader = const RadialGradient(
+          center: Alignment(-0.3, -0.4),
+          colors: [Color(0xFF8FCFFF), Color(0xFF1F77BF)],
+        ).createShader(Rect.fromCircle(center: windowCenter, radius: windowR)),
+    );
+    canvas.drawCircle(
+      windowCenter,
+      windowR,
+      Paint()
+        ..style = PaintingStyle.stroke
+        ..strokeWidth = 2
+        ..color = TT.goldDeep,
+    );
+
+    // ─── Nose cone (top) ───
+    final nosePath = Path()
+      ..moveTo(w * 0.50, h * 0.05)
+      ..lineTo(w * 0.71, h * 0.20)
+      ..lineTo(w * 0.29, h * 0.20)
+      ..close();
+    canvas.drawPath(nosePath.shift(const Offset(0, 2.5)), shadow);
+    canvas.drawPath(
+      nosePath,
+      Paint()
+        ..shader = const LinearGradient(
+          begin: Alignment.topCenter,
+          end: Alignment.bottomCenter,
+          colors: [TT.coralLight, TT.coral, TT.coralDark],
+        ).createShader(Rect.fromLTWH(w * 0.29, h * 0.05, w * 0.42, h * 0.16)),
+    );
+    canvas.drawPath(
+      nosePath,
+      Paint()
+        ..style = PaintingStyle.stroke
+        ..strokeWidth = 2
+        ..color = TT.coralDark,
+    );
+
+    // ─── Tail fins (left + right) ───
+    final finL = Path()
+      ..moveTo(w * 0.30, h * 0.65)
+      ..lineTo(w * 0.10, h * 0.85)
+      ..lineTo(w * 0.30, h * 0.85)
+      ..close();
+    final finR = Path()
+      ..moveTo(w * 0.70, h * 0.65)
+      ..lineTo(w * 0.90, h * 0.85)
+      ..lineTo(w * 0.70, h * 0.85)
+      ..close();
+    final finPaint = Paint()
+      ..shader = const LinearGradient(
+        begin: Alignment.topCenter,
+        end: Alignment.bottomCenter,
+        colors: [TT.coral, TT.coralDark],
+      ).createShader(Rect.fromLTWH(0, h * 0.65, w, h * 0.20));
+    canvas.drawPath(finL.shift(const Offset(0, 2.5)), shadow);
+    canvas.drawPath(finR.shift(const Offset(0, 2.5)), shadow);
+    canvas.drawPath(finL, finPaint);
+    canvas.drawPath(finR, finPaint);
+
+    // ─── Animated flame at exhaust ───
+    final flameTopY = h * 0.78;
+    final flameAmp = 1.0 + pulseValue * 0.6;
+    final flameH = h * 0.20 * flameAmp;
+    final flameCenter = Offset(w * 0.50, flameTopY + flameH / 2);
+
+    // Outer orange.
+    final outerFlame = Path()
+      ..moveTo(w * 0.34, flameTopY)
+      ..quadraticBezierTo(w * 0.30, flameTopY + flameH * 0.45,
+          w * 0.50, flameTopY + flameH)
+      ..quadraticBezierTo(w * 0.70, flameTopY + flameH * 0.45,
+          w * 0.66, flameTopY)
+      ..close();
+    canvas.drawPath(
+      outerFlame,
+      Paint()
+        ..shader = const LinearGradient(
+          begin: Alignment.topCenter,
+          end: Alignment.bottomCenter,
+          colors: [Color(0xFFFFD13B), Color(0xFFFF6E1A), Color(0xFFE83A1A)],
+        ).createShader(Rect.fromCircle(center: flameCenter, radius: flameH))
+        ..maskFilter = const MaskFilter.blur(BlurStyle.normal, 1.5),
+    );
+    // Inner white-yellow core.
+    final innerFlame = Path()
+      ..moveTo(w * 0.42, flameTopY)
+      ..quadraticBezierTo(w * 0.40, flameTopY + flameH * 0.35,
+          w * 0.50, flameTopY + flameH * 0.85)
+      ..quadraticBezierTo(w * 0.60, flameTopY + flameH * 0.35,
+          w * 0.58, flameTopY)
+      ..close();
+    canvas.drawPath(
+      innerFlame,
+      Paint()
+        ..shader = const RadialGradient(
+          colors: [Colors.white, Color(0xFFFFE89C)],
+        ).createShader(Rect.fromCircle(center: flameCenter, radius: flameH * 0.5)),
+    );
+
+    // Tiny spark dots scattering below the flame.
+    final sparkPaint = Paint()
+      ..color = const Color(0xFFFFD13B).withAlpha((150 + pulseValue * 80).toInt());
+    for (int i = 0; i < 4; i++) {
+      final sx = w * 0.36 + (i * w * 0.085) + pulseValue * 4;
+      final sy = flameTopY + flameH + 2 + (i.isEven ? 1 : 4);
+      canvas.drawCircle(Offset(sx, sy), 1.6, sparkPaint);
+    }
+
+    canvas.restore();
+  }
+
+  @override
+  bool shouldRepaint(covariant _RocketCapsulePainter old) =>
+      old.pulseValue != pulseValue ||
+      old.horizontal != horizontal ||
+      old.jellyColor != jellyColor;
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -618,7 +936,7 @@ class _RainbowJelly extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final orbitAngle = pulseValue * 2 * pi;
-    final radius = cellSize * 0.36;
+    final radius = cellSize * 0.40;
     final center = cellSize / 2;
     const rainbowColors = [
       Color(0xFFFF4D80), // pink
@@ -629,76 +947,238 @@ class _RainbowJelly extends StatelessWidget {
       Color(0xFF8B24DB), // purple
     ];
 
-    // Hue-shifting glow
+    // Hue-shifting glow color cycles through full spectrum.
     final hue = pulseValue * 360;
-    final glowColor = HSLColor.fromAHSL(1, hue, 0.9, 0.6).toColor();
+    final glowColor = HSLColor.fromAHSL(1, hue, 0.95, 0.65).toColor();
+    // Subtle "breathe" — overall tile pulses 1.0 → 1.06 so it stands out
+    // amongst static tiles even at a glance.
+    final breathScale = 1.0 + 0.06 * sin(pulseValue * 2 * pi);
 
-    return Stack(
-      clipBehavior: Clip.none,
-      children: [
-        // 1. Cycling color glow background
-        Positioned.fill(
-          child: Container(
-            decoration: BoxDecoration(
-              borderRadius: BorderRadius.circular(8),
-              boxShadow: [
-                BoxShadow(
-                  color: glowColor.withAlpha((80 + pulseValue * 50).toInt()),
-                  blurRadius: 14 + pulseValue * 6,
-                  spreadRadius: 1 + pulseValue * 2,
-                ),
-              ],
+    return Transform.scale(
+      scale: breathScale,
+      child: Stack(
+        clipBehavior: Clip.none,
+        children: [
+          // 1. Big radiant rainbow halo behind the tile — bigger than the
+          // cell so the rainbow special "leaks" beyond its borders.
+          Positioned(
+            left: -cellSize * 0.18,
+            top: -cellSize * 0.18,
+            width: cellSize * 1.36,
+            height: cellSize * 1.36,
+            child: IgnorePointer(
+              child: CustomPaint(
+                painter: _RainbowHaloPainter(progress: pulseValue),
+              ),
             ),
           ),
-        ),
-        // 2. Rainbow sprite
-        Positioned.fill(
-          child: Image.asset(
-            'assets/sprites/jelly_rainbow.png',
-            fit: BoxFit.contain,
-            filterQuality: FilterQuality.medium,
-            errorBuilder: (_, __, ___) =>
-                const _FallbackJelly(type: JellyType.purple),
+          // 2. Rotating starburst rays behind the sprite.
+          Positioned.fill(
+            child: IgnorePointer(
+              child: Transform.rotate(
+                angle: orbitAngle * 0.5,
+                child: CustomPaint(
+                  painter: _RainbowRaysPainter(progress: pulseValue),
+                ),
+              ),
+            ),
           ),
-        ),
-        // 3. 6 orbiting colored dots
-        ...List.generate(6, (i) {
-          final angle = orbitAngle + i * (pi / 3);
-          final dx = center + cos(angle) * radius;
-          final dy = center + sin(angle) * radius;
-          final dotAlpha = (200 + pulseValue * 55).toInt().clamp(0, 255);
-          return Positioned(
-            left: dx - 3.5,
-            top: dy - 3.5,
+          // 3. Cycling color glow box-shadow on the tile itself.
+          Positioned.fill(
             child: Container(
-              width: 7,
-              height: 7,
               decoration: BoxDecoration(
-                shape: BoxShape.circle,
-                color: rainbowColors[i].withAlpha(dotAlpha),
+                borderRadius: BorderRadius.circular(8),
                 boxShadow: [
                   BoxShadow(
-                    color:
-                        rainbowColors[i].withAlpha((dotAlpha * 0.6).toInt()),
-                    blurRadius: 5,
+                    color: glowColor.withAlpha((140 + pulseValue * 60).toInt()),
+                    blurRadius: 22 + pulseValue * 10,
+                    spreadRadius: 2 + pulseValue * 3,
                   ),
                 ],
               ),
             ),
-          );
-        }),
-        // 4. Shimmer overlay
-        Positioned.fill(
-          child: ClipRRect(
-            borderRadius: BorderRadius.circular(8),
-            child: CustomPaint(
-              painter: _ShimmerPainter(pulseValue: pulseValue),
+          ),
+          // 4. Rainbow sprite (the actual tile graphic).
+          Positioned.fill(
+            child: Image.asset(
+              'assets/sprites/jelly_rainbow.png',
+              fit: BoxFit.contain,
+              filterQuality: FilterQuality.medium,
+              errorBuilder: (_, __, ___) =>
+                  const _FallbackJelly(type: JellyType.purple),
             ),
           ),
-        ),
-      ],
+          // 5. 6 orbiting colored dots — bigger + brighter than before.
+          ...List.generate(6, (i) {
+            final angle = orbitAngle + i * (pi / 3);
+            final dx = center + cos(angle) * radius;
+            final dy = center + sin(angle) * radius;
+            final dotAlpha = (220 + pulseValue * 35).toInt().clamp(0, 255);
+            return Positioned(
+              left: dx - 5,
+              top: dy - 5,
+              child: Container(
+                width: 10,
+                height: 10,
+                decoration: BoxDecoration(
+                  shape: BoxShape.circle,
+                  gradient: RadialGradient(
+                    colors: [
+                      Colors.white.withAlpha(dotAlpha),
+                      rainbowColors[i].withAlpha(dotAlpha),
+                    ],
+                  ),
+                  boxShadow: [
+                    BoxShadow(
+                      color: rainbowColors[i].withAlpha((dotAlpha * 0.7).toInt()),
+                      blurRadius: 8,
+                      spreadRadius: 1,
+                    ),
+                  ],
+                ),
+              ),
+            );
+          }),
+          // 6. Five-pointed white "★" sparkle marker — the universal
+          // 5-match badge (Candy Crush color bomb cue) that makes this
+          // tile instantly readable as the BIG one.
+          Positioned(
+            left: center - 8,
+            top: center - 8,
+            child: IgnorePointer(
+              child: CustomPaint(
+                size: const Size(16, 16),
+                painter: _FivePointStarPainter(
+                  alpha: (180 + pulseValue * 75).toInt().clamp(0, 255),
+                ),
+              ),
+            ),
+          ),
+          // 7. Shimmer overlay sweeps over everything.
+          Positioned.fill(
+            child: ClipRRect(
+              borderRadius: BorderRadius.circular(8),
+              child: CustomPaint(
+                painter: _ShimmerPainter(pulseValue: pulseValue),
+              ),
+            ),
+          ),
+        ],
+      ),
     );
   }
+}
+
+/// Outer rainbow halo — soft radial gradient that cycles through the spectrum.
+class _RainbowHaloPainter extends CustomPainter {
+  final double progress;
+  _RainbowHaloPainter({required this.progress});
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    final c = Offset(size.width / 2, size.height / 2);
+    final r = size.width / 2;
+    final hue = progress * 360;
+    final base = HSLColor.fromAHSL(1, hue, 0.9, 0.6).toColor();
+    canvas.drawCircle(
+      c,
+      r,
+      Paint()
+        ..shader = RadialGradient(
+          colors: [
+            base.withAlpha(160),
+            base.withAlpha(60),
+            Colors.transparent,
+          ],
+          stops: const [0.45, 0.75, 1.0],
+        ).createShader(Rect.fromCircle(center: c, radius: r))
+        ..maskFilter = const MaskFilter.blur(BlurStyle.normal, 4),
+    );
+  }
+
+  @override
+  bool shouldRepaint(covariant _RainbowHaloPainter old) => old.progress != progress;
+}
+
+/// 8-point starburst rays behind the rainbow sprite — gives it a "heroic"
+/// readable silhouette so the 5-match BIG one is impossible to miss.
+class _RainbowRaysPainter extends CustomPainter {
+  final double progress;
+  _RainbowRaysPainter({required this.progress});
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    final c = Offset(size.width / 2, size.height / 2);
+    final maxR = size.width / 2;
+    final hue = progress * 360;
+    const rayCount = 8;
+    for (int i = 0; i < rayCount; i++) {
+      final angle = i * (2 * pi / rayCount);
+      final color = HSLColor.fromAHSL(1, (hue + i * 45) % 360, 0.95, 0.6).toColor();
+      final paint = Paint()
+        ..shader = RadialGradient(
+          colors: [color.withAlpha(120), Colors.transparent],
+        ).createShader(Rect.fromLTWH(0, 0, maxR * 1.2, 30));
+      final path = Path()
+        ..moveTo(c.dx, c.dy)
+        ..lineTo(c.dx + cos(angle - 0.06) * maxR, c.dy + sin(angle - 0.06) * maxR)
+        ..lineTo(c.dx + cos(angle + 0.06) * maxR, c.dy + sin(angle + 0.06) * maxR)
+        ..close();
+      canvas.drawPath(path, paint);
+    }
+  }
+
+  @override
+  bool shouldRepaint(covariant _RainbowRaysPainter old) => old.progress != progress;
+}
+
+/// Tiny 5-pointed star painted over the center of the rainbow sprite —
+/// universal "color bomb" cue.
+class _FivePointStarPainter extends CustomPainter {
+  final int alpha;
+  _FivePointStarPainter({required this.alpha});
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    final c = Offset(size.width / 2, size.height / 2);
+    final r = size.width / 2;
+    final outerR = r * 0.95;
+    final innerR = r * 0.4;
+    final path = Path();
+    for (int i = 0; i < 10; i++) {
+      final radius = i.isEven ? outerR : innerR;
+      final angle = -pi / 2 + i * pi / 5;
+      final x = c.dx + cos(angle) * radius;
+      final y = c.dy + sin(angle) * radius;
+      if (i == 0) {
+        path.moveTo(x, y);
+      } else {
+        path.lineTo(x, y);
+      }
+    }
+    path.close();
+
+    // Soft outer glow.
+    canvas.drawPath(
+      path,
+      Paint()
+        ..color = Colors.white.withAlpha(alpha)
+        ..maskFilter = const MaskFilter.blur(BlurStyle.normal, 3),
+    );
+    // Crisp white star.
+    canvas.drawPath(path, Paint()..color = Colors.white.withAlpha(alpha));
+    // Thin gold outline.
+    canvas.drawPath(
+      path,
+      Paint()
+        ..style = PaintingStyle.stroke
+        ..strokeWidth = 1.2
+        ..color = const Color(0xFFE8A317).withAlpha(alpha),
+    );
+  }
+
+  @override
+  bool shouldRepaint(covariant _FivePointStarPainter old) => old.alpha != alpha;
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -948,90 +1428,6 @@ class _LightningBoltPainter extends CustomPainter {
 
   @override
   bool shouldRepaint(covariant _LightningBoltPainter old) =>
-      old.pulseValue != pulseValue;
-}
-
-// ─────────────────────────────────────────────────────────────────────────────
-// _RocketStreakPainter — directional glow streaks for rocket specials
-// ─────────────────────────────────────────────────────────────────────────────
-
-class _RocketStreakPainter extends CustomPainter {
-  final bool horizontal;
-  final double pulseValue;
-  final Color color;
-
-  _RocketStreakPainter({
-    required this.horizontal,
-    required this.pulseValue,
-    required this.color,
-  });
-
-  @override
-  void paint(Canvas canvas, Size size) {
-    final alpha = (60 + pulseValue * 80).toInt().clamp(0, 255);
-    final paint = Paint()
-      ..color = color.withAlpha(alpha)
-      ..maskFilter = const MaskFilter.blur(BlurStyle.normal, 3);
-
-    final center = Offset(size.width / 2, size.height / 2);
-    final lineLength = (horizontal ? size.width : size.height) * 0.42;
-    final lineWidth = 2.0 + pulseValue;
-
-    if (horizontal) {
-      // Left streak
-      canvas.drawRRect(
-        RRect.fromRectAndRadius(
-          Rect.fromCenter(
-            center: Offset(center.dx - lineLength * 0.3, center.dy),
-            width: lineLength,
-            height: lineWidth,
-          ),
-          const Radius.circular(2),
-        ),
-        paint,
-      );
-      // Right streak
-      canvas.drawRRect(
-        RRect.fromRectAndRadius(
-          Rect.fromCenter(
-            center: Offset(center.dx + lineLength * 0.3, center.dy),
-            width: lineLength,
-            height: lineWidth,
-          ),
-          const Radius.circular(2),
-        ),
-        paint,
-      );
-    } else {
-      // Top streak
-      canvas.drawRRect(
-        RRect.fromRectAndRadius(
-          Rect.fromCenter(
-            center: Offset(center.dx, center.dy - lineLength * 0.3),
-            width: lineWidth,
-            height: lineLength,
-          ),
-          const Radius.circular(2),
-        ),
-        paint,
-      );
-      // Bottom streak
-      canvas.drawRRect(
-        RRect.fromRectAndRadius(
-          Rect.fromCenter(
-            center: Offset(center.dx, center.dy + lineLength * 0.3),
-            width: lineWidth,
-            height: lineLength,
-          ),
-          const Radius.circular(2),
-        ),
-        paint,
-      );
-    }
-  }
-
-  @override
-  bool shouldRepaint(covariant _RocketStreakPainter old) =>
       old.pulseValue != pulseValue;
 }
 
@@ -1349,4 +1745,483 @@ class _ChainPainter extends CustomPainter {
 
   @override
   bool shouldRepaint(covariant CustomPainter oldDelegate) => false;
+}
+
+// ─────────────────────────────────────────────────────────────────────────
+// Tropical destroy burst — per-product particle effect when matched
+// ─────────────────────────────────────────────────────────────────────────
+
+({Color primary, Color accent, Color glow}) _palette(JellyType t) {
+  switch (t) {
+    case JellyType.purple: // coconut → brown wood + white meat
+      return (
+        primary: const Color(0xFF6B4226),
+        accent: const Color(0xFFFFF1D9),
+        glow: const Color(0xFF8B5A2B)
+      );
+    case JellyType.yellow: // pineapple → gold + green leaf
+      return (
+        primary: const Color(0xFFFFCB3D),
+        accent: const Color(0xFF7BD66E),
+        glow: const Color(0xFFFFE89C)
+      );
+    case JellyType.blue: // shell → turquoise water
+      return (
+        primary: const Color(0xFF26B89E),
+        accent: const Color(0xFF8EE6D9),
+        glow: const Color(0xFF6FD3E6)
+      );
+    case JellyType.green: // mango → fresh green
+      return (
+        primary: const Color(0xFF3CA84F),
+        accent: const Color(0xFF7BD66E),
+        glow: const Color(0xFFCFFF99)
+      );
+    case JellyType.pink: // hibiscus → pink petals
+      return (
+        primary: const Color(0xFFFF5A8E),
+        accent: const Color(0xFFFFCB3D),
+        glow: const Color(0xFFFFB3D1)
+      );
+    case JellyType.orange: // crab → orange shell
+      return (
+        primary: const Color(0xFFE85A5A),
+        accent: const Color(0xFFFFCB3D),
+        glow: const Color(0xFFFF8E7A)
+      );
+    case JellyType.black: // raven → blue shimmer + dark
+      return (
+        primary: const Color(0xFF1A1A2E),
+        accent: const Color(0xFF4DA8FF),
+        glow: const Color(0xFF8AC4FF)
+      );
+  }
+}
+
+/// Trailing dust behind a tile mid-swap — 4 fading dots strung along the
+/// line from the tile's start position to its current position. Pure
+/// decoration; cleans up when the move animation ends.
+class _SwapDustPainter extends CustomPainter {
+  final JellyType jellyType;
+  final double progress;
+  final Offset travel;
+  final double cellSize;
+
+  _SwapDustPainter({
+    required this.jellyType,
+    required this.progress,
+    required this.travel,
+    required this.cellSize,
+  });
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    if (progress <= 0.05 || progress >= 0.98) return;
+    // Paint container is 2× cellSize; the cell sits at the middle. The
+    // tile has already been moved by transform — we draw dust BEHIND
+    // its current position (toward the start, opposite of travel).
+    final center = Offset(size.width / 2, size.height / 2);
+    final pal = _palette(jellyType);
+
+    // Distance the cell has moved so far.
+    final movedDx = travel.dx * progress;
+    final movedDy = travel.dy * progress;
+    // Direction back toward start (unit-ish):
+    final lenSq = movedDx * movedDx + movedDy * movedDy;
+    if (lenSq < 1) return;
+    final len = sqrt(lenSq);
+    final ux = -movedDx / len;
+    final uy = -movedDy / len;
+
+    final paint = Paint()
+      ..maskFilter = const MaskFilter.blur(BlurStyle.normal, 1.6);
+    // 4 dust particles spaced along the trail.
+    for (int i = 0; i < 4; i++) {
+      final dist = (i + 0.7) * (cellSize * 0.18);
+      if (dist > len * 1.1) continue;
+      // Each particle's "age" — older particles fade more.
+      final age = (i / 4.0).clamp(0.0, 1.0);
+      final fadeIn = (progress / 0.18).clamp(0.0, 1.0);
+      final alpha = ((1 - age) * 180 * fadeIn * (1 - progress)).toInt().clamp(0, 180);
+      // Slight perpendicular jitter so particles don't form a straight
+      // boring line. Use position-derived seed.
+      final perp = Offset(-uy, ux);
+      final jitter = (i.isEven ? 1.0 : -1.0) * (cellSize * 0.08);
+      final p = center + Offset(ux * dist, uy * dist) + perp * jitter;
+      paint.color = pal.accent.withAlpha(alpha);
+      canvas.drawCircle(p, cellSize * 0.07 * (1 - age * 0.4), paint);
+    }
+  }
+
+  @override
+  bool shouldRepaint(covariant _SwapDustPainter old) =>
+      old.progress != progress || old.travel != travel;
+}
+
+/// Brief golden halo that flashes around a tile for ~120ms RIGHT BEFORE
+/// it gets destroyed — gives the player a beat of "yes, this matched!"
+/// anticipation. Two concentric rings + radial glow.
+class _PreMatchGlowPainter extends CustomPainter {
+  final double progress;
+  _PreMatchGlowPainter({required this.progress});
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    if (progress <= 0) return;
+    final c = Offset(size.width / 2, size.height / 2);
+    final t = progress;
+    // Radius grows from 0.6r → 0.95r over the brief window.
+    final baseR = (size.width * 0.5) * (0.6 + 0.35 * t);
+    // Alpha peaks at t=0.5 then fades — gives a "blink" feel.
+    final alpha = (sin(t * pi) * 235).toInt().clamp(0, 235);
+
+    // Soft halo gradient
+    final halo = Paint()
+      ..shader = RadialGradient(
+        colors: [
+          const Color(0xFFFFE89C).withAlpha(alpha),
+          const Color(0xFFFFC25C).withAlpha((alpha * 0.55).toInt()),
+          Colors.transparent,
+        ],
+        stops: const [0.0, 0.55, 1.0],
+      ).createShader(Rect.fromCircle(center: c, radius: baseR));
+    canvas.drawCircle(c, baseR, halo);
+
+    // Bright outer ring stroke.
+    final ring = Paint()
+      ..style = PaintingStyle.stroke
+      ..strokeWidth = 3
+      ..color = const Color(0xFFFFFAD8).withAlpha((alpha * 0.9).toInt());
+    canvas.drawCircle(c, baseR * 0.88, ring);
+
+    // Tiny sparkles at 4 cardinal points to sell the "magic match" idea.
+    final sparkle = Paint()
+      ..color = const Color(0xFFFFFAD8).withAlpha(alpha)
+      ..maskFilter = const MaskFilter.blur(BlurStyle.normal, 2);
+    final r2 = baseR * 0.92;
+    for (int i = 0; i < 4; i++) {
+      final ang = i * (pi / 2) + t * pi;
+      canvas.drawCircle(
+        Offset(c.dx + cos(ang) * r2, c.dy + sin(ang) * r2),
+        2.5,
+        sparkle,
+      );
+    }
+  }
+
+  @override
+  bool shouldRepaint(covariant _PreMatchGlowPainter old) => old.progress != progress;
+}
+
+class _TropicalBurstPainter extends CustomPainter {
+  final JellyType jellyType;
+  final double progress;
+
+  _TropicalBurstPainter({required this.jellyType, required this.progress});
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    final c = Offset(size.width / 2, size.height / 2);
+    final maxR = size.width / 2;
+    final pal = _palette(jellyType);
+
+    // Soft glow ring expanding outward
+    final glowT = (progress / 0.5).clamp(0.0, 1.0);
+    final ringR = maxR * (0.25 + glowT * 0.55);
+    final ringAlpha = (220 * (1 - progress)).toInt().clamp(0, 220);
+    canvas.drawCircle(
+      c,
+      ringR,
+      Paint()
+        ..color = pal.glow.withAlpha(ringAlpha)
+        ..maskFilter = const MaskFilter.blur(BlurStyle.normal, 8),
+    );
+
+    // 14 primary particles flying radially outward — denser dopamine.
+    const n = 14;
+    final outR = maxR * (0.15 + progress * 0.85);
+    final particleAlpha = ((1 - progress) * 240).toInt().clamp(0, 240);
+    final particleSize = (1.0 - progress * 0.5) * maxR * 0.16;
+
+    for (int i = 0; i < n; i++) {
+      final angle = i * (2 * pi / n) + progress * 0.6;
+      final px = c.dx + cos(angle) * outR;
+      final py = c.dy + sin(angle) * outR;
+      _drawShape(canvas, Offset(px, py), particleSize, angle, pal.primary, particleAlpha);
+    }
+
+    // 8 accent particles smaller — fills the gaps between primary spokes.
+    const n2 = 8;
+    final outR2 = maxR * (0.1 + progress * 0.7);
+    final particleSize2 = (1.0 - progress * 0.5) * maxR * 0.12;
+    for (int i = 0; i < n2; i++) {
+      final angle = i * (2 * pi / n2) + pi / n2 + progress * -0.4;
+      final px = c.dx + cos(angle) * outR2;
+      final py = c.dy + sin(angle) * outR2;
+      _drawAccent(canvas, Offset(px, py), particleSize2, pal.accent, particleAlpha);
+    }
+
+    // Secondary slow drift — 6 tiny dots that linger after the main blast.
+    if (progress > 0.25) {
+      const n3 = 6;
+      final lateT = ((progress - 0.25) / 0.75).clamp(0.0, 1.0);
+      final outR3 = maxR * (0.3 + lateT * 0.55);
+      final lateAlpha = ((1 - lateT) * 200).toInt().clamp(0, 200);
+      final dotPaint = Paint()
+        ..color = pal.accent.withAlpha(lateAlpha)
+        ..maskFilter = const MaskFilter.blur(BlurStyle.normal, 1.6);
+      for (int i = 0; i < n3; i++) {
+        final ang = i * (2 * pi / n3) + lateT * 1.2;
+        final px = c.dx + cos(ang) * outR3;
+        final py = c.dy + sin(ang) * outR3 + lateT * 4; // slight gravity
+        canvas.drawCircle(Offset(px, py), maxR * 0.04 * (1 - lateT * 0.6), dotPaint);
+      }
+    }
+
+    // Bright center flash
+    if (progress < 0.3) {
+      final flashAlpha = ((1 - progress / 0.3) * 240).toInt().clamp(0, 240);
+      canvas.drawCircle(
+        c,
+        maxR * 0.25 * (1 - progress / 0.3),
+        Paint()
+          ..color = Colors.white.withAlpha(flashAlpha)
+          ..maskFilter = const MaskFilter.blur(BlurStyle.normal, 6),
+      );
+    }
+  }
+
+  void _drawShape(Canvas canvas, Offset center, double size, double rotation,
+      Color color, int alpha) {
+    final paint = Paint()..color = color.withAlpha(alpha);
+    final shadow = Paint()
+      ..color = Colors.black.withAlpha((alpha * 0.4).toInt())
+      ..maskFilter = const MaskFilter.blur(BlurStyle.normal, 2);
+
+    canvas.save();
+    canvas.translate(center.dx, center.dy);
+    canvas.rotate(rotation);
+
+    switch (jellyType) {
+      case JellyType.purple:
+        final rect = RRect.fromRectAndRadius(
+          Rect.fromCenter(center: Offset.zero, width: size * 1.6, height: size),
+          Radius.circular(size * 0.3),
+        );
+        canvas.drawRRect(rect.shift(const Offset(0, 1)), shadow);
+        canvas.drawRRect(rect, paint);
+        break;
+      case JellyType.yellow:
+        _starShape(canvas, size, paint, shadow, points: 4);
+        break;
+      case JellyType.blue:
+        final path = Path()
+          ..moveTo(0, -size)
+          ..quadraticBezierTo(size * 0.7, -size * 0.2, size * 0.5, size * 0.4)
+          ..quadraticBezierTo(0, size * 0.9, -size * 0.5, size * 0.4)
+          ..quadraticBezierTo(-size * 0.7, -size * 0.2, 0, -size)
+          ..close();
+        canvas.drawPath(path.shift(const Offset(0, 1)), shadow);
+        canvas.drawPath(path, paint);
+        break;
+      case JellyType.green:
+        final path = Path()
+          ..moveTo(0, -size)
+          ..quadraticBezierTo(size * 0.8, -size * 0.3, 0, size)
+          ..quadraticBezierTo(-size * 0.8, -size * 0.3, 0, -size)
+          ..close();
+        canvas.drawPath(path.shift(const Offset(0, 1)), shadow);
+        canvas.drawPath(path, paint);
+        break;
+      case JellyType.pink:
+        _starShape(canvas, size, paint, shadow, points: 5);
+        break;
+      case JellyType.orange:
+        final path = Path();
+        for (int i = 0; i < 6; i++) {
+          final a = i * (pi / 3);
+          final px = cos(a) * size * 0.7;
+          final py = sin(a) * size * 0.7;
+          if (i == 0) {
+            path.moveTo(px, py);
+          } else {
+            path.lineTo(px, py);
+          }
+        }
+        path.close();
+        canvas.drawPath(path.shift(const Offset(0, 1)), shadow);
+        canvas.drawPath(path, paint);
+        break;
+      case JellyType.black:
+        // Black raven → diamond/feather shape
+        final path = Path()
+          ..moveTo(0, -size)
+          ..lineTo(size * 0.7, 0)
+          ..lineTo(0, size)
+          ..lineTo(-size * 0.7, 0)
+          ..close();
+        canvas.drawPath(path.shift(const Offset(0, 1)), shadow);
+        canvas.drawPath(path, paint);
+        break;
+    }
+    canvas.restore();
+  }
+
+  void _starShape(Canvas canvas, double size, Paint fill, Paint shadow,
+      {required int points}) {
+    final path = Path();
+    for (int i = 0; i < points * 2; i++) {
+      final r = i.isEven ? size : size * 0.45;
+      final a = -pi / 2 + i * pi / points;
+      final px = cos(a) * r;
+      final py = sin(a) * r;
+      if (i == 0) {
+        path.moveTo(px, py);
+      } else {
+        path.lineTo(px, py);
+      }
+    }
+    path.close();
+    canvas.drawPath(path.shift(const Offset(0, 1)), shadow);
+    canvas.drawPath(path, fill);
+  }
+
+  void _drawAccent(Canvas canvas, Offset center, double size, Color color, int alpha) {
+    canvas.drawCircle(
+      center,
+      size * 0.6,
+      Paint()
+        ..color = color.withAlpha(alpha)
+        ..maskFilter = const MaskFilter.blur(BlurStyle.normal, 1.5),
+    );
+    canvas.drawCircle(
+      center,
+      size * 0.3,
+      Paint()..color = Colors.white.withAlpha((alpha * 0.7).toInt()),
+    );
+  }
+
+  @override
+  bool shouldRepaint(covariant _TropicalBurstPainter old) =>
+      old.progress != progress || old.jellyType != jellyType;
+}
+
+// ─────────────────────────────────────────────────────────────────────────
+// Special spawn burst — dramatic rainbow shockwave when 4/5/6+ matches
+// create a power-up tile. Multi-layer: outer rainbow ring + center white
+// flash + 12 colored sparkles spiraling outward + 2 expanding gold rings.
+// ─────────────────────────────────────────────────────────────────────────
+
+class _SpecialSpawnPainter extends CustomPainter {
+  final double progress; // 0..1
+  _SpecialSpawnPainter({required this.progress});
+
+  static const _rainbow = [
+    Color(0xFFFF5A8E), // pink
+    Color(0xFFFF801A), // orange
+    Color(0xFFFFD91A), // yellow
+    Color(0xFF33D973), // green
+    Color(0xFF338CFF), // blue
+    Color(0xFF8B24DB), // purple
+  ];
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    final c = Offset(size.width / 2, size.height / 2);
+    final maxR = size.width / 2;
+
+    // 1) Outer expanding rainbow rings (2 staggered)
+    for (int i = 0; i < 2; i++) {
+      final ringT = (progress - i * 0.15).clamp(0.0, 1.0);
+      if (ringT <= 0) continue;
+      final ringR = maxR * (0.2 + ringT * 0.85);
+      final ringAlpha = ((1 - ringT) * 220).toInt().clamp(0, 220);
+      canvas.drawCircle(
+        c,
+        ringR,
+        Paint()
+          ..style = PaintingStyle.stroke
+          ..strokeWidth = 6
+          ..shader = SweepGradient(
+            colors: [..._rainbow, _rainbow.first],
+            transform: GradientRotation(progress * 6.28),
+          ).createShader(Rect.fromCircle(center: c, radius: ringR))
+          ..maskFilter = const MaskFilter.blur(BlurStyle.normal, 3),
+      );
+      // alpha overlay
+      canvas.drawCircle(
+        c,
+        ringR,
+        Paint()
+          ..style = PaintingStyle.stroke
+          ..strokeWidth = 2
+          ..color = Colors.white.withAlpha(ringAlpha),
+      );
+    }
+
+    // 2) Center radial gold burst (peaks at t=0.3)
+    final flashT = (progress / 0.5).clamp(0.0, 1.0);
+    final flashAlpha = (((1 - flashT) * 240)).toInt().clamp(0, 240);
+    canvas.drawCircle(
+      c,
+      maxR * (0.15 + flashT * 0.3),
+      Paint()
+        ..shader = RadialGradient(
+          colors: [
+            Colors.white.withAlpha(flashAlpha),
+            const Color(0xFFFFCB3D).withAlpha((flashAlpha * 0.6).toInt()),
+            Colors.transparent,
+          ],
+          stops: const [0.0, 0.6, 1.0],
+        ).createShader(Rect.fromCircle(center: c, radius: maxR * 0.5)),
+    );
+
+    // 3) 12 colored sparkles spiraling outward
+    const n = 12;
+    for (int i = 0; i < n; i++) {
+      final angle = i * (3.14159 * 2 / n) + progress * 1.5;
+      final r = maxR * (0.25 + progress * 0.7);
+      final px = c.dx + cos(angle) * r;
+      final py = c.dy + sin(angle) * r;
+      final sparkSize = (1 - progress * 0.5) * maxR * 0.06;
+      final color = _rainbow[i % _rainbow.length];
+      final alpha = ((1 - progress) * 240).toInt().clamp(0, 240);
+      // halo
+      canvas.drawCircle(
+        Offset(px, py),
+        sparkSize * 1.8,
+        Paint()
+          ..color = color.withAlpha(alpha)
+          ..maskFilter = const MaskFilter.blur(BlurStyle.normal, 3),
+      );
+      // bright core
+      canvas.drawCircle(
+        Offset(px, py),
+        sparkSize * 0.7,
+        Paint()..color = Colors.white.withAlpha(alpha),
+      );
+    }
+
+    // 4) 4 cross rays (sharp white lines from center)
+    if (progress < 0.5) {
+      final rayAlpha = (((1 - progress / 0.5)) * 220).toInt().clamp(0, 220);
+      final rayLen = maxR * (0.5 + progress * 0.5);
+      final rayPaint = Paint()
+        ..color = Colors.white.withAlpha(rayAlpha)
+        ..strokeWidth = 3
+        ..strokeCap = StrokeCap.round;
+      for (int i = 0; i < 4; i++) {
+        final a = i * (3.14159 / 2) + progress * 0.3;
+        canvas.drawLine(
+          Offset(c.dx + cos(a) * 10, c.dy + sin(a) * 10),
+          Offset(c.dx + cos(a) * rayLen, c.dy + sin(a) * rayLen),
+          rayPaint,
+        );
+      }
+    }
+  }
+
+  @override
+  bool shouldRepaint(covariant _SpecialSpawnPainter old) =>
+      old.progress != progress;
 }

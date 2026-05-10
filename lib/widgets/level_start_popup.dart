@@ -1,24 +1,14 @@
 import 'package:flutter/material.dart';
 
+import 'package:patpat_game/game/level_generator.dart';
+import 'package:patpat_game/models/enums.dart';
 import 'package:patpat_game/models/level_config.dart';
-import 'package:patpat_game/theme/game_colors.dart';
-import 'package:patpat_game/widgets/shared/gold_button.dart';
-import 'package:patpat_game/widgets/shared/gold_panel.dart';
-import 'package:patpat_game/widgets/shared/star_strip.dart';
+import 'package:patpat_game/theme/tropical_theme.dart';
+import 'package:patpat_game/widgets/tropical/island_button.dart';
+import 'package:patpat_game/widgets/tropical/island_chip.dart';
+import 'package:patpat_game/widgets/tropical/island_panel.dart';
+import 'package:patpat_game/widgets/tropical/shell_strip.dart';
 
-/// Mockup M4 — Level start popup shown when tapping a level node on the map.
-///
-/// Layout (top → bottom):
-///   [Seviye N badge with star strip]
-///   [empty star slots — current attempt placeholders]
-///   [SEVİYE N title]
-///   [Region name pill — e.g. "Şeker Bahçesi"]
-///   [En Yüksek line — only if highScore > 0]
-///   [3 booster cards — Çekiç x3, Renk x2, +1 x1]
-///   [Big OYNA button]
-///   [Close X — top-right corner]
-///
-/// Public API preserved (level, earnedStars, highScore, onPlay, onClose).
 class LevelStartPopup extends StatefulWidget {
   final int level;
   final int earnedStars;
@@ -63,144 +53,130 @@ class _LevelStartPopupState extends State<LevelStartPopup>
     final region = GameRegion.forLevel(widget.level);
 
     return GestureDetector(
-      // Tap outside to close
       onTap: widget.onClose,
       behavior: HitTestBehavior.opaque,
       child: Container(
-        color: Colors.black.withAlpha(170),
+        color: Colors.black.withAlpha(180),
         child: Center(
           child: AnimatedBuilder(
             animation: _enter,
-            builder: (context, child) {
+            builder: (_, child) {
               final t = Curves.easeOutBack.transform(_enter.value.clamp(0, 1));
               return Opacity(
                 opacity: _enter.value.clamp(0, 1),
-                child: Transform.scale(
-                  scale: 0.7 + 0.3 * t,
-                  child: child,
-                ),
+                child: Transform.scale(scale: 0.7 + 0.3 * t, child: child),
               );
             },
             child: GestureDetector(
-              // Block tap-outside on the panel itself
               onTap: () {},
-              child: Stack(
-                clipBehavior: Clip.none,
-                children: [
-                  // Main panel
-                  ConstrainedBox(
-                    constraints: const BoxConstraints(maxWidth: 320),
-                    child: GoldPanel(
-                      padding: const EdgeInsets.fromLTRB(20, 28, 20, 24),
-                      child: Column(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          // "Seviye N" badge with previous best stars
-                          _LevelBadge(
-                            level: widget.level,
-                            earnedStars: widget.earnedStars,
-                          ),
-
-                          const SizedBox(height: 18),
-
-                          // Empty star slots (this attempt)
-                          StarStrip(
-                            filled: 0,
-                            size: 24,
-                            spacing: 4,
-                          ),
-
-                          const SizedBox(height: 14),
-
-                          // SEVİYE N
-                          Text(
-                            'SEVİYE ${widget.level}',
-                            style: TextStyle(
-                              color: Colors.white,
-                              fontSize: 24,
-                              fontWeight: FontWeight.w900,
-                              letterSpacing: 2,
-                              shadows: [
-                                Shadow(
-                                  color: Colors.black.withAlpha(200),
-                                  blurRadius: 4,
-                                  offset: const Offset(0, 2),
-                                ),
-                                Shadow(
-                                  color: GameColors.goldFrameDeep,
-                                  blurRadius: 8,
-                                ),
-                              ],
+              child: Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 28),
+                child: Stack(
+                  clipBehavior: Clip.none,
+                  children: [
+                    ConstrainedBox(
+                      constraints: const BoxConstraints(maxWidth: 360),
+                      child: IslandPanel(
+                        padding: const EdgeInsets.fromLTRB(20, 22, 20, 22),
+                        child: Column(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            // Level number badge
+                            Container(
+                              padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 8),
+                              decoration: BoxDecoration(
+                                borderRadius: BorderRadius.circular(20),
+                                gradient: TT.coralButtonGradient,
+                                border: Border.all(color: TT.goldShine, width: 2),
+                                boxShadow: [
+                                  BoxShadow(color: TT.coral.withAlpha(160), blurRadius: 14, offset: const Offset(0, 4)),
+                                ],
+                              ),
+                              child: Row(
+                                mainAxisSize: MainAxisSize.min,
+                                children: [
+                                  const Icon(Icons.flag_rounded, color: TT.goldShine, size: 22),
+                                  const SizedBox(width: 6),
+                                  Text(
+                                    'BÖLÜM ${widget.level}',
+                                    style: TT.titleLarge.copyWith(
+                                      color: TT.sandLight,
+                                      letterSpacing: 1.4,
+                                      fontSize: 20,
+                                      shadows: [
+                                        Shadow(color: Colors.black.withAlpha(220), blurRadius: 4, offset: const Offset(0, 2)),
+                                      ],
+                                    ),
+                                  ),
+                                ],
+                              ),
                             ),
-                          ),
-
-                          const SizedBox(height: 8),
-
-                          // Region name pill
-                          _RegionPill(name: region.displayName),
-
-                          if (widget.highScore > 0) ...[
                             const SizedBox(height: 10),
-                            Text(
-                              'En Yüksek: ${widget.highScore}',
-                              style: TextStyle(
-                                color: Colors.white.withAlpha(160),
-                                fontSize: 12,
-                                fontWeight: FontWeight.w600,
-                              ),
+                            ShellStrip(filled: widget.earnedStars, size: 28, animate: false),
+                            const SizedBox(height: 8),
+                            IslandChip(
+                              text: region.displayName,
+                              icon: Icons.terrain_rounded,
+                              bg: TT.gold,
+                              fontSize: 12,
+                              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 5),
                             ),
-                          ],
-
-                          const SizedBox(height: 18),
-
-                          // 3 booster cards
-                          Row(
-                            mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-                            children: const [
-                              _BoosterCard(
-                                icon: Icons.gavel_rounded,
-                                label: 'Çekiç',
-                                count: 3,
-                                color: GameColors.cherryRed,
-                              ),
-                              _BoosterCard(
-                                icon: Icons.auto_awesome,
-                                label: 'Renk',
-                                count: 2,
-                                color: GameColors.buttonPurple,
-                                isRainbow: true,
-                              ),
-                              _BoosterCard(
-                                icon: Icons.add_rounded,
-                                label: '+1',
-                                count: 1,
-                                color: GameColors.buttonBlue,
+                            if (widget.highScore > 0) ...[
+                              const SizedBox(height: 8),
+                              Text(
+                                'En yüksek puan: ${widget.highScore}',
+                                style: TT.bodySmall.copyWith(color: TT.driftWoodDark, fontWeight: FontWeight.w800),
                               ),
                             ],
-                          ),
-
-                          const SizedBox(height: 22),
-
-                          // Big OYNA button
-                          GoldButton(
-                            text: 'OYNA',
-                            color: GoldButtonColor.gold,
-                            size: GoldButtonSize.large,
-                            width: 220,
-                            onPressed: widget.onPlay,
-                          ),
-                        ],
+                            const SizedBox(height: 14),
+                            // ─── Hedef Paneli (Candy Crush tarzı) ───
+                            _GoalsPanel(level: widget.level),
+                            const SizedBox(height: 14),
+                            // Booster slots — visual placeholders only (purchase via shop)
+                            Row(
+                              mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                              children: [
+                                _BoosterSlot(asset: TA.boosterHammer, count: 0),
+                                _BoosterSlot(asset: TA.boosterColorBlast, count: 0),
+                                _BoosterSlot(asset: TA.boosterExtraMoves, count: 0),
+                              ],
+                            ),
+                            const SizedBox(height: 16),
+                            IslandButton(
+                              text: 'OYNA',
+                              icon: Icons.play_arrow_rounded,
+                              color: IslandButtonColor.palm,
+                              size: IslandButtonSize.large,
+                              fullWidth: true,
+                              onPressed: widget.onPlay,
+                            ),
+                          ],
+                        ),
                       ),
                     ),
-                  ),
-
-                  // Close X button (overlapping top-right)
-                  Positioned(
-                    top: -8,
-                    right: -8,
-                    child: _CloseButton(onTap: widget.onClose),
-                  ),
-                ],
+                    // Close button (top-right)
+                    Positioned(
+                      right: -8,
+                      top: -8,
+                      child: GestureDetector(
+                        onTap: widget.onClose,
+                        child: Container(
+                          width: 36,
+                          height: 36,
+                          decoration: BoxDecoration(
+                            shape: BoxShape.circle,
+                            gradient: TT.coralButtonGradient,
+                            border: Border.all(color: TT.goldShine, width: 2),
+                            boxShadow: [
+                              BoxShadow(color: Colors.black.withAlpha(180), blurRadius: 6, offset: const Offset(0, 2)),
+                            ],
+                          ),
+                          child: const Icon(Icons.close_rounded, color: Colors.white, size: 22),
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
               ),
             ),
           ),
@@ -210,358 +186,187 @@ class _LevelStartPopupState extends State<LevelStartPopup>
   }
 }
 
-// ─────────────────────────────────────────────────────────────────────────────
-// _LevelBadge — "Seviye N" header with 3 best-stars (mockup M4 top)
-// ─────────────────────────────────────────────────────────────────────────────
-
-class _LevelBadge extends StatelessWidget {
+/// Candy Crush style goals panel — shows level number, moves, and required
+/// jelly collections in a single dark plaque so the player knows EXACTLY what
+/// they need to do.
+class _GoalsPanel extends StatelessWidget {
   final int level;
-  final int earnedStars;
-
-  const _LevelBadge({required this.level, required this.earnedStars});
+  const _GoalsPanel({required this.level});
 
   @override
   Widget build(BuildContext context) {
+    // Generate level config to discover goals + moves.
+    final config = LevelGenerator.generate(level);
+    final moves = config.maxMoves;
+    final goals = config.goals;
+
     return Container(
+      padding: const EdgeInsets.fromLTRB(12, 10, 12, 10),
       decoration: BoxDecoration(
-        borderRadius: BorderRadius.circular(20),
-        gradient: const LinearGradient(
-          colors: [
-            GameColors.goldFrameBright,
-            GameColors.goldFrameMid,
-            GameColors.goldFrameDeep,
-            GameColors.goldFrameMid,
-            GameColors.goldFrameBright,
-          ],
-          stops: [0.0, 0.25, 0.5, 0.75, 1.0],
-        ),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withAlpha(120),
-            blurRadius: 10,
-            offset: const Offset(0, 4),
-          ),
-        ],
-      ),
-      padding: const EdgeInsets.all(2.5),
-      child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 28, vertical: 10),
-        decoration: BoxDecoration(
-          borderRadius: BorderRadius.circular(18),
-          gradient: const LinearGradient(
-            begin: Alignment.topCenter,
-            end: Alignment.bottomCenter,
-            colors: [
-              GameColors.panelPurple,
-              GameColors.panelPurpleDark,
-            ],
-          ),
-        ),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Text(
-              'Seviye',
-              style: TextStyle(
-                color: Colors.white.withAlpha(220),
-                fontSize: 13,
-                fontWeight: FontWeight.w800,
-                letterSpacing: 1,
-                shadows: [
-                  Shadow(color: Colors.black54, blurRadius: 3),
-                ],
-              ),
-            ),
-            const SizedBox(height: 2),
-            Text(
-              '$level',
-              style: TextStyle(
-                color: GameColors.goldFrameBright,
-                fontSize: 28,
-                fontWeight: FontWeight.w900,
-                height: 1,
-                shadows: [
-                  Shadow(
-                    color: Colors.black.withAlpha(220),
-                    blurRadius: 4,
-                    offset: const Offset(0, 2),
-                  ),
-                ],
-              ),
-            ),
-            const SizedBox(height: 6),
-            StarStrip(filled: earnedStars, size: 22, spacing: 3),
-          ],
-        ),
-      ),
-    );
-  }
-}
-
-// ─────────────────────────────────────────────────────────────────────────────
-// _RegionPill — small purple pill with the region display name
-// ─────────────────────────────────────────────────────────────────────────────
-
-class _RegionPill extends StatelessWidget {
-  final String name;
-  const _RegionPill({required this.name});
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 6),
-      decoration: BoxDecoration(
-        borderRadius: BorderRadius.circular(14),
+        borderRadius: BorderRadius.circular(16),
         gradient: const LinearGradient(
           begin: Alignment.topCenter,
           end: Alignment.bottomCenter,
-          colors: [
-            GameColors.panelPurpleLight,
-            GameColors.panelPurple,
-          ],
+          colors: [Color(0xFF8B6F4A), Color(0xFF5C4A2D), Color(0xFF3D2F1A)],
         ),
-        border: Border.all(
-          color: GameColors.goldFrameMid.withAlpha(180),
-          width: 1.5,
-        ),
+        border: Border.all(color: TT.goldShine.withAlpha(180), width: 1.5),
         boxShadow: [
-          BoxShadow(
-            color: GameColors.goldFrameMid.withAlpha(60),
-            blurRadius: 8,
-          ),
+          BoxShadow(color: Colors.black.withAlpha(120), blurRadius: 6, offset: const Offset(0, 2)),
         ],
       ),
-      child: Text(
-        name,
-        style: TextStyle(
-          color: Colors.white,
-          fontSize: 13,
-          fontWeight: FontWeight.w800,
-          letterSpacing: 0.5,
-          shadows: [
-            Shadow(
-              color: Colors.black.withAlpha(180),
-              blurRadius: 3,
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-}
-
-// ─────────────────────────────────────────────────────────────────────────────
-// _BoosterCard — round gold-bordered booster icon with count badge
-// ─────────────────────────────────────────────────────────────────────────────
-
-class _BoosterCard extends StatelessWidget {
-  final IconData icon;
-  final String label;
-  final int count;
-  final Color color;
-  final bool isRainbow;
-
-  const _BoosterCard({
-    required this.icon,
-    required this.label,
-    required this.count,
-    required this.color,
-    this.isRainbow = false,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    return Column(
-      mainAxisSize: MainAxisSize.min,
-      children: [
-        Stack(
-          clipBehavior: Clip.none,
-          children: [
-            // Gold frame circle
-            Container(
-              width: 56,
-              height: 56,
-              decoration: BoxDecoration(
-                shape: BoxShape.circle,
-                gradient: const LinearGradient(
-                  colors: [
-                    GameColors.goldFrameBright,
-                    GameColors.goldFrameMid,
-                    GameColors.goldFrameDeep,
-                    GameColors.goldFrameMid,
-                    GameColors.goldFrameBright,
-                  ],
-                  stops: [0.0, 0.25, 0.5, 0.75, 1.0],
-                ),
-                boxShadow: [
-                  BoxShadow(
-                    color: Colors.black.withAlpha(140),
-                    blurRadius: 8,
-                    offset: const Offset(0, 3),
-                  ),
-                  BoxShadow(
-                    color: color.withAlpha(80),
-                    blurRadius: 12,
-                    spreadRadius: 1,
-                  ),
-                ],
-              ),
-              padding: const EdgeInsets.all(2.5),
-              child: Container(
-                decoration: BoxDecoration(
-                  shape: BoxShape.circle,
-                  gradient: isRainbow
-                      ? const SweepGradient(
-                          colors: [
-                            Color(0xFFFF4080),
-                            Color(0xFFFFCC00),
-                            Color(0xFF30B050),
-                            Color(0xFF00E5FF),
-                            Color(0xFFB44DFF),
-                            Color(0xFFFF4080),
-                          ],
-                        )
-                      : LinearGradient(
-                          begin: Alignment.topCenter,
-                          end: Alignment.bottomCenter,
-                          colors: [
-                            color,
-                            Color.lerp(color, Colors.black, 0.4) ?? color,
-                          ],
-                        ),
-                ),
-                child: Center(
-                  child: Icon(
-                    icon,
-                    color: Colors.white,
-                    size: 26,
-                    shadows: [
-                      Shadow(
-                        color: Colors.black.withAlpha(220),
-                        blurRadius: 4,
-                        offset: const Offset(0, 1),
-                      ),
-                    ],
-                  ),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          // Header: "HEDEFLER" + moves chip
+          Row(
+            children: [
+              const Icon(Icons.flag_rounded, color: TT.goldShine, size: 16),
+              const SizedBox(width: 6),
+              Text(
+                'HEDEFLER',
+                style: TextStyle(
+                  color: TT.goldShine,
+                  fontSize: 11,
+                  fontWeight: FontWeight.w900,
+                  letterSpacing: 1.2,
+                  shadows: [Shadow(color: Colors.black.withAlpha(220), blurRadius: 2, offset: const Offset(0, 1))],
                 ),
               ),
-            ),
-
-            // Count badge (bottom-right)
-            Positioned(
-              bottom: -4,
-              right: -4,
-              child: Container(
-                width: 22,
-                height: 22,
+              const Spacer(),
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
                 decoration: BoxDecoration(
-                  shape: BoxShape.circle,
+                  borderRadius: BorderRadius.circular(8),
                   gradient: const LinearGradient(
                     begin: Alignment.topCenter,
                     end: Alignment.bottomCenter,
-                    colors: [
-                      GameColors.cherryRed,
-                      GameColors.cherryRedDark,
-                    ],
+                    colors: [TT.palmLight, TT.palm, TT.palmDark],
                   ),
-                  border: Border.all(
-                    color: GameColors.goldFrameBright,
-                    width: 1.5,
-                  ),
-                  boxShadow: [
-                    BoxShadow(
-                      color: Colors.black.withAlpha(140),
-                      blurRadius: 4,
-                      offset: const Offset(0, 1),
+                  border: Border.all(color: TT.goldShine, width: 1),
+                ),
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    const Icon(Icons.swap_horiz_rounded, color: Colors.white, size: 12),
+                    const SizedBox(width: 3),
+                    Text(
+                      '$moves hamle',
+                      style: const TextStyle(
+                        color: Colors.white,
+                        fontSize: 11,
+                        fontWeight: FontWeight.w900,
+                      ),
                     ),
                   ],
                 ),
-                alignment: Alignment.center,
-                child: Text(
-                  'x$count',
-                  style: const TextStyle(
-                    color: Colors.white,
-                    fontSize: 9,
-                    fontWeight: FontWeight.w900,
-                    height: 1,
-                  ),
-                ),
               ),
-            ),
-          ],
-        ),
-        const SizedBox(height: 6),
-        Text(
-          label,
-          style: TextStyle(
-            color: Colors.white.withAlpha(220),
-            fontSize: 11,
-            fontWeight: FontWeight.w800,
-            shadows: [
-              Shadow(color: Colors.black.withAlpha(180), blurRadius: 3),
             ],
           ),
-        ),
-      ],
+          const SizedBox(height: 8),
+          // Goal items (jelly + count, candy-crush style)
+          Wrap(
+            alignment: WrapAlignment.center,
+            spacing: 10,
+            runSpacing: 6,
+            children: goals
+                .where((g) => g.goalType == GoalType.collectJelly)
+                .take(4)
+                .map((g) => _GoalItem(jelly: g.jellyType, count: g.count))
+                .toList(),
+          ),
+        ],
+      ),
     );
   }
 }
 
-// ─────────────────────────────────────────────────────────────────────────────
-// _CloseButton — round gold-bordered X
-// ─────────────────────────────────────────────────────────────────────────────
-
-class _CloseButton extends StatelessWidget {
-  final VoidCallback onTap;
-  const _CloseButton({required this.onTap});
+class _GoalItem extends StatelessWidget {
+  final JellyType jelly;
+  final int count;
+  const _GoalItem({required this.jelly, required this.count});
 
   @override
   Widget build(BuildContext context) {
-    return GestureDetector(
-      onTap: onTap,
-      child: Container(
-        width: 36,
-        height: 36,
-        decoration: BoxDecoration(
-          shape: BoxShape.circle,
-          gradient: const LinearGradient(
-            colors: [
-              GameColors.goldFrameBright,
-              GameColors.goldFrameMid,
-              GameColors.goldFrameDeep,
-              GameColors.goldFrameMid,
-              GameColors.goldFrameBright,
-            ],
-            stops: [0.0, 0.25, 0.5, 0.75, 1.0],
-          ),
-          boxShadow: [
-            BoxShadow(
-              color: Colors.black.withAlpha(160),
-              blurRadius: 8,
-              offset: const Offset(0, 3),
-            ),
-          ],
-        ),
-        padding: const EdgeInsets.all(2.5),
-        child: Container(
-          decoration: const BoxDecoration(
-            shape: BoxShape.circle,
-            gradient: LinearGradient(
-              begin: Alignment.topCenter,
-              end: Alignment.bottomCenter,
-              colors: [
-                GameColors.cherryRed,
-                GameColors.cherryRedDark,
-              ],
+    return Container(
+      padding: const EdgeInsets.fromLTRB(4, 3, 8, 3),
+      decoration: BoxDecoration(
+        borderRadius: BorderRadius.circular(20),
+        color: Colors.black.withAlpha(140),
+        border: Border.all(color: TT.gold.withAlpha(160), width: 1),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Container(
+            width: 28,
+            height: 28,
+            decoration: const BoxDecoration(shape: BoxShape.circle, color: Colors.white12),
+            padding: const EdgeInsets.all(2),
+            child: Image.asset(
+              'assets/sprites/jelly_${jelly.name}.png',
+              fit: BoxFit.contain,
+              errorBuilder: (_, __, ___) => const Icon(Icons.help_outline, color: Colors.white, size: 18),
             ),
           ),
-          alignment: Alignment.center,
-          child: const Icon(
-            Icons.close_rounded,
-            color: Colors.white,
-            size: 18,
+          const SizedBox(width: 4),
+          Text(
+            'x$count',
+            style: const TextStyle(
+              color: Colors.white,
+              fontSize: 14,
+              fontWeight: FontWeight.w900,
+              shadows: [Shadow(color: Colors.black, blurRadius: 2, offset: Offset(0, 1))],
+            ),
           ),
-        ),
+        ],
+      ),
+    );
+  }
+}
+
+class _BoosterSlot extends StatelessWidget {
+  final String asset;
+  final int count;
+  const _BoosterSlot({required this.asset, required this.count});
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      width: 76,
+      padding: const EdgeInsets.fromLTRB(6, 8, 6, 8),
+      decoration: BoxDecoration(
+        borderRadius: BorderRadius.circular(14),
+        gradient: TT.sandPanelGradient,
+        border: Border.all(color: TT.gold, width: 1.5),
+        boxShadow: [
+          BoxShadow(color: Colors.black.withAlpha(80), blurRadius: 4, offset: const Offset(0, 2)),
+        ],
+      ),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          SizedBox(
+            height: 44,
+            child: Image.asset(
+              asset,
+              fit: BoxFit.contain,
+              errorBuilder: (_, __, ___) => const Icon(Icons.bolt_rounded, color: TT.gold, size: 36),
+            ),
+          ),
+          const SizedBox(height: 4),
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+            decoration: BoxDecoration(
+              borderRadius: BorderRadius.circular(8),
+              gradient: TT.coralButtonGradient,
+              border: Border.all(color: TT.goldShine, width: 1),
+            ),
+            child: Text(
+              'x$count',
+              style: const TextStyle(fontSize: 11, fontWeight: FontWeight.w900, color: Colors.white),
+            ),
+          ),
+        ],
       ),
     );
   }

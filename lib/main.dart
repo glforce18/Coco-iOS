@@ -5,13 +5,22 @@ import 'package:firebase_core/firebase_core.dart';
 import 'package:patpat_game/auth/auth_manager.dart';
 import 'package:patpat_game/billing/billing_manager.dart';
 import 'package:patpat_game/ads/ad_manager.dart';
+import 'package:patpat_game/notifications/notification_manager.dart';
+import 'package:patpat_game/notifications/fcm_manager.dart';
 import 'package:patpat_game/router.dart';
 import 'package:patpat_game/providers/game_providers.dart';
+import 'package:patpat_game/widgets/achievement_unlock_toast.dart';
+import 'package:patpat_game/widgets/update_banner.dart';
+import 'dart:io' show Platform;
+import 'package:app_tracking_transparency/app_tracking_transparency.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
   SystemChrome.setPreferredOrientations([DeviceOrientation.portraitUp]);
-  SystemChrome.setEnabledSystemUIMode(SystemUiMode.edgeToEdge);
+  // Hide Android system status + navigation bars (immersive sticky); user
+  // can swipe from edges to temporarily reveal them. Returns to immersive
+  // automatically after a few seconds.
+  SystemChrome.setEnabledSystemUIMode(SystemUiMode.immersiveSticky);
 
   // Try to initialize Firebase, but don't crash if config is missing
   try {
@@ -22,30 +31,62 @@ void main() async {
     AuthManager.instance.firebaseReady = false;
   }
 
-  runApp(const ProviderScope(child: PatPatApp()));
+  // Local notification scheduler — independent of Firebase, safe to init.
+  await NotificationManager.instance.init();
+
+  runApp(const ProviderScope(child: CocoApp()));
 }
 
-class PatPatApp extends ConsumerStatefulWidget {
-  const PatPatApp({super.key});
+class CocoApp extends ConsumerStatefulWidget {
+  const CocoApp({super.key});
 
   @override
-  ConsumerState<PatPatApp> createState() => _PatPatAppState();
+  ConsumerState<CocoApp> createState() => _CocoAppState();
 }
 
-class _PatPatAppState extends ConsumerState<PatPatApp> {
+class _CocoAppState extends ConsumerState<CocoApp> {
   @override
   void initState() {
     super.initState();
     ref.read(playerProgressProvider.notifier).load();
     _initBilling();
     _initAds();
+    _initFcm();
+  }
+
+  Future<void> _initFcm() async {
+    if (!AuthManager.instance.firebaseReady) return;
+    await FcmManager.instance.init(
+      onToken: (token) async {
+        await ref.read(playerProgressProvider.notifier).setFcmToken(token);
+      },
+    );
   }
 
   Future<void> _initAds() async {
     final progress = ref.read(playerProgressProvider);
     AdManager.instance.adsDisabled =
         progress.removeAdsPurchased || progress.vipActive;
+    // iOS App Tracking Transparency — must be requested BEFORE the ads
+    // SDK kicks off so the IDFA decision is in place. Android no-ops.
+    await _requestTrackingPermissionIfNeeded();
     await AdManager.instance.init();
+  }
+
+  Future<void> _requestTrackingPermissionIfNeeded() async {
+    if (!Platform.isIOS) return;
+    try {
+      final status =
+          await AppTrackingTransparency.trackingAuthorizationStatus;
+      if (status == TrackingStatus.notDetermined) {
+        // System prompt — only fires once. Tiny delay so the OS isn't
+        // showing the launch image at the same time as the prompt.
+        await Future<void>.delayed(const Duration(milliseconds: 250));
+        await AppTrackingTransparency.requestTrackingAuthorization();
+      }
+    } catch (_) {
+      // ATT only available on iOS 14.5+ — fall through silently otherwise.
+    }
   }
 
   Future<void> _initBilling() async {
@@ -58,12 +99,24 @@ class _PatPatAppState extends ConsumerState<PatPatApp> {
   @override
   Widget build(BuildContext context) {
     return MaterialApp.router(
-      title: 'PatPat',
+      title: 'Coco',
       debugShowCheckedModeBanner: false,
       theme: ThemeData.dark().copyWith(
         scaffoldBackgroundColor: const Color(0xFF0D0235),
       ),
       routerConfig: AppRouter.router,
+      // Mount the global achievement unlock toast above every screen.
+      builder: (context, child) {
+        return Stack(
+          children: [
+            child ?? const SizedBox.shrink(),
+            const AchievementUnlockToast(),
+            // Update banner sits ABOVE the achievement toast so a forced
+            // update modal can block all interaction.
+            const UpdateBanner(),
+          ],
+        );
+      },
     );
   }
 }

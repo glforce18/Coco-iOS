@@ -1,7 +1,7 @@
 name: patpat_game
-description: PatPat - Eslestirme Macerasi
+description: Coco - Eslestirme Macerasi
 publish_to: 'none'
-version: 1.1.0+3
+version: 2.5.0+50
 
 environment:
   sdk: ^3.6.0
@@ -20,15 +20,41 @@ dependencies:
   cloud_firestore: ^5.6.1
   in_app_purchase: ^3.2.0
   google_mobile_ads: ^5.2.0
+  audioplayers: ^6.1.0
+  flutter_local_notifications: ^17.2.4
+  firebase_messaging: ^15.1.6
+  timezone: ^0.9.4
+  permission_handler: ^11.3.1
+  http: ^1.2.2
+  app_tracking_transparency: ^2.0.6
+  package_info_plus: ^8.1.0
+  url_launcher: ^6.3.1
 
 dev_dependencies:
   flutter_test:
     sdk: flutter
   flutter_lints: ^6.0.0
   flutter_native_splash: ^2.4.4
+  flutter_launcher_icons: ^0.14.4
+
+flutter_launcher_icons:
+  image_path: "assets/icon/appicon.png"
+  android: true
+  ios: true
+  remove_alpha_ios: true
+  min_sdk_android: 21
+  adaptive_icon_background: "#0D2A1F"
+  adaptive_icon_foreground: "assets/icon/appicon.png"
+  web:
+    generate: false
+  windows:
+    generate: false
+  macos:
+    generate: false
 
 flutter_native_splash:
-  color: "#0D0235"
+  color: "#FFC58A"
+  color_dark: "#053040"
   android: true
   ios: true
 
@@ -38,3 +64,11 @@ flutter:
     - assets/sprites/
     - assets/backgrounds/
     - assets/ui/
+    - assets/tropical/backgrounds/
+    - assets/tropical/mascot/
+    - assets/tropical/icons/
+    - assets/tropical/nodes/
+    - assets/tropical/decor/
+    - assets/tropical/rewards/
+    - assets/tropical/achievements/
+    - assets/audio/

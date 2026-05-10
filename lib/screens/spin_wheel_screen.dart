@@ -1,10 +1,21 @@
-import 'dart:math';
+import 'dart:math' as math;
+
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
-import 'package:patpat_game/providers/game_providers.dart';
-import 'package:patpat_game/theme/game_colors.dart';
 
+import 'package:patpat_game/ads/ad_manager.dart';
+import 'package:patpat_game/providers/game_providers.dart';
+import 'package:patpat_game/theme/tropical_theme.dart';
+import 'package:patpat_game/widgets/tropical/island_button.dart';
+import 'package:patpat_game/widgets/tropical/island_panel.dart';
+import 'package:patpat_game/widgets/tropical/island_scaffold.dart';
+import 'package:patpat_game/widgets/tropical/island_top_bar.dart';
+import 'package:patpat_game/widgets/tropical/mascot_view.dart';
+
+/// Tropical spin wheel — a wooden wheel framed in golden rope, with
+/// tropical-coded prize segments, a swinging mallet pointer, and a Coco
+/// hub at the center. Big "stop reveal" burst on win.
 class SpinWheelScreen extends ConsumerStatefulWidget {
   const SpinWheelScreen({super.key});
 
@@ -14,135 +25,120 @@ class SpinWheelScreen extends ConsumerStatefulWidget {
 
 class _SpinWheelScreenState extends ConsumerState<SpinWheelScreen>
     with TickerProviderStateMixin {
-  // Wheel segments: label, emoji, color
-  static const _segments = <_WheelSegment>[
-    _WheelSegment('50', '\uD83E\uDE99', Color(0xFFFF5A9E), 'coins', 50),
-    _WheelSegment('100', '\uD83E\uDE99', Color(0xFF4DA6FF), 'coins', 100),
-    _WheelSegment('200', '\uD83E\uDE99', Color(0xFF5CD87A), 'coins', 200),
-    _WheelSegment('300', '\uD83E\uDE99', Color(0xFFFFD84D), 'coins', 300),
-    _WheelSegment('1', '\uD83D\uDD28', Color(0xFFFF8844), 'hammer', 1),
-    _WheelSegment('1', '\uD83C\uDF08', Color(0xFFB366FF), 'colorBlast', 1),
-    _WheelSegment('1', '\u27A1\uFE0F', Color(0xFF33E5FF), 'extraMoves', 1),
-    _WheelSegment('50', '\uD83E\uDE99', Color(0xFFE08AFF), 'coins', 50),
+  late final AnimationController _spinCtrl;
+  late final AnimationController _glowCtrl;
+  late final AnimationController _burstCtrl;
+  late final AnimationController _malletCtrl;
+  bool _spinning = false;
+  int? _resultIdx;
+  Map<String, int>? _resultPrize;
+
+  static const _segments = <_Segment>[
+    _Segment(label: '50',    sub: '',       icon: Icons.monetization_on_rounded, color: TT.lagoon),
+    _Segment(label: '100',   sub: '',       icon: Icons.monetization_on_rounded, color: TT.coral),
+    _Segment(label: '200',   sub: '',       icon: Icons.monetization_on_rounded, color: TT.palm),
+    _Segment(label: '300',   sub: 'JACKPOT',icon: Icons.diamond_rounded,           color: TT.gold),
+    _Segment(label: 'Çekiç', sub: '',       icon: Icons.gavel_rounded,            color: TT.bamboo),
+    _Segment(label: 'Renk',  sub: '',       icon: Icons.auto_awesome_rounded,     color: TT.lagoonDark),
+    _Segment(label: '+3',    sub: '',       icon: Icons.skip_next_rounded,        color: TT.coralDark),
+    _Segment(label: '50',    sub: '',       icon: Icons.monetization_on_rounded, color: TT.lagoon),
   ];
 
-  late AnimationController _spinController;
-  late Animation<double> _spinAnimation;
-  late AnimationController _ledController;
-  late AnimationController _prizeController;
-  late Animation<double> _prizeScale;
-
-  bool _isSpinning = false;
-  int? _wonPrizeIndex;
-  double _currentRotation = 0;
-  final _random = Random();
+  static const prizes = <Map<String, int>>[
+    {'coins': 50},
+    {'coins': 100},
+    {'coins': 200},
+    {'coins': 300},
+    {'hammer': 1},
+    {'colorBlast': 1},
+    {'extraMoves': 1},
+    {'coins': 50},
+  ];
 
   @override
   void initState() {
     super.initState();
-    _spinController = AnimationController(
+    _spinCtrl = AnimationController(
+        vsync: this, duration: const Duration(milliseconds: 4500));
+    _glowCtrl = AnimationController(
+        vsync: this, duration: const Duration(milliseconds: 1600))
+      ..repeat(reverse: true);
+    _burstCtrl = AnimationController(
+        vsync: this, duration: const Duration(milliseconds: 1800));
+    // Mallet pointer "tick" — driven manually as the wheel rotates past
+    // each segment boundary.
+    _malletCtrl = AnimationController(
       vsync: this,
-      duration: const Duration(milliseconds: 4500),
+      duration: const Duration(milliseconds: 220),
+      lowerBound: 0,
+      upperBound: 1,
     );
-
-    _ledController = AnimationController(
-      vsync: this,
-      duration: const Duration(milliseconds: 600),
-    )..repeat(reverse: true);
-
-    _prizeController = AnimationController(
-      vsync: this,
-      duration: const Duration(milliseconds: 500),
-    );
-    _prizeScale = Tween<double>(begin: 0.0, end: 1.0).animate(
-      CurvedAnimation(parent: _prizeController, curve: Curves.elasticOut),
-    );
+    _spinCtrl.addListener(_onSpinTick);
   }
 
   @override
   void dispose() {
-    _spinController.dispose();
-    _ledController.dispose();
-    _prizeController.dispose();
+    _spinCtrl.removeListener(_onSpinTick);
+    _spinCtrl.dispose();
+    _glowCtrl.dispose();
+    _burstCtrl.dispose();
+    _malletCtrl.dispose();
     super.dispose();
   }
 
-  Future<void> _spin({required bool free}) async {
-    if (_isSpinning) return;
-
-    final notifier = ref.read(playerProgressProvider.notifier);
-
-    if (!free && ref.read(playerProgressProvider).coins < 100) {
-      _showNotEnoughCoins();
-      return;
-    }
-
-    setState(() {
-      _isSpinning = true;
-      _wonPrizeIndex = null;
-    });
-
-
-    // Decide which prize to land on
-    final targetIndex = _random.nextInt(_segments.length);
-    // Each segment is (2*pi / 8) = pi/4 radians
-    final segmentAngle = 2 * pi / _segments.length;
-    // We want the pointer (at top) to land in the middle of the target segment.
-    // Wheel rotates clockwise, pointer is at top (12 o'clock).
-    // Segment 0 starts at -pi/8 from the top. To land on segment N,
-    // we need to rotate so segment N is at the top.
-    final fullSpins = 6 + _random.nextInt(3); // 6-8 full spins
-    final targetAngle =
-        fullSpins * 2 * pi + targetIndex * segmentAngle + segmentAngle / 2;
-
-    _spinAnimation = Tween<double>(
-      begin: 0,
-      end: targetAngle,
-    ).animate(
-      CurvedAnimation(
-        parent: _spinController,
-        curve: const _DecelerationCurve(),
-      ),
-    );
-
-    _spinController.reset();
-    await _spinController.forward();
-
-    _currentRotation = targetAngle % (2 * pi);
-
-    // Award prize
-    final success = await notifier.spinWheel(targetIndex, free: free);
-    if (success) {
-
-      setState(() {
-        _wonPrizeIndex = targetIndex;
-        _isSpinning = false;
-      });
-      _prizeController.reset();
-      _prizeController.forward();
-
-      // Check achievements
-      await notifier.checkAchievements();
-    } else {
-      setState(() => _isSpinning = false);
+  // Track the previous "segment under pointer" so we can fire the mallet
+  // animation when the boundary passes.
+  int _lastSegUnderPointer = -1;
+  void _onSpinTick() {
+    if (!_spinning) return;
+    // Final wheel angle = (12 full revolutions) + (target offset).
+    // Segment[i] centroid initially at -π/2 + i*step; after rotation `-angle`,
+    // it lands at -π/2 + i*step - angle. Solving for centroid = -π/2 gives
+    // i = (angle / step) mod N → that's the segment under the top pointer.
+    final step = 2 * math.pi / _segments.length;
+    final target = (_resultIdx ?? 0) * step;
+    final angle = _spinCtrl.value * (12 * 2 * math.pi + target);
+    final segIdx = (angle / step).floor() % _segments.length;
+    if (segIdx != _lastSegUnderPointer) {
+      _lastSegUnderPointer = segIdx;
+      // Fire only if we're not already mid-animation, so quick spins
+      // don't queue up endless animations.
+      if (!_malletCtrl.isAnimating) _malletCtrl.forward(from: 0);
     }
   }
 
-  void _showNotEnoughCoins() {
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: const Text(
-          'Yeterli coin yok!',
-          textAlign: TextAlign.center,
-          style: TextStyle(fontWeight: FontWeight.w600),
+  Future<void> _doSpin({required bool free}) async {
+    if (_spinning) return;
+    final notifier = ref.read(playerProgressProvider.notifier);
+    final progress = ref.read(playerProgressProvider);
+    if (!free && progress.coins < 100) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          backgroundColor: TT.coral,
+          content: Text('Yeterli altının yok!', textAlign: TextAlign.center),
+          behavior: SnackBarBehavior.floating,
         ),
-        duration: const Duration(seconds: 2),
-        backgroundColor: GameColors.cherryRedDark,
-        behavior: SnackBarBehavior.floating,
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-        margin: const EdgeInsets.symmetric(horizontal: 60, vertical: 16),
-      ),
-    );
+      );
+      return;
+    }
+    setState(() {
+      _spinning = true;
+      _resultIdx = null;
+      _resultPrize = null;
+    });
+    final target = math.Random().nextInt(_segments.length);
+    _resultIdx = target;
+    _spinCtrl.reset();
+    _spinCtrl.animateTo(1.0, curve: const _DecelCurve());
+    await Future.delayed(const Duration(milliseconds: 4500));
+    final ok = await notifier.spinWheel(target, free: free);
+    if (!mounted) return;
+    setState(() {
+      _spinning = false;
+      _resultPrize = ok ? prizes[target] : null;
+    });
+    if (ok) _burstCtrl.forward(from: 0);
+    await notifier.checkAchievements();
   }
 
   @override
@@ -150,718 +146,807 @@ class _SpinWheelScreenState extends ConsumerState<SpinWheelScreen>
     final progress = ref.watch(playerProgressProvider);
     final notifier = ref.read(playerProgressProvider.notifier);
     final isFree = notifier.isFreeSpinAvailable;
-    final canAfford = progress.coins >= 100;
+    final msLeft = notifier.msUntilFreeSpin;
 
-    return Scaffold(
-      body: Container(
-        width: double.infinity,
-        height: double.infinity,
-        decoration: const BoxDecoration(
-          gradient: LinearGradient(
-            begin: Alignment.topCenter,
-            end: Alignment.bottomCenter,
-            colors: [
-              Color(0xFF1A0660),
-              Color(0xFF0D0235),
-              Color(0xFF050120),
-            ],
-          ),
-        ),
-        child: Stack(
-          children: [
-            // Colorful bubble decorations
-            CustomPaint(
-              size: MediaQuery.of(context).size,
-              painter: _BubbleDecorationPainter(),
-            ),
-            SafeArea(
-          child: Column(
-            children: [
-              // Header
-              _buildHeader(context, progress.coins),
-              const Spacer(flex: 1),
-
-              // Title
-              const Text(
-                '\u015eANS \u00c7ARKI',
-                style: TextStyle(
-                  fontSize: 28,
-                  fontWeight: FontWeight.w900,
-                  color: GameColors.goldFrameBright,
-                  letterSpacing: 3,
-                  shadows: [
-                    Shadow(color: GameColors.goldFrameDeep, blurRadius: 16),
-                  ],
-                ),
-              ),
-              const SizedBox(height: 4),
-              if (!isFree && !_isSpinning)
-                _buildCooldownTimer(notifier),
-              const SizedBox(height: 16),
-
-              // Wheel
-              SizedBox(
-                width: 320,
-                height: 320,
-                child: Stack(
-                  alignment: Alignment.center,
-                  children: [
-                    // LED ring
-                    _buildLedRing(),
-
-                    // Wheel
-                    AnimatedBuilder(
-                      animation: _spinController,
-                      builder: (context, child) {
-                        final angle = _isSpinning || _spinController.isAnimating
-                            ? _spinAnimation.value
-                            : _currentRotation;
-                        return Transform.rotate(
-                          angle: angle,
-                          child: child,
-                        );
-                      },
-                      child: _buildWheel(),
-                    ),
-
-                    // Center hub
-                    _buildCenterHub(),
-
-                    // Top pointer
-                    Positioned(
-                      top: 4,
-                      child: _buildPointer(),
-                    ),
-                  ],
-                ),
-              ),
-
-              const SizedBox(height: 24),
-
-              // Prize popup
-              if (_wonPrizeIndex != null)
-                _buildPrizeDisplay(_wonPrizeIndex!),
-
-              const Spacer(flex: 1),
-
-              // Spin button
-              if (_wonPrizeIndex == null)
-                _buildSpinButton(isFree, canAfford)
-              else
-                _buildContinueButton(),
-
-              const SizedBox(height: 12),
-
-              // Prize legend
-              _buildPrizeLegend(),
-
-              const SizedBox(height: 16),
-            ],
-          ),
-        ),
-          ],
-        ),
-      ),
-    );
-  }
-
-  Widget _buildPrizeLegend() {
-    return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 24),
-      child: Wrap(
-        alignment: WrapAlignment.center,
-        spacing: 8,
-        runSpacing: 6,
-        children: _segments.map((seg) {
-          final label = seg.type == 'coins'
-              ? '${seg.label} Coin'
-              : seg.type == 'hammer'
-                  ? '\u00c7eki\u00e7'
-                  : seg.type == 'colorBlast'
-                      ? 'Renk Patlat'
-                      : '+3 Hamle';
-          return Container(
-            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-            decoration: BoxDecoration(
-              color: seg.color.withAlpha(40),
-              borderRadius: BorderRadius.circular(10),
-              border: Border.all(color: seg.color.withAlpha(80)),
-            ),
-            child: Row(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                Container(
-                  width: 14,
-                  height: 14,
-                  decoration: BoxDecoration(
-                    shape: BoxShape.circle,
-                    color: seg.color,
-                    boxShadow: [
-                      BoxShadow(
-                        color: seg.color.withAlpha(60),
-                        blurRadius: 4,
-                      ),
-                    ],
-                  ),
-                ),
-                const SizedBox(width: 4),
-                Text(
-                  label,
-                  style: TextStyle(
-                    fontSize: 10,
-                    fontWeight: FontWeight.w600,
-                    color: Colors.white.withAlpha(200),
-                  ),
-                ),
-              ],
-            ),
-          );
-        }).toList(),
-      ),
-    );
-  }
-
-  Widget _buildHeader(BuildContext context, int coins) {
-    return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-      child: Row(
+    return IslandScaffold(
+      backgroundAsset: TA.spinWheelBg,
+      overlayOpacity: 0.45,
+      child: Stack(
         children: [
-          GestureDetector(
-            onTap: () {
-              context.go('/map');
-            },
-            child: Container(
-              width: 40,
-              height: 40,
-              decoration: BoxDecoration(
-                shape: BoxShape.circle,
-                color: Colors.white.withAlpha(20),
-                border: Border.all(color: Colors.white.withAlpha(60)),
+          Column(
+            children: [
+              IslandTopBar(
+                stars: progress.totalStars,
+                coins: progress.coins,
+                hearts: progress.lives,
+                leading: IslandCircleButton(
+                  icon: Icons.arrow_back_rounded,
+                  onTap: () => context.go('/map'),
+                ),
               ),
-              child: const Icon(Icons.arrow_back_rounded,
-                  color: Colors.white, size: 22),
-            ),
-          ),
-          const Spacer(),
-          Container(
-            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-            decoration: BoxDecoration(
-              color: GameColors.goldFrameDeep.withAlpha(100),
-              borderRadius: BorderRadius.circular(14),
-              border: Border.all(color: GameColors.goldFrameMid.withAlpha(80)),
-            ),
-            child: Row(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                const Text('\uD83E\uDE99', style: TextStyle(fontSize: 16)),
-                const SizedBox(width: 6),
-                Text(
-                  '$coins',
-                  style: const TextStyle(
-                    fontSize: 16,
-                    fontWeight: FontWeight.w700,
-                    color: GameColors.goldFrameBright,
+              const SizedBox(height: 10),
+              _Headline(),
+              const Spacer(flex: 1),
+              Expanded(
+                flex: 5,
+                child: Center(
+                  child: AspectRatio(
+                    aspectRatio: 1,
+                    child: Padding(
+                      padding: const EdgeInsets.symmetric(horizontal: 18),
+                      child: Stack(
+                        alignment: Alignment.center,
+                        children: [
+                          _AmbientGlow(controller: _glowCtrl),
+                          _RopeFrame(),
+                          _WheelDisc(
+                            segments: _segments,
+                            spinCtrl: _spinCtrl,
+                            resultIdx: _resultIdx,
+                            spinning: _spinning,
+                            burstCtrl: _burstCtrl,
+                          ),
+                          _CenterHub(glowCtrl: _glowCtrl),
+                          _MalletPointer(controller: _malletCtrl),
+                        ],
+                      ),
+                    ),
                   ),
                 ),
-              ],
-            ),
+              ),
+              const SizedBox(height: 12),
+              Padding(
+                padding: const EdgeInsets.fromLTRB(28, 0, 28, 16),
+                child: _resultPrize != null
+                    ? _PrizePanel(
+                        prize: _resultPrize!,
+                        onClose: () => setState(() {
+                          _resultPrize = null;
+                          _resultIdx = null;
+                        }),
+                      )
+                    : Column(
+                        children: [
+                          IslandButton(
+                            text: isFree ? 'Bedava Çevir' : '4 Saat Sonra Bedava',
+                            icon: isFree
+                                ? Icons.bolt_rounded
+                                : Icons.access_time_rounded,
+                            color: isFree
+                                ? IslandButtonColor.palm
+                                : IslandButtonColor.bamboo,
+                            size: IslandButtonSize.large,
+                            fullWidth: true,
+                            onPressed:
+                                isFree && !_spinning ? () => _doSpin(free: true) : null,
+                          ),
+                          if (!isFree) ...[
+                            const SizedBox(height: 6),
+                            Text(
+                              _formatTime(msLeft),
+                              style: TT.bodySmall.copyWith(
+                                color: TT.sandLight,
+                                fontWeight: FontWeight.w800,
+                              ),
+                            ),
+                          ],
+                          const SizedBox(height: 8),
+                          IslandButton(
+                            text: 'Çevir (100 altın)',
+                            leading: const Icon(Icons.monetization_on_rounded,
+                                color: Colors.white, size: 22),
+                            color: IslandButtonColor.coral,
+                            size: IslandButtonSize.medium,
+                            fullWidth: true,
+                            onPressed: !_spinning && progress.coins >= 100
+                                ? () => _doSpin(free: false)
+                                : null,
+                          ),
+                          if (AdManager.instance.isRewardedAdReady) ...[
+                            const SizedBox(height: 8),
+                            IslandButton(
+                              text: 'Reklam İzle Bedava Çevir',
+                              leading: const Icon(Icons.play_circle_filled_rounded,
+                                  color: Colors.white, size: 22),
+                              color: IslandButtonColor.lagoon,
+                              size: IslandButtonSize.medium,
+                              fullWidth: true,
+                              onPressed: !_spinning
+                                  ? () {
+                                      AdManager.instance.showRewardedAd(
+                                        onRewarded: () {
+                                          if (mounted) _doSpin(free: true);
+                                        },
+                                      );
+                                    }
+                                  : null,
+                            ),
+                          ],
+                        ],
+                      ),
+              ),
+            ],
           ),
+          // Stop reveal overlay — confetti + flash above all UI when prize lands.
+          if (_resultPrize != null && _burstCtrl.value > 0)
+            Positioned.fill(
+              child: IgnorePointer(
+                child: AnimatedBuilder(
+                  animation: _burstCtrl,
+                  builder: (_, __) => CustomPaint(
+                    painter: _StopBurstPainter(progress: _burstCtrl.value),
+                  ),
+                ),
+              ),
+            ),
         ],
       ),
     );
   }
 
-  Widget _buildCooldownTimer(PlayerProgressNotifier notifier) {
-    final ms = notifier.msUntilFreeSpin;
-    final hours = ms ~/ (60 * 60 * 1000);
-    final minutes = (ms % (60 * 60 * 1000)) ~/ (60 * 1000);
-    return Text(
-      '\u00dccretsiz \u00e7evirmede: ${hours}s ${minutes}dk',
-      style: TextStyle(
-        fontSize: 13,
-        color: Colors.white.withAlpha(160),
+  String _formatTime(int ms) {
+    final h = ms ~/ (1000 * 60 * 60);
+    final m = (ms ~/ (1000 * 60)) % 60;
+    return 'Sonraki bedava: ${h}s ${m}d';
+  }
+}
+
+// ─── Headline plaque ────────────────────────────────────────────────────────
+
+class _Headline extends StatelessWidget {
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 14),
+      child: Container(
+        padding: const EdgeInsets.all(2.5),
+        decoration: BoxDecoration(
+          borderRadius: BorderRadius.circular(20),
+          gradient: const LinearGradient(
+            begin: Alignment.topCenter,
+            end: Alignment.bottomCenter,
+            colors: [TT.goldShine, TT.gold, TT.goldDeep],
+          ),
+          boxShadow: [
+            BoxShadow(color: Colors.black.withAlpha(160), blurRadius: 12, offset: const Offset(0, 4)),
+            BoxShadow(color: TT.gold.withAlpha(140), blurRadius: 18, spreadRadius: -2),
+          ],
+        ),
+        child: Container(
+          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 5),
+          decoration: BoxDecoration(
+            borderRadius: BorderRadius.circular(16),
+            gradient: const LinearGradient(
+              begin: Alignment.topCenter,
+              end: Alignment.bottomCenter,
+              colors: [TT.coralLight, TT.coral, TT.coralDark],
+            ),
+          ),
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              const Icon(Icons.casino_rounded, color: TT.goldShine, size: 22),
+              const SizedBox(width: 8),
+              Text(
+                'COCO\'NUN ÇARKI',
+                style: TT.titleLarge.copyWith(
+                  color: TT.sandLight,
+                  letterSpacing: 1.6,
+                  fontSize: 18,
+                  shadows: [
+                    Shadow(color: Colors.black.withAlpha(220), blurRadius: 4, offset: const Offset(0, 2)),
+                  ],
+                ),
+              ),
+            ],
+          ),
+        ),
       ),
     );
   }
+}
 
-  Widget _buildLedRing() {
+// ─── Pulsing gold halo behind the wheel ──────────────────────────────────────
+
+class _AmbientGlow extends StatelessWidget {
+  final AnimationController controller;
+  const _AmbientGlow({required this.controller});
+
+  @override
+  Widget build(BuildContext context) {
     return AnimatedBuilder(
-      animation: _ledController,
-      builder: (context, _) {
-        return CustomPaint(
-          size: const Size(320, 320),
-          painter: _LedRingPainter(
-            progress: _ledController.value,
+      animation: controller,
+      builder: (_, __) {
+        final t = controller.value;
+        return Container(
+          decoration: BoxDecoration(
+            shape: BoxShape.circle,
+            boxShadow: [
+              BoxShadow(
+                color: TT.gold.withAlpha((90 + 100 * t).toInt()),
+                blurRadius: 60,
+                spreadRadius: 16 + 8 * t,
+              ),
+              BoxShadow(
+                color: TT.coralLight.withAlpha((40 + 60 * t).toInt()),
+                blurRadius: 80,
+                spreadRadius: 4,
+              ),
+            ],
           ),
         );
       },
     );
   }
+}
 
-  Widget _buildWheel() {
+// ─── Rope-wrapped outer frame ───────────────────────────────────────────────
+
+class _RopeFrame extends StatelessWidget {
+  @override
+  Widget build(BuildContext context) {
     return CustomPaint(
-      size: const Size(280, 280),
-      painter: _WheelPainter(segments: _segments),
+      painter: _RopePainter(),
+      size: const Size.square(380),
     );
   }
+}
 
-  Widget _buildCenterHub() {
-    return Container(
-      width: 48,
-      height: 48,
-      decoration: BoxDecoration(
-        shape: BoxShape.circle,
-        gradient: const LinearGradient(
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-          colors: [Color(0xFFFFE44D), Color(0xFFB8860B)],
-        ),
-        border: Border.all(color: Colors.white.withAlpha(120), width: 2),
-        boxShadow: [
-          BoxShadow(
-            color: GameColors.goldFrameMid.withAlpha(100),
-            blurRadius: 12,
-          ),
-        ],
-      ),
-      child: const Center(
-        child: Text(
-          'PP',
-          style: TextStyle(
-            fontSize: 18,
-            fontWeight: FontWeight.w900,
-            color: Color(0xFF3E2000),
-            letterSpacing: 1,
-            shadows: [
-              Shadow(color: Color(0x40000000), blurRadius: 2),
-            ],
-          ),
-        ),
-      ),
-    );
-  }
+class _RopePainter extends CustomPainter {
+  @override
+  void paint(Canvas canvas, Size size) {
+    final c = Offset(size.width / 2, size.height / 2);
+    final outerR = size.width / 2;
 
-  Widget _buildPointer() {
-    return CustomPaint(
-      size: const Size(30, 28),
-      painter: _PointerPainter(),
-    );
-  }
+    // Outer dark wood ring (the wheel's edge shadow).
+    final shadow = Paint()
+      ..color = Colors.black.withAlpha(180)
+      ..maskFilter = const MaskFilter.blur(BlurStyle.normal, 12);
+    canvas.drawCircle(c.translate(0, 6), outerR * 0.93, shadow);
 
-  Widget _buildPrizeDisplay(int prizeIndex) {
-    final segment = _segments[prizeIndex];
-    return ScaleTransition(
-      scale: _prizeScale,
-      child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 14),
-        decoration: BoxDecoration(
-          borderRadius: BorderRadius.circular(20),
-          gradient: LinearGradient(
-            colors: [
-              segment.color.withAlpha(160),
-              segment.color.withAlpha(80),
-            ],
-          ),
-          border: Border.all(color: GameColors.goldFrameMid, width: 2),
-          boxShadow: [
-            BoxShadow(
-              color: segment.color.withAlpha(100),
-              blurRadius: 20,
-            ),
-          ],
-        ),
-        child: Row(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Text(segment.emoji, style: const TextStyle(fontSize: 32)),
-            const SizedBox(width: 8),
-            Text(
-              '+${segment.label} ${segment.type == 'coins' ? 'Coin' : segment.type == 'hammer' ? '\u00c7eki\u00e7' : segment.type == 'colorBlast' ? 'Renk Patlat' : 'Hamle'}',
-              style: const TextStyle(
-                fontSize: 22,
-                fontWeight: FontWeight.w800,
-                color: Colors.white,
-                shadows: [Shadow(color: Colors.black54, blurRadius: 4)],
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
+    // Rope band — alternating gold/dark twist look.
+    final ropeR = outerR * 0.92;
+    const segs = 36;
+    for (int i = 0; i < segs; i++) {
+      final a1 = i * (math.pi * 2 / segs);
+      final a2 = (i + 1) * (math.pi * 2 / segs);
+      final p = Path()
+        ..moveTo(c.dx + math.cos(a1) * (ropeR - 14), c.dy + math.sin(a1) * (ropeR - 14))
+        ..lineTo(c.dx + math.cos(a1) * (ropeR + 4), c.dy + math.sin(a1) * (ropeR + 4))
+        ..arcToPoint(
+          Offset(c.dx + math.cos(a2) * (ropeR + 4), c.dy + math.sin(a2) * (ropeR + 4)),
+          radius: Radius.circular(ropeR + 4),
+          clockwise: true,
+        )
+        ..lineTo(c.dx + math.cos(a2) * (ropeR - 14), c.dy + math.sin(a2) * (ropeR - 14))
+        ..arcToPoint(
+          Offset(c.dx + math.cos(a1) * (ropeR - 14), c.dy + math.sin(a1) * (ropeR - 14)),
+          radius: Radius.circular(ropeR - 14),
+          clockwise: false,
+        )
+        ..close();
 
-  Widget _buildSpinButton(bool isFree, bool canAfford) {
-    final Color bgTop;
-    final Color bgBottom;
-    final String label;
-
-    if (isFree) {
-      bgTop = const Color(0xFF30B050);
-      bgBottom = const Color(0xFF1A7030);
-      label = 'BEDAVA \u00c7EV\u0130R!';
-    } else if (canAfford) {
-      bgTop = const Color(0xFFFFD700);
-      bgBottom = const Color(0xFFB8860B);
-      label = '100 \uD83E\uDE99 \u00c7EV\u0130R';
-    } else {
-      bgTop = Colors.grey.shade600;
-      bgBottom = Colors.grey.shade800;
-      label = '100 \uD83E\uDE99 \u00c7EV\u0130R';
+      final paint = Paint()
+        ..shader = (i.isEven
+                ? const LinearGradient(
+                    begin: Alignment.topCenter,
+                    end: Alignment.bottomCenter,
+                    colors: [TT.goldShine, TT.gold, TT.goldDeep],
+                  )
+                : const LinearGradient(
+                    begin: Alignment.topCenter,
+                    end: Alignment.bottomCenter,
+                    colors: [TT.driftWood, TT.driftWoodDark],
+                  ))
+            .createShader(Rect.fromCircle(center: c, radius: ropeR + 4));
+      canvas.drawPath(p, paint);
     }
 
-    final enabled = !_isSpinning && (isFree || canAfford);
-
-    return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 48),
-      child: GestureDetector(
-        onTap: enabled ? () => _spin(free: isFree) : null,
-        child: AnimatedOpacity(
-          opacity: enabled ? 1.0 : 0.5,
-          duration: const Duration(milliseconds: 200),
-          child: Container(
-            height: 56,
-            decoration: BoxDecoration(
-              borderRadius: BorderRadius.circular(18),
-              gradient: LinearGradient(
-                begin: Alignment.topCenter,
-                end: Alignment.bottomCenter,
-                colors: [bgTop, bgBottom],
-              ),
-              border: Border.all(color: Colors.white.withAlpha(50), width: 1.5),
-              boxShadow: [
-                BoxShadow(
-                  color: bgTop.withAlpha(80),
-                  blurRadius: 16,
-                  offset: const Offset(0, 4),
-                ),
-              ],
-            ),
-            child: Center(
-              child: _isSpinning
-                  ? const SizedBox(
-                      width: 24,
-                      height: 24,
-                      child: CircularProgressIndicator(
-                        color: Colors.white,
-                        strokeWidth: 3,
-                      ),
-                    )
-                  : Text(
-                      label,
-                      style: TextStyle(
-                        fontSize: 18,
-                        fontWeight: FontWeight.w900,
-                        color: isFree ? Colors.white : const Color(0xFF3E2000),
-                        letterSpacing: 1.5,
-                        shadows: const [
-                          Shadow(color: Colors.black26, blurRadius: 4),
-                        ],
-                      ),
-                    ),
-            ),
-          ),
-        ),
-      ),
-    );
+    // 8 nail studs around the rope.
+    const studs = 8;
+    for (int i = 0; i < studs; i++) {
+      final ang = i * (math.pi * 2 / studs) - math.pi / 2;
+      final pos = Offset(c.dx + math.cos(ang) * ropeR, c.dy + math.sin(ang) * ropeR);
+      canvas.drawCircle(
+        pos,
+        7,
+        Paint()
+          ..shader = const RadialGradient(
+            colors: [TT.goldShine, TT.gold, TT.goldDeep],
+          ).createShader(Rect.fromCircle(center: pos, radius: 7)),
+      );
+      canvas.drawCircle(
+        pos,
+        7,
+        Paint()
+          ..style = PaintingStyle.stroke
+          ..strokeWidth = 1.4
+          ..color = TT.goldDeep,
+      );
+    }
   }
-
-  Widget _buildContinueButton() {
-    return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 48),
-      child: GestureDetector(
-        onTap: () {
-          setState(() {
-            _wonPrizeIndex = null;
-          });
-        },
-        child: Container(
-          height: 50,
-          decoration: BoxDecoration(
-            borderRadius: BorderRadius.circular(16),
-            gradient: const LinearGradient(
-              colors: [Color(0xFF6040A0), Color(0xFF4020A0)],
-            ),
-            border: Border.all(color: Colors.white.withAlpha(40)),
-          ),
-          child: const Center(
-            child: Text(
-              'DEVAM',
-              style: TextStyle(
-                fontSize: 18,
-                fontWeight: FontWeight.w800,
-                color: Colors.white,
-                letterSpacing: 1.5,
-              ),
-            ),
-          ),
-        ),
-      ),
-    );
-  }
-}
-
-// ---------------------------------------------------------------------------
-// Data class for wheel segments
-// ---------------------------------------------------------------------------
-class _WheelSegment {
-  final String label;
-  final String emoji;
-  final Color color;
-  final String type; // coins, hammer, colorBlast, extraMoves
-  final int value;
-
-  const _WheelSegment(this.label, this.emoji, this.color, this.type, this.value);
-}
-
-// ---------------------------------------------------------------------------
-// Custom deceleration curve for natural spin feel
-// ---------------------------------------------------------------------------
-class _DecelerationCurve extends Curve {
-  const _DecelerationCurve();
 
   @override
-  double transformInternal(double t) {
-    // Cubic bezier-like deceleration: fast start, slow end
-    return 1 - pow(1 - t, 3).toDouble();
+  bool shouldRepaint(covariant _RopePainter old) => false;
+}
+
+// ─── Spinnable wheel disc — colored prize segments ──────────────────────────
+
+class _WheelDisc extends StatelessWidget {
+  final List<_Segment> segments;
+  final AnimationController spinCtrl;
+  final AnimationController burstCtrl;
+  final int? resultIdx;
+  final bool spinning;
+
+  const _WheelDisc({
+    required this.segments,
+    required this.spinCtrl,
+    required this.burstCtrl,
+    required this.resultIdx,
+    required this.spinning,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return AnimatedBuilder(
+      animation: Listenable.merge([spinCtrl, burstCtrl]),
+      builder: (_, __) {
+        // Wheel rotates `angle` radians (negative direction visually).
+        // Segment[i] centroid sits at -π/2 + i*step before rotation. To land
+        // segment[resultIdx] under the top pointer (-π/2) after spin, the
+        // rotation must equal `+i*step`. We add 12 full revolutions for flair.
+        final step = 2 * math.pi / segments.length;
+        final target = (resultIdx ?? 0) * step;
+        final angle = spinCtrl.value * (12 * 2 * math.pi + target);
+        return SizedBox(
+          width: 320,
+          height: 320,
+          child: Transform.rotate(
+            angle: -angle,
+            child: CustomPaint(
+              // Single source of truth — clean disc with colored segments
+              // and one big label per slice. No Leonardo asset overlay
+              // (it had pre-painted numbers that doubled with our labels).
+              painter: _DiscPainter(
+                segments: segments,
+                winnerIdx: !spinning && burstCtrl.value > 0 ? resultIdx : null,
+                winnerPulse: burstCtrl.value,
+              ),
+              size: const Size.square(320),
+            ),
+          ),
+        );
+      },
+    );
   }
 }
 
-// ---------------------------------------------------------------------------
-// Wheel painter — draws 8 colored segments with emoji and label
-// ---------------------------------------------------------------------------
-class _WheelPainter extends CustomPainter {
-  final List<_WheelSegment> segments;
+class _DiscPainter extends CustomPainter {
+  final List<_Segment> segments;
+  final int? winnerIdx;
+  final double winnerPulse;
 
-  _WheelPainter({required this.segments});
+  _DiscPainter({
+    required this.segments,
+    required this.winnerIdx,
+    required this.winnerPulse,
+  });
 
   @override
   void paint(Canvas canvas, Size size) {
-    final center = Offset(size.width / 2, size.height / 2);
-    final radius = size.width / 2;
-    final segmentAngle = 2 * pi / segments.length;
+    final c = Offset(size.width / 2, size.height / 2);
+    final r = size.width / 2;
 
-    for (int i = 0; i < segments.length; i++) {
-      final startAngle = i * segmentAngle - pi / 2 - segmentAngle / 2;
-      final segment = segments[i];
+    // Dark wooden disc base.
+    final wood = Paint()
+      ..shader = const RadialGradient(
+        colors: [TT.driftWood, TT.driftWoodDark, Color(0xFF2A1A0A)],
+        stops: [0.0, 0.7, 1.0],
+      ).createShader(Rect.fromCircle(center: c, radius: r));
+    canvas.drawCircle(c, r, wood);
 
-      // Draw segment
+    final segR = r - 6;
+    final n = segments.length;
+    final step = 2 * math.pi / n;
+    for (int i = 0; i < n; i++) {
+      final start = -math.pi / 2 - step / 2 + i * step;
+      final seg = segments[i];
+      final isWinner = winnerIdx == i;
+      final base = isWinner
+          ? Color.lerp(seg.color, TT.goldShine, 0.3 + winnerPulse * 0.5)!
+          : seg.color;
+
       final paint = Paint()
-        ..shader = RadialGradient(
+        ..shader = LinearGradient(
+          begin: Alignment.topCenter,
+          end: Alignment.bottomCenter,
           colors: [
-            segment.color,
-            segment.color.withAlpha(180),
+            Color.lerp(base, Colors.white, 0.32)!,
+            base,
+            Color.lerp(base, Colors.black, 0.35)!,
           ],
-        ).createShader(Rect.fromCircle(center: center, radius: radius));
+        ).createShader(Rect.fromCircle(center: c, radius: segR));
+      final path = Path()
+        ..moveTo(c.dx, c.dy)
+        ..arcTo(Rect.fromCircle(center: c, radius: segR), start, step, false)
+        ..close();
+      canvas.drawPath(path, paint);
 
-      canvas.drawArc(
-        Rect.fromCircle(center: center, radius: radius),
-        startAngle,
-        segmentAngle,
-        true,
-        paint,
+      // Segment divider — gold edge.
+      canvas.drawPath(
+        path,
+        Paint()
+          ..style = PaintingStyle.stroke
+          ..strokeWidth = 2.8
+          ..color = TT.goldDeep,
       );
 
-      // Draw border between segments
-      final borderPaint = Paint()
-        ..color = Colors.white.withAlpha(80)
-        ..style = PaintingStyle.stroke
-        ..strokeWidth = 1.5;
+      // Winner pulse outline.
+      if (isWinner) {
+        final pulseR = segR * (1 + 0.02 * (1 - winnerPulse));
+        canvas.drawArc(
+          Rect.fromCircle(center: c, radius: pulseR - 4),
+          start,
+          step,
+          false,
+          Paint()
+            ..style = PaintingStyle.stroke
+            ..strokeWidth = 6
+            ..color = TT.goldShine.withAlpha((220 * (1 - winnerPulse)).toInt().clamp(0, 220)),
+        );
+      }
 
-      final x1 = center.dx + radius * cos(startAngle);
-      final y1 = center.dy + radius * sin(startAngle);
-      canvas.drawLine(center, Offset(x1, y1), borderPaint);
-
-      // Draw text (emoji + label) in the middle of the segment
-      final midAngle = startAngle + segmentAngle / 2;
-      final textRadius = radius * 0.62;
-      final tx = center.dx + textRadius * cos(midAngle);
-      final ty = center.dy + textRadius * sin(midAngle);
-
+      // Segment content — ONE big label, dead-centre, tangent. No icon, no
+      // sub-label. The previous icon+label+sub stack overlapped on narrow
+      // 45° segments; minimal text is the only thing that actually fits.
+      final labelAngle = start + step / 2;
       canvas.save();
-      canvas.translate(tx, ty);
-      canvas.rotate(midAngle + pi / 2);
-
-      // Emoji
-      final emojiPainter = TextPainter(
-        text: TextSpan(
-          text: segment.emoji,
-          style: const TextStyle(fontSize: 22),
-        ),
-        textDirection: TextDirection.ltr,
-      )..layout();
-      emojiPainter.paint(
-        canvas,
-        Offset(-emojiPainter.width / 2, -emojiPainter.height - 2),
+      canvas.translate(
+        c.dx + math.cos(labelAngle) * segR * 0.58,
+        c.dy + math.sin(labelAngle) * segR * 0.58,
       );
-
-      // Label
-      final labelPainter = TextPainter(
+      canvas.rotate(labelAngle + math.pi / 2);
+      final tp = TextPainter(
         text: TextSpan(
-          text: segment.type == 'coins' ? segment.label : 'x${segment.label}',
-          style: const TextStyle(
-            fontSize: 14,
-            fontWeight: FontWeight.w800,
+          text: seg.label,
+          style: TextStyle(
             color: Colors.white,
-            shadows: [Shadow(color: Colors.black54, blurRadius: 4)],
+            fontSize: seg.label.length > 5 ? 17 : 26,
+            fontWeight: FontWeight.w900,
+            letterSpacing: 0.3,
+            height: 1.0,
+            shadows: [
+              Shadow(color: Colors.black.withAlpha(230), blurRadius: 5, offset: const Offset(0, 2)),
+              Shadow(color: Colors.black.withAlpha(180), blurRadius: 1, offset: const Offset(0, 0)),
+            ],
           ),
         ),
         textDirection: TextDirection.ltr,
+        textAlign: TextAlign.center,
       )..layout();
-      labelPainter.paint(
-        canvas,
-        Offset(-labelPainter.width / 2, 2),
-      );
-
+      tp.paint(canvas, Offset(-tp.width / 2, -tp.height / 2));
       canvas.restore();
     }
 
-    // Outer ring
-    final ringPaint = Paint()
-      ..style = PaintingStyle.stroke
-      ..strokeWidth = 4
-      ..shader = const SweepGradient(
-        colors: [
-          Color(0xFFFFD700),
-          Color(0xFFB8860B),
-          Color(0xFFFFE44D),
-          Color(0xFFB8860B),
-          Color(0xFFFFD700),
-        ],
-      ).createShader(Rect.fromCircle(center: center, radius: radius));
-    canvas.drawCircle(center, radius - 2, ringPaint);
+    // Thin gold rim around the disc.
+    canvas.drawCircle(
+      c,
+      segR,
+      Paint()
+        ..style = PaintingStyle.stroke
+        ..strokeWidth = 5
+        ..color = TT.goldDeep,
+    );
   }
 
   @override
-  bool shouldRepaint(covariant _WheelPainter oldDelegate) => false;
+  bool shouldRepaint(covariant _DiscPainter old) =>
+      old.winnerIdx != winnerIdx || old.winnerPulse != winnerPulse;
 }
 
-// ---------------------------------------------------------------------------
-// LED ring painter — blinking dots around the wheel
-// ---------------------------------------------------------------------------
-class _LedRingPainter extends CustomPainter {
-  final double progress;
+// ─── Coco-faced center hub ─────────────────────────────────────────────────
 
-  _LedRingPainter({required this.progress});
+class _CenterHub extends StatelessWidget {
+  final AnimationController glowCtrl;
+  const _CenterHub({required this.glowCtrl});
 
   @override
-  void paint(Canvas canvas, Size size) {
-    final center = Offset(size.width / 2, size.height / 2);
-    final radius = size.width / 2 - 4;
-    const ledCount = 16;
-
-    for (int i = 0; i < ledCount; i++) {
-      final angle = i * 2 * pi / ledCount - pi / 2;
-      final x = center.dx + radius * cos(angle);
-      final y = center.dy + radius * sin(angle);
-
-      // Alternate blinking pattern
-      final isLit = (i + (progress > 0.5 ? 1 : 0)) % 2 == 0;
-      final alpha = isLit ? 255 : 60;
-
-      final paint = Paint()
-        ..color = GameColors.goldFrameMid.withAlpha(alpha);
-
-      canvas.drawCircle(Offset(x, y), 4, paint);
-
-      if (isLit) {
-        final glowPaint = Paint()
-          ..color = GameColors.goldFrameMid.withAlpha(40)
-          ..maskFilter = const MaskFilter.blur(BlurStyle.normal, 6);
-        canvas.drawCircle(Offset(x, y), 6, glowPaint);
-      }
-    }
+  Widget build(BuildContext context) {
+    return AnimatedBuilder(
+      animation: glowCtrl,
+      builder: (_, __) {
+        final t = glowCtrl.value;
+        return Container(
+          width: 96,
+          height: 96,
+          decoration: BoxDecoration(
+            shape: BoxShape.circle,
+            gradient: const LinearGradient(
+              begin: Alignment.topCenter,
+              end: Alignment.bottomCenter,
+              colors: [TT.goldShine, TT.gold, TT.goldDeep],
+            ),
+            boxShadow: [
+              BoxShadow(color: Colors.black.withAlpha(180), blurRadius: 14, offset: const Offset(0, 4)),
+              BoxShadow(color: TT.gold.withAlpha((140 + 80 * t).toInt()), blurRadius: 24, spreadRadius: 2),
+            ],
+          ),
+          padding: const EdgeInsets.all(4),
+          child: Container(
+            decoration: BoxDecoration(
+              shape: BoxShape.circle,
+              gradient: const LinearGradient(
+                begin: Alignment.topCenter,
+                end: Alignment.bottomCenter,
+                colors: [TT.lagoon, TT.lagoonDark],
+              ),
+              border: Border.all(color: TT.goldShine, width: 2),
+            ),
+            child: ClipOval(
+              child: Padding(
+                padding: const EdgeInsets.all(4),
+                child: const MascotView(
+                  pose: MascotPose.victory,
+                  height: 86,
+                  bobbing: false,
+                ),
+              ),
+            ),
+          ),
+        );
+      },
+    );
   }
-
-  @override
-  bool shouldRepaint(covariant _LedRingPainter oldDelegate) =>
-      (oldDelegate.progress > 0.5) != (progress > 0.5);
 }
 
-// ---------------------------------------------------------------------------
-// Pointer painter — gold triangle at top
-// ---------------------------------------------------------------------------
-class _PointerPainter extends CustomPainter {
+// ─── Wooden mallet pointer at top — wobbles each segment tick ──────────────
+
+class _MalletPointer extends StatelessWidget {
+  final AnimationController controller;
+  const _MalletPointer({required this.controller});
+
+  @override
+  Widget build(BuildContext context) {
+    return AnimatedBuilder(
+      animation: controller,
+      builder: (_, __) {
+        // Wobble: lean to +18° at t=0.4, ease back to 0°.
+        final t = controller.value;
+        final lean = t < 0.4
+            ? (t / 0.4) * 0.32
+            : 0.32 * (1 - (t - 0.4) / 0.6);
+        return Align(
+          alignment: const Alignment(0, -0.94),
+          child: Transform.rotate(
+            angle: lean,
+            alignment: Alignment.bottomCenter,
+            child: CustomPaint(
+              size: const Size(54, 84),
+              painter: _MalletPainter(),
+            ),
+          ),
+        );
+      },
+    );
+  }
+}
+
+class _MalletPainter extends CustomPainter {
   @override
   void paint(Canvas canvas, Size size) {
-    final path = Path()
-      ..moveTo(size.width / 2, size.height)
-      ..lineTo(0, 0)
-      ..lineTo(size.width, 0)
+    // Drop shadow.
+    final shadow = Paint()
+      ..color = Colors.black.withAlpha(180)
+      ..maskFilter = const MaskFilter.blur(BlurStyle.normal, 4);
+    final body = Path()
+      ..moveTo(size.width / 2 - 8, 0)
+      ..lineTo(size.width / 2 + 8, 0)
+      ..lineTo(size.width / 2 + 22, size.height * 0.4)
+      ..lineTo(size.width / 2 + 4, size.height * 0.55)
+      ..lineTo(size.width / 2 + 4, size.height)
+      ..lineTo(size.width / 2 - 4, size.height)
+      ..lineTo(size.width / 2 - 4, size.height * 0.55)
+      ..lineTo(size.width / 2 - 22, size.height * 0.4)
       ..close();
+    canvas.drawPath(body.shift(const Offset(0, 3)), shadow);
 
-    final paint = Paint()
-      ..shader = const LinearGradient(
-        begin: Alignment.topCenter,
-        end: Alignment.bottomCenter,
-        colors: [Color(0xFFFFE44D), Color(0xFFB8860B)],
-      ).createShader(Rect.fromLTWH(0, 0, size.width, size.height));
-    canvas.drawPath(path, paint);
+    // Mallet head (gold).
+    final headRect = Rect.fromLTWH(
+      size.width / 2 - 24,
+      size.height * 0.05,
+      48,
+      size.height * 0.45,
+    );
+    canvas.drawRRect(
+      RRect.fromRectAndRadius(headRect, const Radius.circular(10)),
+      Paint()
+        ..shader = const LinearGradient(
+          begin: Alignment.topCenter,
+          end: Alignment.bottomCenter,
+          colors: [TT.goldShine, TT.gold, TT.goldDeep],
+        ).createShader(headRect),
+    );
+    canvas.drawRRect(
+      RRect.fromRectAndRadius(headRect, const Radius.circular(10)),
+      Paint()
+        ..style = PaintingStyle.stroke
+        ..strokeWidth = 2
+        ..color = TT.goldDeep,
+    );
 
-    final borderPaint = Paint()
-      ..style = PaintingStyle.stroke
-      ..color = Colors.white.withAlpha(100)
-      ..strokeWidth = 1.5;
-    canvas.drawPath(path, borderPaint);
+    // Wood handle (driftwood).
+    final handleRect = Rect.fromLTWH(
+      size.width / 2 - 5,
+      size.height * 0.55,
+      10,
+      size.height * 0.45,
+    );
+    canvas.drawRRect(
+      RRect.fromRectAndRadius(handleRect, const Radius.circular(3)),
+      Paint()
+        ..shader = const LinearGradient(
+          begin: Alignment.topCenter,
+          end: Alignment.bottomCenter,
+          colors: [TT.driftWood, TT.driftWoodDark],
+        ).createShader(handleRect),
+    );
+
+    // Tip — pointing downward into the wheel rim.
+    final tip = Path()
+      ..moveTo(size.width / 2 - 8, size.height * 0.95)
+      ..lineTo(size.width / 2 + 8, size.height * 0.95)
+      ..lineTo(size.width / 2, size.height + 4)
+      ..close();
+    canvas.drawPath(
+      tip,
+      Paint()
+        ..shader = const LinearGradient(
+          begin: Alignment.topCenter,
+          end: Alignment.bottomCenter,
+          colors: [TT.goldShine, TT.gold, TT.goldDeep],
+        ).createShader(Rect.fromLTWH(0, size.height * 0.9, size.width, 14)),
+    );
   }
 
   @override
-  bool shouldRepaint(covariant CustomPainter oldDelegate) => false;
+  bool shouldRepaint(covariant _MalletPainter old) => false;
 }
 
-// ---------------------------------------------------------------------------
-// Bubble decoration painter — colorful circles in the background
-// ---------------------------------------------------------------------------
-class _BubbleDecorationPainter extends CustomPainter {
+// ─── Prize panel + screen-wide stop burst ──────────────────────────────────
+
+class _PrizePanel extends StatelessWidget {
+  final Map<String, int> prize;
+  final VoidCallback onClose;
+  const _PrizePanel({required this.prize, required this.onClose});
+
+  String _format(Map<String, int> p) {
+    final parts = <String>[];
+    if ((p['coins'] ?? 0) > 0) parts.add('${p['coins']} altın');
+    if ((p['hammer'] ?? 0) > 0) parts.add('${p['hammer']} Çekiç');
+    if ((p['colorBlast'] ?? 0) > 0) parts.add('${p['colorBlast']} Renk Patlatma');
+    if ((p['extraMoves'] ?? 0) > 0) parts.add('${p['extraMoves']} +3 Hamle');
+    return parts.join(' + ');
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return TweenAnimationBuilder<double>(
+      tween: Tween(begin: 0.6, end: 1.0),
+      duration: const Duration(milliseconds: 500),
+      curve: Curves.elasticOut,
+      builder: (_, scale, child) => Transform.scale(scale: scale, child: child),
+      child: IslandPanel(
+        padding: const EdgeInsets.all(16),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Row(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                const Icon(Icons.celebration_rounded, color: TT.coral, size: 26),
+                const SizedBox(width: 8),
+                Text('TEBRİKLER!',
+                    style: TT.titleLarge.copyWith(color: TT.goldDeep, letterSpacing: 1.4)),
+                const SizedBox(width: 8),
+                const Icon(Icons.celebration_rounded, color: TT.coral, size: 26),
+              ],
+            ),
+            const SizedBox(height: 6),
+            Text(_format(prize),
+                style: TT.titleMedium.copyWith(color: TT.driftWoodDark)),
+            const SizedBox(height: 12),
+            IslandButton(
+              text: 'Tamam',
+              icon: Icons.check_rounded,
+              color: IslandButtonColor.palm,
+              size: IslandButtonSize.medium,
+              fullWidth: true,
+              onPressed: onClose,
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _StopBurstPainter extends CustomPainter {
+  final double progress;
+  _StopBurstPainter({required this.progress});
+
+  static const _confetti = [
+    Color(0xFFFFD91A),
+    Color(0xFF338CFF),
+    Color(0xFF33D973),
+    Color(0xFFFF4D80),
+    Color(0xFFFF801A),
+    Color(0xFFE63946),
+    Color(0xFFFFE89C),
+  ];
+
   @override
   void paint(Canvas canvas, Size size) {
-    final rng = Random(123);
-    final bubbles = <(Offset, double, Color)>[
-      (Offset(size.width * 0.1, size.height * 0.08), 40, const Color(0xFFFF5A9E)),
-      (Offset(size.width * 0.85, size.height * 0.12), 30, const Color(0xFF4DA6FF)),
-      (Offset(size.width * 0.15, size.height * 0.35), 25, const Color(0xFF5CD87A)),
-      (Offset(size.width * 0.9, size.height * 0.4), 35, const Color(0xFFFFD84D)),
-      (Offset(size.width * 0.5, size.height * 0.05), 20, const Color(0xFFB366FF)),
-      (Offset(size.width * 0.05, size.height * 0.7), 28, const Color(0xFF33E5FF)),
-      (Offset(size.width * 0.92, size.height * 0.75), 22, const Color(0xFFFF8844)),
-      (Offset(size.width * 0.4, size.height * 0.88), 32, const Color(0xFFE08AFF)),
-      (Offset(size.width * 0.7, size.height * 0.92), 18, const Color(0xFFFF5A9E)),
-      (Offset(size.width * 0.25, size.height * 0.55), 15, const Color(0xFF4DA6FF)),
-    ];
-
-    for (final (center, radius, color) in bubbles) {
-      final paint = Paint()
-        ..shader = RadialGradient(
-          colors: [
-            color.withAlpha(35),
-            color.withAlpha(12),
-            color.withAlpha(0),
-          ],
-          stops: const [0.0, 0.6, 1.0],
-        ).createShader(Rect.fromCircle(center: center, radius: radius));
-      canvas.drawCircle(center, radius, paint);
-
-      // Highlight dot
-      final hlPaint = Paint()
-        ..color = color.withAlpha(50)
-        ..maskFilter = const MaskFilter.blur(BlurStyle.normal, 3);
+    if (progress <= 0) return;
+    // Initial flash on the wheel (top-half of screen).
+    final flashAlpha = ((1 - (progress * 2.5).clamp(0, 1)) * 130).toInt();
+    if (flashAlpha > 0) {
+      final c = Offset(size.width / 2, size.height * 0.42);
       canvas.drawCircle(
-        center + Offset(-radius * 0.25, -radius * 0.25),
-        radius * 0.2,
-        hlPaint,
+        c,
+        size.width * 0.7 * (0.4 + progress * 0.6),
+        Paint()
+          ..color = const Color(0xFFFFE89C).withAlpha(flashAlpha)
+          ..maskFilter = const MaskFilter.blur(BlurStyle.normal, 24),
       );
     }
-
-    // Extra small random sparkle dots
-    for (int i = 0; i < 15; i++) {
+    // Confetti rain.
+    final rng = math.Random(31);
+    for (int i = 0; i < 60; i++) {
       final x = rng.nextDouble() * size.width;
-      final y = rng.nextDouble() * size.height;
-      final r = 2.0 + rng.nextDouble() * 3;
-      final hue = rng.nextDouble() * 360;
-      final c = HSLColor.fromAHSL(1, hue, 0.8, 0.7).toColor().withAlpha(25);
-      canvas.drawCircle(Offset(x, y), r, Paint()..color = c);
+      final yStart = -30 - rng.nextDouble() * 200;
+      final speed = 0.6 + rng.nextDouble() * 0.8;
+      final y = yStart + progress * size.height * 1.2 * speed;
+      if (y < -30 || y > size.height + 50) continue;
+      final color = _confetti[i % _confetti.length];
+      final s = 4.5 + rng.nextDouble() * 5;
+      final rot = rng.nextDouble() * math.pi * 2 + progress * math.pi * 4;
+      final swayX = math.sin(progress * math.pi * 2.5 + i.toDouble()) * 16;
+      canvas.save();
+      canvas.translate(x + swayX, y);
+      canvas.rotate(rot);
+      canvas.drawRect(
+        Rect.fromCenter(center: Offset.zero, width: s, height: s * 1.4),
+        Paint()..color = color.withAlpha(((1 - progress) * 230).toInt().clamp(0, 230)),
+      );
+      canvas.restore();
     }
   }
 
   @override
-  bool shouldRepaint(covariant _BubbleDecorationPainter old) => false;
+  bool shouldRepaint(covariant _StopBurstPainter old) => old.progress != progress;
+}
+
+// ─── Models ─────────────────────────────────────────────────────────────────
+
+class _Segment {
+  final String label;
+  final String sub;
+  final IconData icon;
+  final Color color;
+  const _Segment({
+    required this.label,
+    required this.sub,
+    required this.icon,
+    required this.color,
+  });
+}
+
+/// Decel curve for the spin — fast start, smooth tail.
+class _DecelCurve extends Curve {
+  const _DecelCurve();
+  @override
+  double transformInternal(double t) {
+    return 1 - math.pow(1 - t, 3).toDouble();
+  }
 }

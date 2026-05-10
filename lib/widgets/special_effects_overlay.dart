@@ -20,6 +20,8 @@ enum SpecialEffectType {
   megaBomb,      // bomb + bomb combo
   multiBeam,     // rocket + bomb combo
   boardClear,    // rainbow + rainbow combo
+  hammerSmash,   // booster: hammer falls onto a cell + impact burst
+  colorSweep,    // booster: color blast sweep across all cells of one color
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -140,6 +142,10 @@ class _SpecialEffectPainter extends CustomPainter {
         _paintMultiBeam(canvas, boardWidth, boardHeight);
       case SpecialEffectType.boardClear:
         _paintBoardClear(canvas, boardWidth, boardHeight);
+      case SpecialEffectType.hammerSmash:
+        _paintHammerSmash(canvas);
+      case SpecialEffectType.colorSweep:
+        _paintColorSweep(canvas, boardWidth, boardHeight);
     }
 
     canvas.restore();
@@ -271,7 +277,9 @@ class _SpecialEffectPainter extends CustomPainter {
     _paintBeamParticles(canvas, origin, false, extent, progress);
   }
 
-  /// Draw sparkle particles along a beam path.
+  /// Draw sparkle particles along a beam path + bright rocket "heads" at
+  /// both tips so the beam reads as two rockets ripping outward, not just
+  /// a glowing line.
   void _paintBeamParticles(
     Canvas canvas,
     Offset origin,
@@ -279,18 +287,19 @@ class _SpecialEffectPainter extends CustomPainter {
     double extent,
     double progress,
   ) {
-    // Use seeded random from origin so particles don't jitter on repaint
+    // Use seeded random from origin so particles don't jitter on repaint.
     final seed = effect.origin.row * 100 + effect.origin.col;
     final rng = Random(seed);
 
-    final particleCount = 20;
+    // Doubled density (was 20) → thicker exhaust trail.
+    const particleCount = 40;
     for (int i = 0; i < particleCount; i++) {
       final t = rng.nextDouble();
-      if (t > progress * 1.2) continue; // Only show particles within beam reach
+      if (t > progress * 1.2) continue; // Only show particles within beam reach.
 
-      final perpOffset = (rng.nextDouble() - 0.5) * 18;
-      final particleAlpha = ((1.0 - (t - progress + 0.3).abs().clamp(0.0, 0.3) / 0.3) * 200).toInt().clamp(0, 200);
-      final particleSize = 2.0 + rng.nextDouble() * 3;
+      final perpOffset = (rng.nextDouble() - 0.5) * 22;
+      final particleAlpha = ((1.0 - (t - progress + 0.3).abs().clamp(0.0, 0.3) / 0.3) * 220).toInt().clamp(0, 220);
+      final particleSize = 1.8 + rng.nextDouble() * 3.2;
 
       Offset pos;
       if (horizontal) {
@@ -309,9 +318,27 @@ class _SpecialEffectPainter extends CustomPainter {
           ..maskFilter = const MaskFilter.blur(BlurStyle.normal, 2),
       );
     }
+
+    // Bright rocket "heads" at each tip — fades quickly past the leading edge.
+    final headAlpha = ((1 - progress) * 230).toInt().clamp(0, 230);
+    final headPaint = Paint()
+      ..color = const Color(0xFFFFFAD8).withAlpha(headAlpha)
+      ..maskFilter = const MaskFilter.blur(BlurStyle.normal, 4);
+    final headCorePaint = Paint()
+      ..color = Colors.white.withAlpha(headAlpha);
+    final tipL = horizontal
+        ? Offset(origin.dx - extent, origin.dy)
+        : Offset(origin.dx, origin.dy - extent);
+    final tipR = horizontal
+        ? Offset(origin.dx + extent, origin.dy)
+        : Offset(origin.dx, origin.dy + extent);
+    canvas.drawCircle(tipL, 14, headPaint);
+    canvas.drawCircle(tipR, 14, headPaint);
+    canvas.drawCircle(tipL, 5, headCorePaint);
+    canvas.drawCircle(tipR, 5, headCorePaint);
   }
 
-  // ─── BOMB BLAST ───────────────────────────────────────────────────
+  // ─── BOMB BLAST (boosted intensity) ───────────────────────────────
 
   void _paintBomb(Canvas canvas, double bw, double bh, int radius) {
     final progress = effect.progress;
@@ -320,26 +347,49 @@ class _SpecialEffectPainter extends CustomPainter {
     final maxRadius = cellSize * (radius / 2 + 0.5);
     final currentRadius = maxRadius * Curves.easeOutCubic.transform(progress);
 
-    // Expanding shockwave ring (orange/red)
-    final ringAlpha = (200 * (1 - progress)).toInt().clamp(0, 255);
-    final ringWidth = 8.0 * (1 - progress * 0.7);
-    final ringPaint = Paint()
-      ..color = Color.fromARGB(ringAlpha, 255, 120, 30)
-      ..style = PaintingStyle.stroke
-      ..strokeWidth = ringWidth
-      ..maskFilter = const MaskFilter.blur(BlurStyle.normal, 6);
-    canvas.drawCircle(center, currentRadius, ringPaint);
+    // Full-screen white flash on impact (first 12% of animation).
+    if (progress < 0.12) {
+      final flashOp = (1 - progress / 0.12);
+      canvas.drawRect(
+        Rect.fromLTWH(0, 0, bw, bh),
+        Paint()..color = Colors.white.withAlpha((180 * flashOp).toInt().clamp(0, 220)),
+      );
+    }
 
-    // Second inner ring (brighter)
+    // FOUR layered shockwave rings (was 2) — staggered timing for "boom-boom" feel.
+    for (int i = 0; i < 4; i++) {
+      final stagger = i * 0.08;
+      final ringT = ((progress - stagger) / (1.0 - stagger)).clamp(0.0, 1.0);
+      if (ringT <= 0) continue;
+      final r = maxRadius * Curves.easeOutCubic.transform(ringT) * (0.6 + i * 0.18);
+      final alpha = ((1 - ringT) * (200 - i * 30)).toInt().clamp(0, 220);
+      final w = (10.0 - i * 2) * (1 - ringT * 0.6);
+      canvas.drawCircle(
+        center,
+        r,
+        Paint()
+          ..color = Color.fromARGB(
+            alpha,
+            255,
+            120 + i * 25,
+            30 + i * 30,
+          )
+          ..style = PaintingStyle.stroke
+          ..strokeWidth = w.clamp(1.0, 12.0)
+          ..maskFilter = MaskFilter.blur(BlurStyle.normal, 6 - i.toDouble()),
+      );
+    }
+
+    // Second inner bright ring (white-yellow) for extra punch.
     if (progress < 0.6) {
       final innerRingPaint = Paint()
         ..color = Color.fromARGB(
-          (180 * (1 - progress / 0.6)).toInt().clamp(0, 255),
-          255, 200, 80,
+          (220 * (1 - progress / 0.6)).toInt().clamp(0, 255),
+          255, 230, 120,
         )
         ..style = PaintingStyle.stroke
-        ..strokeWidth = 4 * (1 - progress / 0.6)
-        ..maskFilter = const MaskFilter.blur(BlurStyle.normal, 3);
+        ..strokeWidth = 5 * (1 - progress / 0.6)
+        ..maskFilter = const MaskFilter.blur(BlurStyle.normal, 4);
       canvas.drawCircle(center, currentRadius * 0.7, innerRingPaint);
     }
 
@@ -360,34 +410,72 @@ class _SpecialEffectPainter extends CustomPainter {
       canvas.drawCircle(center, currentRadius * 0.6, flashPaint);
     }
 
-    // Spark particles flying outward
+    // Spark particles flying outward — more particles + colored variations.
     final seed = effect.origin.row * 100 + effect.origin.col + 42;
     final rng = Random(seed);
-    final sparkCount = radius == 5 ? 18 : 12;
+    final sparkCount = radius == 5 ? 36 : 24;  // was 18/12
     for (int i = 0; i < sparkCount; i++) {
       final angle = rng.nextDouble() * 2 * pi;
-      final sparkSpeed = 0.8 + rng.nextDouble() * 0.4;
-      final sparkDist = currentRadius * sparkSpeed;
+      final sparkSpeed = 0.6 + rng.nextDouble() * 0.7;
+      final sparkDist = currentRadius * sparkSpeed * (1 + progress * 0.5);
       final sparkPos = Offset(
         center.dx + cos(angle) * sparkDist,
         center.dy + sin(angle) * sparkDist,
       );
-      final sparkAlpha = (220 * (1 - progress)).toInt().clamp(0, 255);
-      final sparkSize = (3.0 + rng.nextDouble() * 2) * (1 - progress * 0.5);
+      final sparkAlpha = (240 * (1 - progress)).toInt().clamp(0, 255);
+      final sparkSize = (3.5 + rng.nextDouble() * 2.5) * (1 - progress * 0.4);
 
-      // Spark with glow
+      // Vary colors: yellow, orange, red mix
+      final colorPick = i % 3;
+      final coreColor = colorPick == 0
+          ? const Color(0xFFFFEE99)
+          : colorPick == 1
+              ? const Color(0xFFFF8C20)
+              : const Color(0xFFFF4520);
+
+      // Outer glow
       canvas.drawCircle(
         sparkPos,
-        sparkSize * 2,
+        sparkSize * 2.6,
         Paint()
-          ..color = const Color(0xFFFF6D00).withAlpha((sparkAlpha * 0.3).toInt())
-          ..maskFilter = const MaskFilter.blur(BlurStyle.normal, 4),
+          ..color = coreColor.withAlpha((sparkAlpha * 0.35).toInt())
+          ..maskFilter = const MaskFilter.blur(BlurStyle.normal, 5),
       );
+      // Mid glow
       canvas.drawCircle(
         sparkPos,
-        sparkSize,
-        Paint()..color = Color.fromARGB(sparkAlpha, 255, 230, 100),
+        sparkSize * 1.4,
+        Paint()
+          ..color = coreColor.withAlpha((sparkAlpha * 0.7).toInt())
+          ..maskFilter = const MaskFilter.blur(BlurStyle.normal, 2),
       );
+      // White-hot core
+      canvas.drawCircle(
+        sparkPos,
+        sparkSize * 0.6,
+        Paint()..color = Colors.white.withAlpha(sparkAlpha),
+      );
+    }
+
+    // Smoke debris (grey particles, slower, fade slowly)
+    if (progress > 0.15) {
+      final smokeT = (progress - 0.15) / 0.85;
+      for (int i = 0; i < 8; i++) {
+        final angle = rng.nextDouble() * 2 * pi;
+        final dist = currentRadius * (0.3 + rng.nextDouble() * 0.5) * (1 + smokeT);
+        final smokePos = Offset(
+          center.dx + cos(angle) * dist,
+          center.dy + sin(angle) * dist - smokeT * cellSize,  // rises up
+        );
+        final smokeAlpha = ((1 - smokeT) * 100).toInt().clamp(0, 100);
+        canvas.drawCircle(
+          smokePos,
+          cellSize * 0.18 * (1 + smokeT * 0.5),
+          Paint()
+            ..color = const Color(0xFF666666).withAlpha(smokeAlpha)
+            ..maskFilter = const MaskFilter.blur(BlurStyle.normal, 8),
+        );
+      }
     }
 
     // Screen shake feel: subtle radial lines
@@ -796,6 +884,216 @@ class _SpecialEffectPainter extends CustomPainter {
           ..color = color.withAlpha(alpha)
           ..maskFilter = const MaskFilter.blur(BlurStyle.normal, 2),
       );
+    }
+  }
+
+  // ─── HAMMER SMASH (booster) ────────────────────────────────────────
+  // 0.0 → 0.6: hammer rotates in from top-left, lands on origin cell
+  // 0.6 → 1.0: impact ring + crack burst + cell flash
+  void _paintHammerSmash(Canvas canvas) {
+    final t = effect.progress;
+    final c = _cellCenter(effect.origin);
+    // Phase split
+    final approach = (t / 0.6).clamp(0.0, 1.0).toDouble();
+    final impact = ((t - 0.6) / 0.4).clamp(0.0, 1.0).toDouble();
+
+    if (impact < 1.0) {
+      // ── Approach phase: hammer drops in from top-left of cell ──
+      final ease = Curves.easeIn.transform(approach);
+      // Start offset 80px up-left, end at cell centre
+      final hx = c.dx - 80 + 80 * ease;
+      final hy = c.dy - 90 + 90 * ease;
+      // Rotation: -1.2 rad → 0 (swing down)
+      final rot = -1.2 + 1.2 * ease;
+
+      canvas.save();
+      canvas.translate(hx, hy);
+      canvas.rotate(rot);
+      _drawHammerIcon(canvas, cellSize * 0.7);
+      canvas.restore();
+
+      // Motion trail (small radial dots behind hammer)
+      final trailPaint = Paint()
+        ..color = const Color(0xFFFFD56F).withValues(alpha: 0.5 * (1 - approach))
+        ..maskFilter = const MaskFilter.blur(BlurStyle.normal, 8);
+      canvas.drawCircle(Offset(hx - 20, hy - 20), 14, trailPaint);
+    }
+
+    if (impact > 0) {
+      // ── Impact phase: glow flash + radial crack ─────────────────────
+      final ringR = cellSize * (0.6 + impact * 0.9);
+      final ringAlpha = ((1 - impact) * 220).toInt();
+      // White flash
+      final flashPaint = Paint()
+        ..color = Colors.white.withAlpha(ringAlpha)
+        ..maskFilter = const MaskFilter.blur(BlurStyle.normal, 12);
+      canvas.drawCircle(c, ringR * 0.65, flashPaint);
+
+      // Gold ring
+      final ringPaint = Paint()
+        ..style = PaintingStyle.stroke
+        ..strokeWidth = 4 + impact * 4
+        ..color = const Color(0xFFFFD56F).withAlpha(ringAlpha);
+      canvas.drawCircle(c, ringR, ringPaint);
+
+      // 8 radial spikes (crack burst)
+      final spikePaint = Paint()
+        ..color = const Color(0xFFFFE89C).withAlpha(((1 - impact) * 255).toInt())
+        ..style = PaintingStyle.stroke
+        ..strokeWidth = 3
+        ..strokeCap = StrokeCap.round;
+      for (int i = 0; i < 8; i++) {
+        final angle = (i / 8) * pi * 2;
+        final r1 = cellSize * 0.45;
+        final r2 = cellSize * (0.8 + impact * 0.5);
+        canvas.drawLine(
+          Offset(c.dx + cos(angle) * r1, c.dy + sin(angle) * r1),
+          Offset(c.dx + cos(angle) * r2, c.dy + sin(angle) * r2),
+          spikePaint,
+        );
+      }
+
+      // Settled hammer on cell (fading)
+      if (impact < 0.55) {
+        canvas.save();
+        canvas.translate(c.dx, c.dy);
+        canvas.rotate(impact * 0.4); // slight rebound rotate
+        _drawHammerIcon(canvas, cellSize * 0.7 * (1 - impact * 0.3));
+        canvas.restore();
+      }
+    }
+  }
+
+  void _drawHammerIcon(Canvas canvas, double size) {
+    // Wooden handle
+    final handlePaint = Paint()
+      ..shader = ui.Gradient.linear(
+        Offset(-size * 0.5, 0),
+        Offset(size * 0.5, 0),
+        const [Color(0xFF8B5A2B), Color(0xFF5C3A1A), Color(0xFF8B5A2B)],
+      );
+    final handleRect = Rect.fromCenter(
+      center: const Offset(0, 0),
+      width: size * 0.85,
+      height: size * 0.18,
+    );
+    final handleRRect = RRect.fromRectAndRadius(handleRect, Radius.circular(size * 0.05));
+    canvas.drawRRect(handleRRect, handlePaint);
+    canvas.drawRRect(
+      handleRRect,
+      Paint()
+        ..color = const Color(0xFF2A1810).withValues(alpha: 0.6)
+        ..style = PaintingStyle.stroke
+        ..strokeWidth = 1.4,
+    );
+
+    // Metal head — block with gradient
+    final headPaint = Paint()
+      ..shader = ui.Gradient.linear(
+        Offset(-size * 0.18, -size * 0.3),
+        Offset(size * 0.18, size * 0.3),
+        const [Color(0xFFE0E0E0), Color(0xFF6B6B6B), Color(0xFF3A3A3A)],
+      );
+    final headRect = Rect.fromCenter(
+      center: Offset(-size * 0.32, 0),
+      width: size * 0.36,
+      height: size * 0.48,
+    );
+    final headRRect = RRect.fromRectAndRadius(headRect, Radius.circular(size * 0.06));
+    canvas.drawRRect(headRRect, headPaint);
+    canvas.drawRRect(
+      headRRect,
+      Paint()
+        ..color = const Color(0xFF1A1A1A)
+        ..style = PaintingStyle.stroke
+        ..strokeWidth = 1.6,
+    );
+
+    // Specular highlight on hammer head
+    canvas.drawRect(
+      Rect.fromCenter(
+        center: Offset(-size * 0.38, -size * 0.12),
+        width: size * 0.06,
+        height: size * 0.2,
+      ),
+      Paint()..color = Colors.white.withValues(alpha: 0.55),
+    );
+  }
+
+  // ─── COLOR SWEEP (booster) ─────────────────────────────────────────
+  // Radial color wave radiating from origin cell across the whole board,
+  // tinted with the target color. All cells in the wave-front flash.
+  void _paintColorSweep(Canvas canvas, double bw, double bh) {
+    final t = effect.progress;
+    final origin = _cellCenter(effect.origin);
+    final maxR = sqrt(bw * bw + bh * bh) * 0.55;
+    final r = maxR * Curves.easeOutCubic.transform(t.clamp(0.0, 1.0).toDouble());
+
+    final color = _colorFor(effect.targetColor);
+
+    // Outer ring
+    canvas.drawCircle(
+      origin,
+      r,
+      Paint()
+        ..color = color.withValues(alpha: 0.55 * (1 - t * 0.5))
+        ..style = PaintingStyle.stroke
+        ..strokeWidth = 8 + 4 * (1 - t),
+    );
+    // Inner glow gradient
+    canvas.drawCircle(
+      origin,
+      r * 0.95,
+      Paint()
+        ..shader = ui.Gradient.radial(
+          origin,
+          r,
+          [
+            color.withValues(alpha: 0),
+            color.withValues(alpha: 0.45 * (1 - t)),
+            color.withValues(alpha: 0),
+          ],
+          [0.0, 0.7, 1.0],
+        ),
+    );
+    // Sparkle dots on the ring
+    final sparkPaint = Paint()..color = Colors.white.withValues(alpha: 0.9 * (1 - t));
+    for (int i = 0; i < 18; i++) {
+      final angle = (i / 18) * pi * 2 + t * 1.2;
+      final sx = origin.dx + cos(angle) * r;
+      final sy = origin.dy + sin(angle) * r;
+      canvas.drawCircle(Offset(sx, sy), 3 + 2 * (1 - t), sparkPaint);
+    }
+
+    // Tint targeted cells with color burst at their positions
+    for (final pos in effect.targets) {
+      final cc = _cellCenter(pos);
+      final dist = (cc - origin).distance;
+      final reached = (r >= dist) ? 1.0 : 0.0;
+      if (reached > 0) {
+        // Phase since wave passed
+        final since = ((r - dist) / maxR).clamp(0.0, 1.0).toDouble();
+        final alpha = (0.65 * (1 - since)).clamp(0.0, 1.0);
+        canvas.drawCircle(
+          cc,
+          cellSize * 0.55 * (1 + since * 0.4),
+          Paint()
+            ..color = color.withValues(alpha: alpha)
+            ..maskFilter = const MaskFilter.blur(BlurStyle.normal, 6),
+        );
+      }
+    }
+  }
+
+  Color _colorFor(JellyType? t) {
+    switch (t) {
+      case JellyType.blue:   return const Color(0xFF4A8FE7);
+      case JellyType.green:  return const Color(0xFF3CA84F);
+      case JellyType.orange: return const Color(0xFFFF8E2E);
+      case JellyType.pink:   return const Color(0xFFFF6FA5);
+      case JellyType.purple: return const Color(0xFFA060E7);
+      case JellyType.yellow: return const Color(0xFFFFCB3D);
+      default:               return const Color(0xFFE85A5A);
     }
   }
 

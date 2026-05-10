@@ -1,0 +1,724 @@
+{
+  "assets": {
+    "daily_reward_bg": {
+      "path": "/root/PatPatFlutter/assets/tropical/backgrounds/daily_reward_bg.png",
+      "prompt": "open treasure chest on sandy beach with gold coins and gems spilling out, sunbeam from above, sparkling magical particle",
+      "ts": 1778177844
+    },
+    "profile_bg": {
+      "path": "/root/PatPatFlutter/assets/tropical/backgrounds/profile_bg.png",
+      "prompt": "cozy beach hut interior, hammock, wooden walls, parrot perch, sunlight streaming through bamboo blinds, treasure chest i",
+      "ts": 1778177844
+    },
+    "mascot_home_bg": {
+      "path": "/root/PatPatFlutter/assets/tropical/backgrounds/mascot_home_bg.png",
+      "prompt": "beach cottage with garden, white wooden walls, hammock, palm leaves, warm afternoon light, pet bowl, tropical flowers, h",
+      "ts": 1778177844
+    },
+    "shop_bg": {
+      "path": "/root/PatPatFlutter/assets/tropical/backgrounds/shop_bg.png",
+      "prompt": "pirate trading post on tropical island, wooden bazaar stalls, crates of fruit and gold, hanging lanterns, palm shadows, ",
+      "ts": 1778177844
+    },
+    "game_bg": {
+      "path": "/root/PatPatFlutter/assets/tropical/backgrounds/game_bg.png",
+      "prompt": "tropical beach scene framed by palm leaves on left and right edges, sandy beach background, soft bokeh ocean, wooden gam",
+      "ts": 1778177844
+    },
+    "spin_wheel_bg": {
+      "path": "/root/PatPatFlutter/assets/tropical/backgrounds/spin_wheel_bg.png",
+      "prompt": "ancient tiki idol cave entrance with glowing carvings, magical mystical atmosphere, blue and orange firelight, tribal to",
+      "ts": 1778177845
+    },
+    "event_bg": {
+      "path": "/root/PatPatFlutter/assets/tropical/backgrounds/event_bg.png",
+      "prompt": "pirate galleon ship docked at tropical pier at sunset, lanterns, rope rigging, palm silhouettes, dramatic sky, adventure",
+      "ts": 1778177845
+    },
+    "main_menu_bg": {
+      "path": "/root/PatPatFlutter/assets/tropical/backgrounds/main_menu_bg.png",
+      "prompt": "tropical island vista at golden hour, palm trees curving, turquoise lagoon, distant volcano peak, sunset sky with orange",
+      "ts": 1778177845
+    },
+    "achievement_bg": {
+      "path": "/root/PatPatFlutter/assets/tropical/backgrounds/achievement_bg.png",
+      "prompt": "ancient tropical temple trophy room, gold idols and trophies on stone shelves, vines, dramatic torchlight, mystical adve",
+      "ts": 1778177849
+    },
+    "no_lives_bg": {
+      "path": "/root/PatPatFlutter/assets/tropical/backgrounds/no_lives_bg.png",
+      "prompt": "sleeping parrot in hammock between palm trees at sunset, peaceful beach, soft warm light, dreamy. premium 3D game render",
+      "ts": 1778177849
+    },
+    "region_lagoon_palace": {
+      "path": "/root/PatPatFlutter/assets/tropical/backgrounds/region_lagoon_palace.png",
+      "prompt": "majestic turquoise lagoon with crystal blue water, exotic flowers, water lilies, ancient stone arches partially submerge",
+      "ts": 1778177849
+    },
+    "region_treasure_cave": {
+      "path": "/root/PatPatFlutter/assets/tropical/backgrounds/region_treasure_cave.png",
+      "prompt": "golden treasure cave entrance with stalactites, gold coins glimmering inside, mystical magical light, jungle vines aroun",
+      "ts": 1778177849
+    },
+    "region_coral_beach": {
+      "path": "/root/PatPatFlutter/assets/tropical/backgrounds/region_coral_beach.png",
+      "prompt": "sunny coral beach with white sand and turquoise water, gentle palm trees, scattered seashells, calm tropical waves. prem",
+      "ts": 1778177849
+    },
+    "region_coconut_island": {
+      "path": "/root/PatPatFlutter/assets/tropical/backgrounds/region_coconut_island.png",
+      "prompt": "lush coconut palm grove on small tropical island, crystal clear lagoon, coconuts on sand, midday sun. premium 3D game re",
+      "ts": 1778177849
+    },
+    "region_palm_valley": {
+      "path": "/root/PatPatFlutter/assets/tropical/backgrounds/region_palm_valley.png",
+      "prompt": "tall palm valley with cascading streams, ferns, tropical flowers, dappled sunlight, dense green foliage. premium 3D game",
+      "ts": 1778177850
+    },
+    "region_sailor_harbor": {
+      "path": "/root/PatPatFlutter/assets/tropical/backgrounds/region_sailor_harbor.png",
+      "prompt": "wooden tropical harbor with fishing boats, lanterns, ropes, sunset over the bay, weathered docks, adventure mood. premiu",
+      "ts": 1778177850
+    },
+    "region_ice_isle": {
+      "path": "/root/PatPatFlutter/assets/tropical/backgrounds/region_ice_isle.png",
+      "prompt": "frozen tropical island, palm trees with ice and snow, icebergs in turquoise water, blue cold light, exotic frozen wonder",
+      "ts": 1778177853
+    },
+    "region_hidden_temple": {
+      "path": "/root/PatPatFlutter/assets/tropical/backgrounds/region_hidden_temple.png",
+      "prompt": "ancient overgrown jungle temple with vines and roots, mossy stone pyramids, mysterious carvings, soft mystical light. pr",
+      "ts": 1778177854
+    },
+    "region_coral_reef": {
+      "path": "/root/PatPatFlutter/assets/tropical/backgrounds/region_coral_reef.png",
+      "prompt": "underwater coral garden with vibrant pink orange purple corals, schools of tropical fish, sunbeams from surface, magical",
+      "ts": 1778177854
+    },
+    "region_volcano_island": {
+      "path": "/root/PatPatFlutter/assets/tropical/backgrounds/region_volcano_island.png",
+      "prompt": "active volcano island with red lava streams, dark rocky terrain, dramatic ash sky, palm silhouettes near base, intense. ",
+      "ts": 1778177854
+    },
+    "region_lost_city": {
+      "path": "/root/PatPatFlutter/assets/tropical/backgrounds/region_lost_city.png",
+      "prompt": "submerged ancient city ruins underwater, fish swimming through stone columns, sunbeams, mysterious atlantis vibe. premiu",
+      "ts": 1778177854
+    },
+    "mascot_idle": {
+      "path": "/root/PatPatFlutter/assets/tropical/mascot/mascot_idle.png",
+      "prompt": "standing waving one wing happily, friendly smile, cute friendly cartoon parrot mascot named Coco, blue and yellow plumag",
+      "ts": 1778177854
+    },
+    "mascot_happy": {
+      "path": "/root/PatPatFlutter/assets/tropical/mascot/mascot_happy.png",
+      "prompt": "celebrating with both wings up, joyful expression, sparkles around, cute friendly cartoon parrot mascot named Coco, blue",
+      "ts": 1778177854
+    },
+    "region_waterfall_paradise": {
+      "path": "/root/PatPatFlutter/assets/tropical/backgrounds/region_waterfall_paradise.png",
+      "prompt": "multi-tier tropical waterfalls cascading into lagoon, rainbow mist, lush jungle, exotic birds, dreamlike. premium 3D gam",
+      "ts": 1778177858
+    },
+    "mascot_victory": {
+      "path": "/root/PatPatFlutter/assets/tropical/mascot/mascot_victory.png",
+      "prompt": "holding gold trophy, triumphant pose, golden glow, cute friendly cartoon parrot mascot named Coco, blue and yellow pluma",
+      "ts": 1778177858
+    },
+    "mascot_thinking": {
+      "path": "/root/PatPatFlutter/assets/tropical/mascot/mascot_thinking.png",
+      "prompt": "wing on chin thinking pose, curious confused expression, question mark above, cute friendly cartoon parrot mascot named ",
+      "ts": 1778177858
+    },
+    "mascot_shopping": {
+      "path": "/root/PatPatFlutter/assets/tropical/mascot/mascot_shopping.png",
+      "prompt": "carrying shopping bag with coin, excited smile, cute friendly cartoon parrot mascot named Coco, blue and yellow plumage ",
+      "ts": 1778177858
+    },
+    "mascot_sleeping": {
+      "path": "/root/PatPatFlutter/assets/tropical/mascot/mascot_sleeping.png",
+      "prompt": "curled up sleeping with closed eyes, peaceful, zzz bubbles, cute friendly cartoon parrot mascot named Coco, blue and yel",
+      "ts": 1778177859
+    },
+    "mascot_sad": {
+      "path": "/root/PatPatFlutter/assets/tropical/mascot/mascot_sad.png",
+      "prompt": "drooping wings, sad teary eyes, pouting, cute friendly cartoon parrot mascot named Coco, blue and yellow plumage with re",
+      "ts": 1778177859
+    },
+    "mascot_vip": {
+      "path": "/root/PatPatFlutter/assets/tropical/mascot/mascot_vip.png",
+      "prompt": "wearing royal golden crown and cape, regal proud pose, sparkles, cute friendly cartoon parrot mascot named Coco, blue an",
+      "ts": 1778177859
+    },
+    "node_locked": {
+      "path": "/root/PatPatFlutter/assets/tropical/icons/node_locked.png",
+      "prompt": "wooden palm tree round signpost with iron padlock, weathered, bound by rope, isolated on transparent or simple soft grad",
+      "ts": 1778177859
+    },
+    "node_unlocked": {
+      "path": "/root/PatPatFlutter/assets/tropical/icons/node_unlocked.png",
+      "prompt": "wooden round plaque with empty star slots, polished tropical wood, ready for stars, isolated on transparent or simple so",
+      "ts": 1778177862
+    },
+    "node_completed": {
+      "path": "/root/PatPatFlutter/assets/tropical/icons/node_completed.png",
+      "prompt": "ornate gold star plaque on bamboo, three filled stars, golden trim, achievement vibe, isolated on transparent or simple ",
+      "ts": 1778177863
+    },
+    "booster_hammer": {
+      "path": "/root/PatPatFlutter/assets/tropical/icons/booster_hammer.png",
+      "prompt": "tribal wooden hammer with shells and feathers, polished wood handle, glowing tip, isolated on transparent or simple soft",
+      "ts": 1778177863
+    },
+    "node_current": {
+      "path": "/root/PatPatFlutter/assets/tropical/icons/node_current.png",
+      "prompt": "glowing tropical tiki torch with flame, golden bamboo signpost, magical aura, vibrant attention-grabbing, isolated on tr",
+      "ts": 1778177863
+    },
+    "booster_color_blast": {
+      "path": "/root/PatPatFlutter/assets/tropical/icons/booster_color_blast.png",
+      "prompt": "rainbow conch shell glowing with magical colors, exploding rainbow particles around it, isolated on transparent or simpl",
+      "ts": 1778177863
+    },
+    "rpill_coral_beach": {
+      "path": "/root/PatPatFlutter/assets/tropical/nodes/rpill_coral_beach.png",
+      "prompt": "small coral and seashell, isolated on transparent or simple soft gradient background, centered, premium 3D rendered game",
+      "ts": 1778177863
+    },
+    "rpill_coconut_island": {
+      "path": "/root/PatPatFlutter/assets/tropical/nodes/rpill_coconut_island.png",
+      "prompt": "stylized coconut palm tree, isolated on transparent or simple soft gradient background, centered, premium 3D rendered ga",
+      "ts": 1778177863
+    },
+    "booster_extra_moves": {
+      "path": "/root/PatPatFlutter/assets/tropical/icons/booster_extra_moves.png",
+      "prompt": "golden compass with sand hourglass next to it, magical glow, treasure motif, isolated on transparent or simple soft grad",
+      "ts": 1778177863
+    },
+    "rpill_lagoon_palace": {
+      "path": "/root/PatPatFlutter/assets/tropical/nodes/rpill_lagoon_palace.png",
+      "prompt": "small turquoise lagoon arch, isolated on transparent or simple soft gradient background, centered, premium 3D rendered g",
+      "ts": 1778177867
+    },
+    "rpill_sailor_harbor": {
+      "path": "/root/PatPatFlutter/assets/tropical/nodes/rpill_sailor_harbor.png",
+      "prompt": "small fishing boat with sail, isolated on transparent or simple soft gradient background, centered, premium 3D rendered ",
+      "ts": 1778177867
+    },
+    "rpill_treasure_cave": {
+      "path": "/root/PatPatFlutter/assets/tropical/nodes/rpill_treasure_cave.png",
+      "prompt": "treasure chest with gold, isolated on transparent or simple soft gradient background, centered, premium 3D rendered game",
+      "ts": 1778177867
+    },
+    "rpill_palm_valley": {
+      "path": "/root/PatPatFlutter/assets/tropical/nodes/rpill_palm_valley.png",
+      "prompt": "palm tree with waterfall stripe, isolated on transparent or simple soft gradient background, centered, premium 3D render",
+      "ts": 1778177867
+    },
+    "rpill_volcano_island": {
+      "path": "/root/PatPatFlutter/assets/tropical/nodes/rpill_volcano_island.png",
+      "prompt": "small volcano with lava, isolated on transparent or simple soft gradient background, centered, premium 3D rendered game ",
+      "ts": 1778177868
+    },
+    "rpill_ice_isle": {
+      "path": "/root/PatPatFlutter/assets/tropical/nodes/rpill_ice_isle.png",
+      "prompt": "frozen palm tree with snowflake, isolated on transparent or simple soft gradient background, centered, premium 3D render",
+      "ts": 1778177868
+    },
+    "rpill_coral_reef": {
+      "path": "/root/PatPatFlutter/assets/tropical/nodes/rpill_coral_reef.png",
+      "prompt": "coral with tropical fish, isolated on transparent or simple soft gradient background, centered, premium 3D rendered game",
+      "ts": 1778177868
+    },
+    "rpill_waterfall_paradise": {
+      "path": "/root/PatPatFlutter/assets/tropical/nodes/rpill_waterfall_paradise.png",
+      "prompt": "tropical waterfall with rainbow, isolated on transparent or simple soft gradient background, centered, premium 3D render",
+      "ts": 1778177871
+    },
+    "rpill_hidden_temple": {
+      "path": "/root/PatPatFlutter/assets/tropical/nodes/rpill_hidden_temple.png",
+      "prompt": "stone temple pyramid with vines, isolated on transparent or simple soft gradient background, centered, premium 3D render",
+      "ts": 1778177871
+    },
+    "daily_2": {
+      "path": "/root/PatPatFlutter/assets/tropical/rewards/daily_2.png",
+      "prompt": "open coin pouch with small gold coins, day 2 reward, simple, isolated on transparent or simple soft gradient background,",
+      "ts": 1778177872
+    },
+    "rpill_lost_city": {
+      "path": "/root/PatPatFlutter/assets/tropical/nodes/rpill_lost_city.png",
+      "prompt": "underwater stone column, isolated on transparent or simple soft gradient background, centered, premium 3D rendered game ",
+      "ts": 1778177872
+    },
+    "daily_1": {
+      "path": "/root/PatPatFlutter/assets/tropical/rewards/daily_1.png",
+      "prompt": "small wooden chest with few coins inside, day 1 starter reward, simple, isolated on transparent or simple soft gradient ",
+      "ts": 1778177872
+    },
+    "daily_3": {
+      "path": "/root/PatPatFlutter/assets/tropical/rewards/daily_3.png",
+      "prompt": "wooden chest with gold coins and gem, day 3 reward, isolated on transparent or simple soft gradient background, centered",
+      "ts": 1778177873
+    },
+    "daily_4": {
+      "path": "/root/PatPatFlutter/assets/tropical/rewards/daily_4.png",
+      "prompt": "leather pouch with gem stones, day 4 reward, isolated on transparent or simple soft gradient background, centered, premi",
+      "ts": 1778177873
+    },
+    "daily_5": {
+      "path": "/root/PatPatFlutter/assets/tropical/rewards/daily_5.png",
+      "prompt": "ornate chest with gold coins and ruby gem overflowing, day 5 reward, isolated on transparent or simple soft gradient bac",
+      "ts": 1778177873
+    },
+    "daily_7": {
+      "path": "/root/PatPatFlutter/assets/tropical/rewards/daily_7.png",
+      "prompt": "ultimate massive treasure trove with crown, gold, gems, magical sparkles, day 7 grand prize, isolated on transparent or ",
+      "ts": 1778177876
+    },
+    "decor_pearl": {
+      "path": "/root/PatPatFlutter/assets/tropical/decor/decor_pearl.png",
+      "prompt": "iridescent pearl in open clamshell, shiny, isolated on transparent or simple soft gradient background, centered, premium",
+      "ts": 1778177877
+    },
+    "decor_coconut": {
+      "path": "/root/PatPatFlutter/assets/tropical/decor/decor_coconut.png",
+      "prompt": "single tropical coconut, glossy brown, isolated, isolated on transparent or simple soft gradient background, centered, p",
+      "ts": 1778177877
+    },
+    "decor_palm_leaves": {
+      "path": "/root/PatPatFlutter/assets/tropical/decor/decor_palm_leaves.png",
+      "prompt": "tropical palm leaves cluster, fresh green, isolated decoration element, isolated on transparent or simple soft gradient ",
+      "ts": 1778177877
+    },
+    "decor_starfish": {
+      "path": "/root/PatPatFlutter/assets/tropical/decor/decor_starfish.png",
+      "prompt": "orange tropical starfish on white, isolated, isolated on transparent or simple soft gradient background, centered, premi",
+      "ts": 1778177877
+    },
+    "decor_seashell": {
+      "path": "/root/PatPatFlutter/assets/tropical/decor/decor_seashell.png",
+      "prompt": "spiral pink seashell, polished shiny, isolated, isolated on transparent or simple soft gradient background, centered, pr",
+      "ts": 1778177877
+    },
+    "decor_crab": {
+      "path": "/root/PatPatFlutter/assets/tropical/decor/decor_crab.png",
+      "prompt": "cute red tropical crab, smiling, mascot-friendly cartoon, isolated on transparent or simple soft gradient background, ce",
+      "ts": 1778177877
+    },
+    "daily_6": {
+      "path": "/root/PatPatFlutter/assets/tropical/rewards/daily_6.png",
+      "prompt": "luxurious treasure box with gold and rare gems, magical glow, day 6 reward, isolated on transparent or simple soft gradi",
+      "ts": 1778177879
+    },
+    "decor_compass": {
+      "path": "/root/PatPatFlutter/assets/tropical/decor/decor_compass.png",
+      "prompt": "golden ornate pirate compass, treasure motif, isolated on transparent or simple soft gradient background, centered, prem",
+      "ts": 1778177880
+    },
+    "decor_map_scroll": {
+      "path": "/root/PatPatFlutter/assets/tropical/decor/decor_map_scroll.png",
+      "prompt": "rolled treasure map scroll, parchment, weathered, isolated on transparent or simple soft gradient background, centered, ",
+      "ts": 1778177881
+    },
+    "decor_gold_coin": {
+      "path": "/root/PatPatFlutter/assets/tropical/decor/decor_gold_coin.png",
+      "prompt": "single gold pirate coin with palm tree imprint, shiny, isolated on transparent or simple soft gradient background, cente",
+      "ts": 1778177882
+    },
+    "decor_pirate_flag": {
+      "path": "/root/PatPatFlutter/assets/tropical/decor/decor_pirate_flag.png",
+      "prompt": "small pirate flag with skull and crossbones on bamboo pole, friendly, isolated on transparent or simple soft gradient ba",
+      "ts": 1778177882
+    },
+    "ach_score_100k": {
+      "path": "/root/PatPatFlutter/assets/tropical/achievements/ach_score_100k.png",
+      "prompt": "100000 score achievement, ornate trophy with rays, isolated on transparent or simple soft gradient background, centered,",
+      "ts": 1778177917
+    },
+    "ach_score_1m": {
+      "path": "/root/PatPatFlutter/assets/tropical/achievements/ach_score_1m.png",
+      "prompt": "1 million score achievement, legendary diamond trophy, isolated on transparent or simple soft gradient background, cente",
+      "ts": 1778177917
+    },
+    "ach_level_240": {
+      "path": "/root/PatPatFlutter/assets/tropical/achievements/ach_level_240.png",
+      "prompt": "complete all levels achievement, golden crown with 240, isolated on transparent or simple soft gradient background, cent",
+      "ts": 1778177917
+    },
+    "ach_score_10k": {
+      "path": "/root/PatPatFlutter/assets/tropical/achievements/ach_score_10k.png",
+      "prompt": "10000 score achievement, gold trophy with 10K mark, isolated on transparent or simple soft gradient background, centered",
+      "ts": 1778177917
+    },
+    "ach_first_match": {
+      "path": "/root/PatPatFlutter/assets/tropical/achievements/ach_first_match.png",
+      "prompt": "first 3-jelly match achievement icon, star with three small jellies, isolated on transparent or simple soft gradient bac",
+      "ts": 1778177917
+    },
+    "ach_level_100": {
+      "path": "/root/PatPatFlutter/assets/tropical/achievements/ach_level_100.png",
+      "prompt": "level 100 achievement, royal banner with 100, premium, isolated on transparent or simple soft gradient background, cente",
+      "ts": 1778177917
+    },
+    "ach_level_50": {
+      "path": "/root/PatPatFlutter/assets/tropical/achievements/ach_level_50.png",
+      "prompt": "level 50 achievement, ribbon with number 50, gold, isolated on transparent or simple soft gradient background, centered,",
+      "ts": 1778177917
+    },
+    "ach_first_combo": {
+      "path": "/root/PatPatFlutter/assets/tropical/achievements/ach_first_combo.png",
+      "prompt": "lightning combo achievement, two crossed jellies with electric spark, isolated on transparent or simple soft gradient ba",
+      "ts": 1778177917
+    },
+    "ach_speed_demon": {
+      "path": "/root/PatPatFlutter/assets/tropical/achievements/ach_speed_demon.png",
+      "prompt": "speed demon achievement, lightning bolt with timer, isolated on transparent or simple soft gradient background, centered",
+      "ts": 1778177922
+    },
+    "ach_3stars_50": {
+      "path": "/root/PatPatFlutter/assets/tropical/achievements/ach_3stars_50.png",
+      "prompt": "fifty 3-star levels achievement, three stars with 50 ribbon, isolated on transparent or simple soft gradient background,",
+      "ts": 1778177922
+    },
+    "ach_rocket_user": {
+      "path": "/root/PatPatFlutter/assets/tropical/achievements/ach_rocket_user.png",
+      "prompt": "rocket expert achievement, cartoon rocket with sparkles, isolated on transparent or simple soft gradient background, cen",
+      "ts": 1778177922
+    },
+    "ach_perfect_run": {
+      "path": "/root/PatPatFlutter/assets/tropical/achievements/ach_perfect_run.png",
+      "prompt": "perfect run no boosters achievement, halo over jelly, isolated on transparent or simple soft gradient background, center",
+      "ts": 1778177922
+    },
+    "ach_rainbow_user": {
+      "path": "/root/PatPatFlutter/assets/tropical/achievements/ach_rainbow_user.png",
+      "prompt": "rainbow expert achievement, rainbow jelly with star, isolated on transparent or simple soft gradient background, centere",
+      "ts": 1778177922
+    },
+    "ach_lightning_user": {
+      "path": "/root/PatPatFlutter/assets/tropical/achievements/ach_lightning_user.png",
+      "prompt": "lightning expert achievement, lightning bolt with star, isolated on transparent or simple soft gradient background, cent",
+      "ts": 1778177922
+    },
+    "ach_combo_master": {
+      "path": "/root/PatPatFlutter/assets/tropical/achievements/ach_combo_master.png",
+      "prompt": "combo master achievement, fireworks of jellies, isolated on transparent or simple soft gradient background, centered, pr",
+      "ts": 1778177922
+    },
+    "ach_bomb_user": {
+      "path": "/root/PatPatFlutter/assets/tropical/achievements/ach_bomb_user.png",
+      "prompt": "bomb expert achievement, cartoon bomb with star, isolated on transparent or simple soft gradient background, centered, p",
+      "ts": 1778177922
+    },
+    "ach_daily_streak_7": {
+      "path": "/root/PatPatFlutter/assets/tropical/achievements/ach_daily_streak_7.png",
+      "prompt": "7 day streak achievement, calendar with fire, isolated on transparent or simple soft gradient background, centered, prem",
+      "ts": 1778177926
+    },
+    "ach_big_spender": {
+      "path": "/root/PatPatFlutter/assets/tropical/achievements/ach_big_spender.png",
+      "prompt": "big spender achievement, golden treasure shower, isolated on transparent or simple soft gradient background, centered, p",
+      "ts": 1778177926
+    },
+    "ach_money_saver": {
+      "path": "/root/PatPatFlutter/assets/tropical/achievements/ach_money_saver.png",
+      "prompt": "money saver achievement, piggy bank with coins, isolated on transparent or simple soft gradient background, centered, pr",
+      "ts": 1778177926
+    },
+    "ach_daily_streak_30": {
+      "path": "/root/PatPatFlutter/assets/tropical/achievements/ach_daily_streak_30.png",
+      "prompt": "30 day streak achievement, golden calendar with crown, isolated on transparent or simple soft gradient background, cente",
+      "ts": 1778177926
+    },
+    "ach_event_winner": {
+      "path": "/root/PatPatFlutter/assets/tropical/achievements/ach_event_winner.png",
+      "prompt": "event winner achievement, gold medal with banner, isolated on transparent or simple soft gradient background, centered, ",
+      "ts": 1778177926
+    },
+    "ach_friend_helper": {
+      "path": "/root/PatPatFlutter/assets/tropical/achievements/ach_friend_helper.png",
+      "prompt": "friend helper achievement, two hands shake with hearts, isolated on transparent or simple soft gradient background, cent",
+      "ts": 1778177926
+    },
+    "ach_tutorial_done": {
+      "path": "/root/PatPatFlutter/assets/tropical/achievements/ach_tutorial_done.png",
+      "prompt": "tutorial complete achievement, graduation cap with star, isolated on transparent or simple soft gradient background, cen",
+      "ts": 1778177927
+    },
+    "ach_first_purchase": {
+      "path": "/root/PatPatFlutter/assets/tropical/achievements/ach_first_purchase.png",
+      "prompt": "first purchase achievement, shopping bag with star, isolated on transparent or simple soft gradient background, centered",
+      "ts": 1778177927
+    },
+    "ach_vip_member": {
+      "path": "/root/PatPatFlutter/assets/tropical/achievements/ach_vip_member.png",
+      "prompt": "VIP achievement, royal crown with V, isolated on transparent or simple soft gradient background, centered, premium 3D re",
+      "ts": 1778177931
+    },
+    "shop_coins_1500": {
+      "path": "/root/PatPatFlutter/assets/tropical/rewards/shop_coins_1500.png",
+      "prompt": "medium chest with 1500 gold coins overflowing, isolated on transparent or simple soft gradient background, centered, pre",
+      "ts": 1778177931
+    },
+    "shop_coins_500": {
+      "path": "/root/PatPatFlutter/assets/tropical/rewards/shop_coins_500.png",
+      "prompt": "small pile of 500 gold pirate coins, glittering, isolated on transparent or simple soft gradient background, centered, p",
+      "ts": 1778177931
+    },
+    "shop_vip_monthly": {
+      "path": "/root/PatPatFlutter/assets/tropical/rewards/shop_vip_monthly.png",
+      "prompt": "royal golden parrot crown with VIP banner, isolated on transparent or simple soft gradient background, centered, premium",
+      "ts": 1778177931
+    },
+    "shop_remove_ads": {
+      "path": "/root/PatPatFlutter/assets/tropical/rewards/shop_remove_ads.png",
+      "prompt": "pirate flag with no symbol over advertisement, clean look, isolated on transparent or simple soft gradient background, c",
+      "ts": 1778177931
+    },
+    "shop_coins_5000": {
+      "path": "/root/PatPatFlutter/assets/tropical/rewards/shop_coins_5000.png",
+      "prompt": "huge treasure trove with 5000 gold coins, gems, premium, isolated on transparent or simple soft gradient background, cen",
+      "ts": 1778177931
+    },
+    "shop_starter_bundle": {
+      "path": "/root/PatPatFlutter/assets/tropical/rewards/shop_starter_bundle.png",
+      "prompt": "starter bundle box with boosters and coins, ribbon-tied, isolated on transparent or simple soft gradient background, cen",
+      "ts": 1778177931
+    },
+    "shop_boosters_x3": {
+      "path": "/root/PatPatFlutter/assets/tropical/rewards/shop_boosters_x3.png",
+      "prompt": "three booster items wrapped together with banner, isolated on transparent or simple soft gradient background, centered, ",
+      "ts": 1778177931
+    },
+    "shop_lives_pack": {
+      "path": "/root/PatPatFlutter/assets/tropical/rewards/shop_lives_pack.png",
+      "prompt": "heart container with magical lives potion bottles, isolated on transparent or simple soft gradient background, centered,",
+      "ts": 1778177935
+    },
+    "splash_alchemy_hero": {
+      "path": "/root/PatPatFlutter/assets/tropical/backgrounds/splash_alchemy_hero.png",
+      "prompt": "tropical island adventure scene with cute parrot Coco mascot in foreground waving, treasure chest, lagoon, palm trees, g",
+      "ts": 1778177942
+    },
+    "mascot_hero_alchemy": {
+      "path": "/root/PatPatFlutter/assets/tropical/mascot/mascot_hero_alchemy.png",
+      "prompt": "Coco the parrot mascot character, blue and yellow plumage, red crest, big sparkling eyes, holding treasure chest, full b",
+      "ts": 1778177942
+    },
+    "boss_intro_card": {
+      "path": "/root/PatPatFlutter/assets/tropical/backgrounds/boss_intro_card.png",
+      "prompt": "epic boss level intro card scene, mystical tropical temple with glowing eye, dark stormy sky, dramatic lightning, premiu",
+      "ts": 1778177942
+    },
+    "treasure_chest_hero": {
+      "path": "/root/PatPatFlutter/assets/tropical/decor/treasure_chest_hero.png",
+      "prompt": "ornate ancient pirate treasure chest overflowing with gold coins, gems, pearls, magical golden glow, hero icon for game,",
+      "ts": 1778177942
+    },
+    "main_menu_alchemy_hero": {
+      "path": "/root/PatPatFlutter/assets/tropical/backgrounds/main_menu_alchemy_hero.png",
+      "prompt": "majestic tropical island with multiple regions visible — coral beach, lagoon, distant volcano — golden hour cinematic, t",
+      "ts": 1778177945
+    },
+    "jelly_yellow": {
+      "path": "/root/PatPatFlutter/assets/tropical/sprites_v8/jelly_yellow.png",
+      "prompt": "single chibi cute round tropical parrot bird character, plump fluffy round body and head fused together, tiny wing nubs ",
+      "ts": 1778194502
+    },
+    "jelly_rocket": {
+      "path": "/root/PatPatFlutter/assets/tropical/sprites_v8/jelly_rocket.png",
+      "prompt": "single cute speckled bird egg sitting in small twig nest, vivid pale blue egg with white speckles, glowing magical aura,",
+      "ts": 1778194499
+    },
+    "jelly_bomb": {
+      "path": "/root/PatPatFlutter/assets/tropical/sprites_v8/jelly_bomb.png",
+      "prompt": "single cute wooden tiki birdhouse with bright red roof, round entrance hole, tiny wisps of smoke from chimney, glowing o",
+      "ts": 1778194502
+    },
+    "jelly_pink": {
+      "path": "/root/PatPatFlutter/assets/tropical/sprites_v8/jelly_pink.png",
+      "prompt": "single chibi cute round tropical parrot bird character, plump fluffy round body and head fused together, tiny wing nubs ",
+      "ts": 1778194502
+    },
+    "jelly_purple": {
+      "path": "/root/PatPatFlutter/assets/tropical/sprites_v8/jelly_purple.png",
+      "prompt": "single chibi cute round tropical parrot bird character, plump fluffy round body and head fused together, tiny wing nubs ",
+      "ts": 1778194503
+    },
+    "jelly_blue": {
+      "path": "/root/PatPatFlutter/assets/tropical/sprites_v8/jelly_blue.png",
+      "prompt": "single chibi cute round tropical parrot bird character, plump fluffy round body and head fused together, tiny wing nubs ",
+      "ts": 1778194499
+    },
+    "jelly_green": {
+      "path": "/root/PatPatFlutter/assets/tropical/sprites_v8/jelly_green.png",
+      "prompt": "single chibi cute round tropical parrot bird character, plump fluffy round body and head fused together, tiny wing nubs ",
+      "ts": 1778194506
+    },
+    "jelly_orange": {
+      "path": "/root/PatPatFlutter/assets/tropical/sprites_v8/jelly_orange.png",
+      "prompt": "single chibi cute round tropical parrot bird character, plump fluffy round body and head fused together, tiny wing nubs ",
+      "ts": 1778194499
+    },
+    "jelly_rainbow": {
+      "path": "/root/PatPatFlutter/assets/tropical/sprites_v8/jelly_rainbow.png",
+      "prompt": "single magical rainbow tropical feather, iridescent prismatic shimmer in pink orange yellow green blue purple, sparkle s",
+      "ts": 1778194513
+    },
+    "game_jungle_bg": {
+      "path": "/root/PatPatFlutter/assets/tropical/backgrounds/game_jungle_bg.png",
+      "prompt": "mystical dark tropical jungle scene at twilight, dense green palm fronds and leaves framing left and right edges of vert",
+      "ts": 1778246858
+    },
+    "jelly_black": {
+      "path": "/root/PatPatFlutter/assets/tropical/sprites_v9/jelly_black.png",
+      "prompt": "single chibi cute round tropical parrot bird character, plump fluffy round body and head fused together, tiny wing nubs ",
+      "ts": 1778276862
+    },
+    "coco_home_interior": {
+      "path": "/root/PatPatFlutter/assets/tropical/backgrounds/coco_home_interior.png",
+      "prompt": "cozy tropical bamboo hut interior, warm golden lantern light, wooden plank floor, woven palm leaf walls and ceiling, han",
+      "ts": 1778276865
+    },
+    "rare_ice": {
+      "path": "/root/PatPatFlutter/assets/tropical/sprites_v10/rare_ice.png",
+      "prompt": "single chibi cute round tropical parrot bird character, plump fluffy round body and head fused together, tiny wing nubs ",
+      "ts": 1778322681
+    },
+    "rare_neon": {
+      "path": "/root/PatPatFlutter/assets/tropical/sprites_v10/rare_neon.png",
+      "prompt": "single chibi cute round tropical parrot bird character, plump fluffy round body and head fused together, tiny wing nubs ",
+      "ts": 1778322681
+    },
+    "rare_fire": {
+      "path": "/root/PatPatFlutter/assets/tropical/sprites_v10/rare_fire.png",
+      "prompt": "single chibi cute round tropical parrot bird character, plump fluffy round body and head fused together, tiny wing nubs ",
+      "ts": 1778322682
+    },
+    "rare_iridescent": {
+      "path": "/root/PatPatFlutter/assets/tropical/sprites_v10/rare_iridescent.png",
+      "prompt": "single chibi cute round tropical parrot bird character, plump fluffy round body and head fused together, tiny wing nubs ",
+      "ts": 1778322684
+    },
+    "nest_scene_bg": {
+      "path": "/root/PatPatFlutter/assets/tropical/backgrounds/nest_scene_bg.png",
+      "prompt": "cozy tropical bird nest scene at golden hour, three small speckled bird eggs nestled in a woven twig nest sitting on a w",
+      "ts": 1778322684
+    },
+    "rare_gold": {
+      "path": "/root/PatPatFlutter/assets/tropical/sprites_v10/rare_gold.png",
+      "prompt": "single chibi cute round tropical parrot bird character, plump fluffy round body and head fused together, tiny wing nubs ",
+      "ts": 1778322685
+    },
+    "jelly_white": {
+      "path": "/root/PatPatFlutter/assets/tropical/sprites_v10/jelly_white.png",
+      "prompt": "single chibi cute round tropical parrot bird character, plump fluffy round body and head fused together, tiny wing nubs ",
+      "ts": 1778409626
+    },
+    "screenshot_yuva_v1": {
+      "path": "/root/PatPatFlutter/assets/tropical/screenshots/screenshot_yuva_v1.png",
+      "prompt": "Premium 3D mobile match-3 game UI screenshot, vertical 9:16 portrait, tropical jungle bird sanctuary egg incubator scree",
+      "ts": 1778426310
+    },
+    "screenshot_yuva_v2": {
+      "path": "/root/PatPatFlutter/assets/tropical/screenshots/screenshot_yuva_v2.png",
+      "prompt": "Vertical 9:16 mobile match-3 game UI screenshot, tropical bird sanctuary egg nest screen, TOP: gold-trim wooden banner r",
+      "ts": 1778426503
+    },
+    "screenshot_islands_v1": {
+      "path": "/root/PatPatFlutter/assets/tropical/screenshots/screenshot_islands_v1.png",
+      "prompt": "Vertical 9:16 mobile match-3 game world map screenshot, TOP: gold-trim wooden banner with red ribbon reading 'ADALAR' in",
+      "ts": 1778426684
+    },
+    "screenshot_islands_v2_names": {
+      "path": "/root/PatPatFlutter/assets/tropical/screenshots/screenshot_islands_v2_names.png",
+      "prompt": "Vertical 9:16 mobile match-3 game world map screenshot, TOP: gold-trim wooden banner with red ribbon reading 'ADALAR' in",
+      "ts": 1778427014
+    },
+    "screenshot_islands_v3_blank": {
+      "path": "/root/PatPatFlutter/assets/tropical/screenshots/screenshot_islands_v3_blank.png",
+      "prompt": "Vertical 9:16 mobile match-3 game world map screenshot, TOP: gold-trim wooden banner with red ribbon, EMPTY no text insi",
+      "ts": 1778427126
+    },
+    "screenshot_spin_wheel_v1": {
+      "path": "/root/PatPatFlutter/assets/tropical/screenshots/screenshot_spin_wheel_v1.png",
+      "prompt": "Vertical 9:16 mobile match-3 game tropical spin wheel screen, TOP: gold-trim wooden banner with red ribbon reading 'COCO",
+      "ts": 1778427412
+    },
+    "screenshot_level_complete_v1": {
+      "path": "/root/PatPatFlutter/assets/tropical/screenshots/screenshot_level_complete_v1.png",
+      "prompt": "Vertical 9:16 mobile match-3 game level complete celebration screen, TOP: huge gold-shimmer 'TEBRIKLER!' text in coral r",
+      "ts": 1778427415
+    },
+    "screenshot_shop_v1": {
+      "path": "/root/PatPatFlutter/assets/tropical/screenshots/screenshot_shop_v1.png",
+      "prompt": "Vertical 9:16 mobile match-3 game tropical shop screen, TOP: gold-trim wooden banner with red ribbon reading 'MAGAZA' in",
+      "ts": 1778427426
+    },
+    "ui_panel_wood_blank": {
+      "path": "/root/PatPatFlutter/assets/tropical/ui/ui_panel_wood_blank.png",
+      "prompt": "Square wooden plaque panel with thick gold metallic border frame, warm sandy cream interior surface, slight gradient lig",
+      "ts": 1778427754
+    },
+    "ui_ribbon_banner": {
+      "path": "/root/PatPatFlutter/assets/tropical/ui/ui_ribbon_banner.png",
+      "prompt": "Wide horizontal red coral game UI ribbon banner with deep folds at both ends, rich coral red and dark crimson colors, go",
+      "ts": 1778427758
+    },
+    "ui_palm_corners": {
+      "path": "/root/PatPatFlutter/assets/tropical/ui/ui_palm_corners.png",
+      "prompt": "Tropical palm fronds and leaves bouquet decoration corner overlay, lush green palms with subtle highlights, isolated on ",
+      "ts": 1778427769
+    },
+    "ui_bamboo_hut_bg": {
+      "path": "/root/PatPatFlutter/assets/tropical/backgrounds/ui_bamboo_hut_bg.png",
+      "prompt": "Cozy tropical bamboo hut interior background, vertical 9:16 portrait composition, warm bamboo plank walls, mossy stone f",
+      "ts": 1778427772
+    },
+    "ui_sunset_ocean_bg": {
+      "path": "/root/PatPatFlutter/assets/tropical/backgrounds/ui_sunset_ocean_bg.png",
+      "prompt": "Tropical sunset ocean view background, vertical 9:16 portrait composition, purple-orange-magenta sky with soft clouds, c",
+      "ts": 1778427783
+    },
+    "ui_premium_bg": {
+      "path": "/root/PatPatFlutter/assets/tropical/backgrounds/ui_premium_bg.png",
+      "prompt": "Vertical 9:16 luxurious tropical treasure background, warm golden light radiating from center, soft palm leaves at corne",
+      "ts": 1778431497
+    },
+    "ui_spin_wheel": {
+      "path": "/root/PatPatFlutter/assets/tropical/ui/ui_spin_wheel.png",
+      "prompt": "Premium tropical wooden spin wheel, square 1:1 frame, round wheel divided into 8 colored prize segments arranged like pi",
+      "ts": 1778431708
+    },
+    "ui_ribbon_red_gold": {
+      "path": "/root/PatPatFlutter/assets/tropical/ui/ui_ribbon_red_gold.png",
+      "prompt": "Horizontal royal red velvet ribbon banner with thick gold trim border, two pointed tassels hanging from bottom corners, ",
+      "ts": 1778436181
+    },
+    "ui_string_lights": {
+      "path": "/root/PatPatFlutter/assets/tropical/ui/ui_string_lights.png",
+      "prompt": "Horizontal row of warm glowing fairy string lights, round amber yellow bulbs hanging from a dark thin curved wire, bulbs",
+      "ts": 1778436181
+    },
+    "mascot_crowned_portrait": {
+      "path": "/root/PatPatFlutter/assets/tropical/mascot/mascot_crowned_portrait.png",
+      "prompt": "Adorable royal crowned macaw parrot portrait, head and shoulders only facing camera, deep blue head feathers, bright yel",
+      "ts": 1778436184
+    },
+    "mascot_crowned_full": {
+      "path": "/root/PatPatFlutter/assets/tropical/mascot/mascot_crowned_full.png",
+      "prompt": "Full body adorable royal crowned macaw parrot standing tall, facing camera straight on, deep blue head and back feathers",
+      "ts": 1778436184
+    },
+    "ui_palm_leaves_right": {
+      "path": "/root/PatPatFlutter/assets/tropical/ui/ui_palm_leaves_right.png",
+      "prompt": "Lush tropical jungle palm leaves cluster framing the RIGHT edge of a screen, leaves growing in from right side pointing ",
+      "ts": 1778436185
+    },
+    "ui_palm_leaves_left": {
+      "path": "/root/PatPatFlutter/assets/tropical/ui/ui_palm_leaves_left.png",
+      "prompt": "Lush tropical jungle palm leaves cluster framing the LEFT edge of a screen, leaves growing in from left side pointing in",
+      "ts": 1778436188
+    }
+  }
+}

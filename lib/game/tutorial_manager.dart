@@ -4,26 +4,26 @@ import 'package:patpat_game/models/position.dart';
 enum TutorialStep {
   welcome(
     level: 1,
-    title: 'Hos Geldin!',
+    title: 'Hoş Geldin!',
     message:
-        'PatPat dunyasina hos geldin! Jelleri eslestirerek hedefleri tamamla.',
+        'Coco dünyasına hoş geldin! Kuşları eşleştirerek hedefleri tamamla.',
     highlightFrom: null,
     highlightTo: null,
     requiresAction: false,
   ),
   teachSwap(
     level: 1,
-    title: 'Kaydir!',
+    title: 'Kaydır!',
     message:
-        'Iki bitisik jeli kaydirarak yer degistir. Ayni renkten 3 veya daha fazla sirala!',
+        'İki bitişik kuşu kaydırarak yer değiştir. Aynı renkten 3 veya daha fazla sırala!',
     highlightFrom: Position(4, 3),
     highlightTo: Position(4, 4),
     requiresAction: true,
   ),
   teachMatch(
     level: 1,
-    title: 'Eslesme!',
-    message: 'Harika! Eslesen jeller patladi ve puan kazandin.',
+    title: 'Eşleşme!',
+    message: 'Harika! Eşleşen kuşlar uçtu ve puan kazandın.',
     highlightFrom: null,
     highlightTo: null,
     requiresAction: false,
@@ -32,7 +32,7 @@ enum TutorialStep {
     level: 1,
     title: 'Hedefler',
     message:
-        'Ustteki hedef paneline bak. Belirtilen sayida jeli topla!',
+        'Üstteki hedef paneline bak. Belirtilen sayıda kuşu topla!',
     highlightFrom: null,
     highlightTo: null,
     requiresAction: false,
@@ -40,7 +40,7 @@ enum TutorialStep {
   teachSpecial4(
     level: 2,
     title: 'Roket!',
-    message: '4 jeli siralarsan ozel bir ROKET olusur.',
+    message: '4 kuşu sıralarsan özel bir ROKET oluşur.',
     highlightFrom: null,
     highlightTo: null,
     requiresAction: false,
@@ -48,7 +48,7 @@ enum TutorialStep {
   teachCombo(
     level: 2,
     title: 'Kombo!',
-    message: 'Zincirleme eslesmeler KOMBOdur!',
+    message: 'Zincirleme eşleşmeler KOMBOdur!',
     highlightFrom: null,
     highlightTo: null,
     requiresAction: false,
@@ -56,15 +56,15 @@ enum TutorialStep {
   teachSpecialBomb(
     level: 3,
     title: 'Bomba!',
-    message: 'T veya L seklinde eslesme → BOMBA!',
+    message: 'T veya L şeklinde eşleşme → BOMBA!',
     highlightFrom: null,
     highlightTo: null,
     requiresAction: false,
   ),
   teachBooster(
     level: 3,
-    title: 'Guclendiriciler',
-    message: 'Alt paneldeki guclendiricileri kullan.',
+    title: 'Güçlendiriciler',
+    message: 'Alt paneldeki güçlendiricileri kullan.',
     highlightFrom: null,
     highlightTo: null,
     requiresAction: false,

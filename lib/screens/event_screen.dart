@@ -1,15 +1,18 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
-import 'package:patpat_game/providers/game_providers.dart';
-import 'package:patpat_game/theme/game_colors.dart';
 
-/// Weekly event task definition.
+import 'package:patpat_game/providers/game_providers.dart';
+import 'package:patpat_game/theme/tropical_theme.dart';
+import 'package:patpat_game/widgets/tropical/island_chip.dart';
+import 'package:patpat_game/widgets/tropical/island_scaffold.dart';
+import 'package:patpat_game/widgets/tropical/island_top_bar.dart';
+
 class _EventTask {
   final String id;
   final String title;
   final String description;
-  final String emoji;
+  final IconData icon;
   final int target;
   final int coinReward;
 
@@ -17,81 +20,25 @@ class _EventTask {
     required this.id,
     required this.title,
     required this.description,
-    required this.emoji,
+    required this.icon,
     required this.target,
     required this.coinReward,
   });
 }
 
-/// 4 task pools that rotate weekly. Each week picks tasks based on week number.
 const _allTasks = <_EventTask>[
-  _EventTask(
-    id: 'collect_purple',
-    title: 'Mor Jole Topla',
-    description: '20 mor jole topla',
-    emoji: '\uD83D\uDFE3',
-    target: 20,
-    coinReward: 50,
-  ),
-  _EventTask(
-    id: 'win_levels',
-    title: 'Seviye Kazan',
-    description: '3 seviye kazan',
-    emoji: '\uD83C\uDFC6',
-    target: 3,
-    coinReward: 75,
-  ),
-  _EventTask(
-    id: 'earn_stars',
-    title: 'Yıldız Topla',
-    description: '10 yıldız kazan',
-    emoji: '\u2B50',
-    target: 10,
-    coinReward: 100,
-  ),
-  _EventTask(
-    id: 'use_specials',
-    title: 'Özel Güç Kullan',
-    description: '5 booster kullan',
-    emoji: '\uD83D\uDE80',
-    target: 5,
-    coinReward: 50,
-  ),
-  _EventTask(
-    id: 'make_combos',
-    title: 'Kombo Yap',
-    description: '3 kombo yap',
-    emoji: '\uD83D\uDD25',
-    target: 3,
-    coinReward: 75,
-  ),
-  _EventTask(
-    id: 'score_points',
-    title: 'Puan Topla',
-    description: '5000 puan topla',
-    emoji: '\uD83D\uDCAF',
-    target: 5000,
-    coinReward: 100,
-  ),
-  _EventTask(
-    id: 'boss_level',
-    title: 'Boss Seviyesi',
-    description: 'Bir boss seviyesini tamamla',
-    emoji: '\uD83D\uDC79',
-    target: 1,
-    coinReward: 200,
-  ),
+  _EventTask(id: 'collect_purple', title: 'Mor Jöle Topla', description: '20 mor jöle topla', icon: Icons.bubble_chart_rounded, target: 20, coinReward: 50),
+  _EventTask(id: 'win_levels', title: 'Bölüm Kazan', description: '3 bölüm kazan', icon: Icons.emoji_events_rounded, target: 3, coinReward: 75),
+  _EventTask(id: 'earn_stars', title: 'Yıldız Topla', description: '10 yıldız kazan', icon: Icons.star_rounded, target: 10, coinReward: 100),
+  _EventTask(id: 'use_specials', title: 'Güçlendirici Kullan', description: '5 güçlendirici kullan', icon: Icons.bolt_rounded, target: 5, coinReward: 50),
+  _EventTask(id: 'make_combos', title: 'Kombo Yap', description: '3 kombo yap', icon: Icons.local_fire_department_rounded, target: 3, coinReward: 75),
+  _EventTask(id: 'score_points', title: 'Puan Topla', description: '5000 puan topla', icon: Icons.bar_chart_rounded, target: 5000, coinReward: 100),
+  _EventTask(id: 'boss_level', title: 'Boss Bölümü', description: 'Bir boss bölümünü tamamla', icon: Icons.castle_rounded, target: 1, coinReward: 200),
 ];
 
-/// Get the tasks for the current week based on week number.
 List<_EventTask> _tasksForWeek(int weekNumber) {
-  // Rotate through tasks — pick 5 tasks per week
   final offset = (weekNumber * 3) % _allTasks.length;
-  final tasks = <_EventTask>[];
-  for (int i = 0; i < 5; i++) {
-    tasks.add(_allTasks[(offset + i) % _allTasks.length]);
-  }
-  return tasks;
+  return List.generate(5, (i) => _allTasks[(offset + i) % _allTasks.length]);
 }
 
 class EventScreen extends ConsumerStatefulWidget {
@@ -105,7 +52,6 @@ class _EventScreenState extends ConsumerState<EventScreen> {
   @override
   void initState() {
     super.initState();
-    // Ensure event week is current
     WidgetsBinding.instance.addPostFrameCallback((_) {
       ref.read(playerProgressProvider.notifier).checkEventWeekReset();
     });
@@ -116,465 +62,175 @@ class _EventScreenState extends ConsumerState<EventScreen> {
     final progress = ref.watch(playerProgressProvider);
     final weekNumber = PlayerProgressNotifier.currentWeekNumber();
     final tasks = _tasksForWeek(weekNumber);
-
-    // Calculate days remaining in the week (Mon=1..Sun=7)
     final now = DateTime.now();
     final daysRemaining = 7 - now.weekday;
 
-    return Scaffold(
-      body: Container(
-        width: double.infinity,
-        height: double.infinity,
-        decoration: const BoxDecoration(
-          gradient: LinearGradient(
-            begin: Alignment.topCenter,
-            end: Alignment.bottomCenter,
-            colors: [
-              Color(0xFF1A0660),
-              Color(0xFF0D0235),
-              Color(0xFF050120),
-            ],
+    return IslandScaffold(
+      backgroundAsset: TA.eventBg,
+      overlayOpacity: 0.5,
+      child: Column(
+        children: [
+          IslandTopBar(
+            stars: progress.totalStars,
+            coins: progress.coins,
+            hearts: progress.lives,
+            leading: IslandCircleButton(icon: Icons.arrow_back_rounded, onTap: () => context.go('/map')),
           ),
-        ),
-        child: SafeArea(
-          child: Column(
-            children: [
-              // Header
-              _buildHeader(context),
-              const SizedBox(height: 8),
-
-              // Event info box
-              _buildEventInfo(weekNumber, daysRemaining),
-              const SizedBox(height: 12),
-
-              // Task list
-              Expanded(
-                child: ListView.builder(
-                  padding: const EdgeInsets.symmetric(
-                      horizontal: 16, vertical: 4),
-                  itemCount: tasks.length,
-                  itemBuilder: (context, index) {
-                    final task = tasks[index];
-                    final currentProgress =
-                        progress.eventProgress[task.id] ?? 0;
-                    return _EventTaskCard(
-                      task: task,
-                      currentProgress: currentProgress,
-                    );
-                  },
-                ),
-              ),
-            ],
-          ),
-        ),
-      ),
-    );
-  }
-
-  Widget _buildHeader(BuildContext context) {
-    return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-      child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 10),
-        decoration: BoxDecoration(
-          color: GameColors.panelPurpleDark.withAlpha(200),
-          borderRadius: BorderRadius.circular(20),
-          border: Border.all(color: GameColors.purpleLight.withAlpha(50)),
-          boxShadow: [
-            BoxShadow(
-              color: GameColors.panelPurpleDark.withAlpha(140),
-              blurRadius: 12,
-            ),
-          ],
-        ),
-        child: Row(
-          children: [
-            GestureDetector(
-              onTap: () {
-                context.go('/map');
-              },
-              child: Container(
-                width: 38,
-                height: 38,
-                decoration: BoxDecoration(
-                  shape: BoxShape.circle,
-                  color: Colors.white.withAlpha(20),
-                  border: Border.all(color: Colors.white.withAlpha(60)),
-                ),
-                child: const Icon(Icons.arrow_back_rounded,
-                    color: Colors.white, size: 20),
-              ),
-            ),
-            const SizedBox(width: 12),
-            const Expanded(
-              child: Text(
-                'HAFTALIK ETKİNLİK',
-                style: TextStyle(
-                  fontSize: 18,
-                  fontWeight: FontWeight.w900,
-                  color: GameColors.goldFrameBright,
-                  letterSpacing: 1.5,
-                  shadows: [
-                    Shadow(color: GameColors.goldFrameDeep, blurRadius: 8),
-                  ],
-                ),
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-
-  Widget _buildEventInfo(int weekNumber, int daysRemaining) {
-    return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 16),
-      child: Container(
-        padding: const EdgeInsets.all(16),
-        decoration: BoxDecoration(
-          borderRadius: BorderRadius.circular(18),
-          gradient: LinearGradient(
-            begin: Alignment.topLeft,
-            end: Alignment.bottomRight,
-            colors: [
-              GameColors.purpleDark.withAlpha(120),
-              GameColors.panelPurple.withAlpha(160),
-            ],
-          ),
-          border: Border.all(color: GameColors.purpleLight.withAlpha(60)),
-          boxShadow: [
-            BoxShadow(
-              color: GameColors.purple.withAlpha(30),
-              blurRadius: 12,
-            ),
-          ],
-        ),
-        child: Row(
-          children: [
-            // Week badge
-            Container(
-              width: 56,
-              height: 56,
+          const SizedBox(height: 12),
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 14),
+            child: Container(
+              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
               decoration: BoxDecoration(
-                shape: BoxShape.circle,
-                gradient: const LinearGradient(
-                  begin: Alignment.topLeft,
-                  end: Alignment.bottomRight,
-                  colors: [Color(0xFFFFD700), Color(0xFFB8860B)],
-                ),
+                borderRadius: BorderRadius.circular(20),
+                gradient: TT.coralButtonGradient,
+                border: Border.all(color: TT.goldShine, width: 2),
                 boxShadow: [
-                  BoxShadow(
-                    color: GameColors.goldFrameMid.withAlpha(60),
-                    blurRadius: 8,
-                  ),
+                  BoxShadow(color: TT.coral.withAlpha(160), blurRadius: 16, offset: const Offset(0, 4)),
                 ],
               ),
-              child: Center(
-                child: Column(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    const Text(
-                      'HAFTA',
-                      style: TextStyle(
-                        fontSize: 8,
-                        fontWeight: FontWeight.w800,
-                        color: Color(0xFF3E2000),
-                        letterSpacing: 0.5,
-                      ),
-                    ),
-                    Text(
-                      '$weekNumber',
-                      style: const TextStyle(
-                        fontSize: 20,
-                        fontWeight: FontWeight.w900,
-                        color: Color(0xFF3E2000),
-                        height: 1.0,
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-            ),
-            const SizedBox(width: 14),
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
+              child: Row(
                 children: [
-                  const Text(
-                    'Görevleri tamamla, ödül kazan!',
-                    style: TextStyle(
-                      fontSize: 14,
-                      fontWeight: FontWeight.w600,
-                      color: Colors.white,
+                  const Icon(Icons.celebration_rounded, color: TT.goldShine, size: 26),
+                  const SizedBox(width: 8),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          'HAFTALIK ETKİNLİK',
+                          style: TT.titleMedium.copyWith(
+                            color: TT.sandLight,
+                            letterSpacing: 1.2,
+                            shadows: [
+                              Shadow(color: Colors.black.withAlpha(220), blurRadius: 4, offset: const Offset(0, 2)),
+                            ],
+                          ),
+                        ),
+                        Text(
+                          'Hafta $weekNumber',
+                          style: TT.bodySmall.copyWith(color: TT.sandLight.withAlpha(210)),
+                        ),
+                      ],
                     ),
                   ),
-                  const SizedBox(height: 4),
-                  Text(
-                    'Her hafta yeni görevler seni bekliyor.',
-                    style: TextStyle(
-                      fontSize: 12,
-                      color: Colors.white.withAlpha(140),
-                    ),
-                  ),
-                ],
-              ),
-            ),
-            // Days remaining
-            Container(
-              padding:
-                  const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
-              decoration: BoxDecoration(
-                color: daysRemaining <= 1
-                    ? GameColors.cherryRedDark.withAlpha(120)
-                    : GameColors.greenDark.withAlpha(100),
-                borderRadius: BorderRadius.circular(12),
-                border: Border.all(
-                  color: daysRemaining <= 1
-                      ? GameColors.cherryRed.withAlpha(80)
-                      : GameColors.buttonGreen.withAlpha(60),
-                ),
-              ),
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  Text(
-                    '$daysRemaining',
-                    style: TextStyle(
-                      fontSize: 18,
-                      fontWeight: FontWeight.w900,
-                      color: daysRemaining <= 1
-                          ? GameColors.cherryRed
-                          : GameColors.buttonGreen,
-                    ),
-                  ),
-                  Text(
-                    'gün',
-                    style: TextStyle(
-                      fontSize: 10,
-                      fontWeight: FontWeight.w600,
-                      color: daysRemaining <= 1
-                          ? GameColors.pinkLight
-                          : Colors.white60,
-                    ),
+                  IslandChip(
+                    text: '$daysRemaining gün',
+                    icon: Icons.access_time_rounded,
+                    bg: TT.gold,
+                    fontSize: 12,
+                    padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
                   ),
                 ],
               ),
             ),
-          ],
-        ),
+          ),
+          const SizedBox(height: 12),
+          Expanded(
+            child: ListView.builder(
+              padding: const EdgeInsets.fromLTRB(14, 0, 14, 24),
+              itemCount: tasks.length,
+              itemBuilder: (_, i) {
+                final task = tasks[i];
+                final p = progress.eventProgress[task.id] ?? 0;
+                return Padding(
+                  padding: const EdgeInsets.only(bottom: 10),
+                  child: _EventTaskCard(task: task, currentProgress: p),
+                );
+              },
+            ),
+          ),
+        ],
       ),
     );
   }
 }
 
-// ---------------------------------------------------------------------------
-// Event Task Card
-// ---------------------------------------------------------------------------
 class _EventTaskCard extends StatelessWidget {
   final _EventTask task;
   final int currentProgress;
-
-  const _EventTaskCard({
-    required this.task,
-    required this.currentProgress,
-  });
+  const _EventTaskCard({required this.task, required this.currentProgress});
 
   @override
   Widget build(BuildContext context) {
-    final isComplete = currentProgress >= task.target;
-    final progressFraction =
-        (currentProgress / task.target).clamp(0.0, 1.0);
-
-    return Padding(
-      padding: const EdgeInsets.only(bottom: 10),
-      child: Container(
-        padding: const EdgeInsets.all(14),
-        decoration: BoxDecoration(
-          borderRadius: BorderRadius.circular(16),
-          gradient: LinearGradient(
-            begin: Alignment.centerLeft,
-            end: Alignment.centerRight,
-            colors: isComplete
-                ? [
-                    GameColors.greenDark.withAlpha(60),
-                    GameColors.panelPurple.withAlpha(100),
-                  ]
-                : [
-                    GameColors.panelPurpleLight.withAlpha(80),
-                    GameColors.panelPurple.withAlpha(120),
-                  ],
-          ),
-          border: Border.all(
-            color: isComplete
-                ? GameColors.buttonGreen.withAlpha(80)
-                : GameColors.purpleLight.withAlpha(40),
-          ),
-          boxShadow: [
-            BoxShadow(
-              color: Colors.black.withAlpha(40),
-              blurRadius: 6,
-              offset: const Offset(0, 2),
-            ),
-          ],
-        ),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Row(
-              children: [
-                // Emoji
-                Container(
-                  width: 42,
-                  height: 42,
-                  decoration: BoxDecoration(
-                    shape: BoxShape.circle,
-                    color: isComplete
-                        ? GameColors.greenDark.withAlpha(120)
-                        : GameColors.purpleDark.withAlpha(100),
-                    border: Border.all(
-                      color: isComplete
-                          ? GameColors.buttonGreen.withAlpha(80)
-                          : GameColors.purpleLight.withAlpha(60),
-                    ),
-                  ),
-                  child: Center(
-                    child: Text(
-                      task.emoji,
-                      style: const TextStyle(fontSize: 20),
-                    ),
-                  ),
-                ),
-                const SizedBox(width: 12),
-
-                // Title + description
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        task.title,
-                        style: TextStyle(
-                          fontSize: 15,
-                          fontWeight: FontWeight.w700,
-                          color: isComplete
-                              ? GameColors.buttonGreen
-                              : Colors.white,
-                        ),
-                      ),
-                      const SizedBox(height: 2),
-                      Text(
-                        task.description,
-                        style: TextStyle(
-                          fontSize: 12,
-                          color: Colors.white.withAlpha(140),
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-
-                // Reward
-                Container(
-                  padding: const EdgeInsets.symmetric(
-                      horizontal: 10, vertical: 4),
-                  decoration: BoxDecoration(
-                    color: isComplete
-                        ? GameColors.buttonGreen.withAlpha(30)
-                        : GameColors.goldFrameDeep.withAlpha(60),
-                    borderRadius: BorderRadius.circular(10),
-                    border: Border.all(
-                      color: isComplete
-                          ? GameColors.buttonGreen.withAlpha(60)
-                          : GameColors.goldFrameMid.withAlpha(40),
-                    ),
-                  ),
-                  child: isComplete
-                      ? const Icon(Icons.check_circle,
-                          color: GameColors.buttonGreen, size: 20)
-                      : Row(
-                          mainAxisSize: MainAxisSize.min,
-                          children: [
-                            const Text('\uD83E\uDE99',
-                                style: TextStyle(fontSize: 12)),
-                            const SizedBox(width: 3),
-                            Text(
-                              '${task.coinReward}',
-                              style: const TextStyle(
-                                fontSize: 13,
-                                fontWeight: FontWeight.w700,
-                                color: GameColors.goldFrameBright,
-                              ),
-                            ),
-                          ],
-                        ),
-                ),
+    final pct = (currentProgress / task.target).clamp(0.0, 1.0);
+    final done = currentProgress >= task.target;
+    return IslandSurface(
+      padding: const EdgeInsets.all(12),
+      child: Row(
+        children: [
+          Container(
+            width: 48,
+            height: 48,
+            decoration: BoxDecoration(
+              shape: BoxShape.circle,
+              gradient: done ? TT.palmButtonGradient : TT.lagoonButtonGradient,
+              border: Border.all(color: TT.goldShine, width: 1.5),
+              boxShadow: [
+                BoxShadow(color: Colors.black.withAlpha(120), blurRadius: 6, offset: const Offset(0, 2)),
               ],
             ),
-
-            const SizedBox(height: 10),
-
-            // Progress bar
-            Row(
+            child: Icon(
+              done ? Icons.check_rounded : task.icon,
+              color: Colors.white,
+              size: 28,
+              shadows: [
+                Shadow(color: Colors.black.withAlpha(200), blurRadius: 4, offset: const Offset(0, 1)),
+              ],
+            ),
+          ),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              mainAxisSize: MainAxisSize.min,
               children: [
-                Expanded(
-                  child: ClipRRect(
-                    borderRadius: BorderRadius.circular(6),
-                    child: SizedBox(
-                      height: 10,
-                      child: Stack(
-                        children: [
-                          Container(
-                            color: Colors.white.withAlpha(20),
-                          ),
-                          FractionallySizedBox(
-                            widthFactor: progressFraction,
-                            child: Container(
-                              decoration: BoxDecoration(
-                                borderRadius: BorderRadius.circular(6),
-                                gradient: LinearGradient(
-                                  colors: isComplete
-                                      ? [
-                                          GameColors.buttonGreen,
-                                          GameColors.greenLight,
-                                        ]
-                                      : [
-                                          GameColors.buttonBlue,
-                                          GameColors.blueLight,
-                                        ],
-                                ),
-                                boxShadow: [
-                                  BoxShadow(
-                                    color: isComplete
-                                        ? GameColors.buttonGreen
-                                            .withAlpha(60)
-                                        : GameColors.buttonBlue
-                                            .withAlpha(60),
-                                    blurRadius: 4,
+                Text(task.title, style: TT.titleMedium.copyWith(color: TT.goldDeep)),
+                Text(task.description, style: TT.bodySmall),
+                const SizedBox(height: 6),
+                Row(
+                  children: [
+                    Expanded(
+                      child: ClipRRect(
+                        borderRadius: BorderRadius.circular(6),
+                        child: SizedBox(
+                          height: 8,
+                          child: Stack(
+                            children: [
+                              Container(color: TT.driftWoodDark.withAlpha(180)),
+                              FractionallySizedBox(
+                                alignment: Alignment.centerLeft,
+                                widthFactor: pct,
+                                child: Container(
+                                  decoration: BoxDecoration(
+                                    gradient: done ? TT.palmButtonGradient : TT.coralButtonGradient,
                                   ),
-                                ],
+                                ),
                               ),
-                            ),
+                            ],
                           ),
-                        ],
+                        ),
                       ),
                     ),
-                  ),
-                ),
-                const SizedBox(width: 10),
-                Text(
-                  '${currentProgress.clamp(0, task.target)}/${task.target}',
-                  style: TextStyle(
-                    fontSize: 12,
-                    fontWeight: FontWeight.w700,
-                    color: isComplete
-                        ? GameColors.buttonGreen
-                        : Colors.white.withAlpha(180),
-                  ),
+                    const SizedBox(width: 8),
+                    Text(
+                      '$currentProgress/${task.target}',
+                      style: TT.bodySmall.copyWith(fontWeight: FontWeight.w900, color: TT.driftWoodDark),
+                    ),
+                  ],
                 ),
               ],
             ),
-          ],
-        ),
+          ),
+          const SizedBox(width: 10),
+          IslandChip(
+            text: '${task.coinReward}',
+            icon: Icons.monetization_on_rounded,
+            bg: done ? TT.palm : TT.gold,
+            fontSize: 13,
+            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+          ),
+        ],
       ),
     );
   }

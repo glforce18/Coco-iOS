@@ -3,7 +3,9 @@ import 'dart:math';
 import 'package:flutter/material.dart';
 
 import 'package:patpat_game/game/tutorial_manager.dart';
-import 'package:patpat_game/theme/game_colors.dart';
+import 'package:patpat_game/theme/tropical_theme.dart';
+import 'package:patpat_game/widgets/tropical/island_button.dart';
+import 'package:patpat_game/widgets/tropical/island_panel.dart';
 
 /// Full-screen overlay that dims the background and shows tutorial messages.
 ///
@@ -164,11 +166,10 @@ class _CutoutPainter extends CustomPainter {
     );
     canvas.restore();
 
-    // Gold pulsing border around cutout
     final borderPaint = Paint()
       ..style = PaintingStyle.stroke
       ..strokeWidth = 2.5 + pulseValue * 1.5
-      ..color = GameColors.goldFrameMid.withAlpha(160 + (95 * pulseValue).toInt());
+      ..color = TT.goldShine.withAlpha(160 + (95 * pulseValue).toInt());
     canvas.drawRRect(
       RRect.fromRectAndRadius(cutout, const Radius.circular(12)),
       borderPaint,
@@ -197,119 +198,43 @@ class _MessageBox extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.all(20),
-      decoration: BoxDecoration(
-        gradient: const LinearGradient(
-          colors: [Color(0xFF2D0B80), Color(0xFF1A0660)],
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-        ),
-        borderRadius: BorderRadius.circular(20),
-        border: Border.all(
-          color: GameColors.goldFrameMid.withAlpha(120),
-          width: 2,
-        ),
-        boxShadow: [
-          BoxShadow(
-            color: GameColors.goldFrameDeep.withAlpha(60),
-            blurRadius: 20,
-            spreadRadius: 2,
-          ),
-        ],
-      ),
+    return IslandPanel(
+      padding: const EdgeInsets.all(18),
       child: Column(
         mainAxisSize: MainAxisSize.min,
         children: [
-          // Title
           Text(
             step.title,
-            style: const TextStyle(
-              color: GameColors.goldFrameBright,
-              fontSize: 22,
-              fontWeight: FontWeight.w900,
-              letterSpacing: 1,
-            ),
+            style: TT.titleLarge.copyWith(color: TT.goldDeep, fontSize: 20, letterSpacing: 1),
           ),
-          const SizedBox(height: 10),
-
-          // Description
+          const SizedBox(height: 8),
           Text(
             step.message,
             textAlign: TextAlign.center,
-            style: TextStyle(
-              color: Colors.white.withAlpha(230),
-              fontSize: 14,
-              height: 1.4,
-            ),
+            style: TT.bodyMedium.copyWith(height: 1.4),
           ),
-          const SizedBox(height: 20),
-
-          // Buttons
+          const SizedBox(height: 16),
           Row(
             children: [
-              // Skip button (muted)
               Expanded(
-                child: GestureDetector(
-                  onTap: onSkip,
-                  child: Container(
-                    padding: const EdgeInsets.symmetric(vertical: 12),
-                    decoration: BoxDecoration(
-                      color: Colors.white.withAlpha(15),
-                      borderRadius: BorderRadius.circular(14),
-                      border: Border.all(color: Colors.white.withAlpha(40)),
-                    ),
-                    child: Text(
-                      'Atla',
-                      textAlign: TextAlign.center,
-                      style: TextStyle(
-                        color: Colors.white.withAlpha(120),
-                        fontSize: 14,
-                        fontWeight: FontWeight.w600,
-                      ),
-                    ),
-                  ),
+                child: IslandButton(
+                  text: 'Atla',
+                  color: IslandButtonColor.bamboo,
+                  size: IslandButtonSize.medium,
+                  fullWidth: true,
+                  onPressed: onSkip,
                 ),
               ),
-              const SizedBox(width: 12),
-              // Continue button (orange gradient)
+              const SizedBox(width: 10),
               Expanded(
                 flex: 2,
-                child: GestureDetector(
-                  onTap: step.requiresAction ? null : onContinue,
-                  child: Container(
-                    padding: const EdgeInsets.symmetric(vertical: 12),
-                    decoration: BoxDecoration(
-                      gradient: step.requiresAction
-                          ? LinearGradient(
-                              colors: [
-                                Colors.grey.shade700,
-                                Colors.grey.shade800,
-                              ],
-                            )
-                          : const LinearGradient(
-                              colors: [Color(0xFFFF8C20), Color(0xFFFF5500)],
-                            ),
-                      borderRadius: BorderRadius.circular(14),
-                      boxShadow: step.requiresAction
-                          ? null
-                          : [
-                              BoxShadow(
-                                color: GameColors.orange.withAlpha(80),
-                                blurRadius: 12,
-                              ),
-                            ],
-                    ),
-                    child: Text(
-                      step.requiresAction ? 'Kaydır...' : 'Devam',
-                      textAlign: TextAlign.center,
-                      style: const TextStyle(
-                        color: Colors.white,
-                        fontSize: 15,
-                        fontWeight: FontWeight.w700,
-                      ),
-                    ),
-                  ),
+                child: IslandButton(
+                  text: step.requiresAction ? 'Kaydır...' : 'Devam',
+                  icon: step.requiresAction ? Icons.swipe_rounded : Icons.arrow_forward_rounded,
+                  color: step.requiresAction ? IslandButtonColor.bamboo : IslandButtonColor.coral,
+                  size: IslandButtonSize.medium,
+                  fullWidth: true,
+                  onPressed: step.requiresAction ? null : onContinue,
                 ),
               ),
             ],

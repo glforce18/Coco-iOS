@@ -59,15 +59,15 @@ class CellAnimation {
   /// Current scale for the cell (1.0 = normal, 0.0 = gone).
   double get currentScale {
     if (type == AnimType.destroy) {
-      // Pop effect: scale up slightly then shrink to zero
+      // Stronger juice-style pop: bigger scale-up + spring shrink.
       final t = curvedProgress;
-      if (t < 0.15) {
-        // Brief scale-up "pop"
-        return 1.0 + (t / 0.15) * 0.15;
+      if (t < 0.2) {
+        // Pop up to 1.3 (was 1.15)
+        return 1.0 + (t / 0.2) * 0.3;
       }
-      // Then shrink to zero
-      final shrinkT = (t - 0.15) / 0.85;
-      return (1.15 * (1.0 - shrinkT)).clamp(0.0, 1.15);
+      // Spring shrink back through 1.0 to 0
+      final shrinkT = (t - 0.2) / 0.8;
+      return (1.3 * (1.0 - shrinkT)).clamp(0.0, 1.3);
     }
     if (type == AnimType.appear) {
       // Scale from 0 to 1 during first 40% of animation
@@ -134,6 +134,38 @@ class BoardAnimator extends ChangeNotifier {
   /// Currently active special effect overlay (laser, shockwave, etc.).
   SpecialEffect? _activeSpecialEffect;
 
+  /// When true, all `_delay()` calls return after ~1ms — used by the
+  /// "Atla" (skip) button so long auto-cascades resolve instantly.
+  bool _skipMode = false;
+  bool get skipMode => _skipMode;
+
+  /// Activate skip mode: all subsequent delays effectively short-circuit
+  /// AND any currently-running animations are cleared so the board
+  /// snaps to its post-animation state.
+  void requestSkip() {
+    _skipMode = true;
+    _animations.clear();
+    _activeSpecialEffect = null;
+    notifyListeners();
+  }
+
+  /// Reset skip mode — call from controller when it returns to idle.
+  void endSkipMode() {
+    if (_skipMode) {
+      _skipMode = false;
+      notifyListeners();
+    }
+  }
+
+  /// Internal: delay that respects skip mode.
+  Future<void> _delay(int ms) async {
+    if (_skipMode) {
+      await Future<void>.delayed(const Duration(milliseconds: 1));
+    } else {
+      await Future<void>.delayed(Duration(milliseconds: ms));
+    }
+  }
+
   /// The active special effect, or null if none is playing.
   SpecialEffect? get activeSpecialEffect => _activeSpecialEffect;
 
@@ -157,7 +189,7 @@ class BoardAnimator extends ChangeNotifier {
     Position to,
     double cellSize,
     double gap, {
-    int durationMs = 200,
+    int durationMs = 160,
   }) async {
     final dx = (to.col - from.col) * (cellSize + gap);
     final dy = (to.row - from.row) * (cellSize + gap);
@@ -178,7 +210,7 @@ class BoardAnimator extends ChangeNotifier {
     );
     notifyListeners();
 
-    await Future<void>.delayed(Duration(milliseconds: durationMs));
+    await _delay(durationMs);
     _animations.remove('${from.row},${from.col}');
     _animations.remove('${to.row},${to.col}');
     notifyListeners();
@@ -213,7 +245,7 @@ class BoardAnimator extends ChangeNotifier {
       curve: Curves.easeOutCubic,
     );
     notifyListeners();
-    await Future<void>.delayed(Duration(milliseconds: halfDurationMs));
+    await _delay(halfDurationMs);
 
     // Phase 2: slide back
     _animations['${from.row},${from.col}'] = CellAnimation(
@@ -231,7 +263,7 @@ class BoardAnimator extends ChangeNotifier {
       curve: Curves.easeInOutCubic,
     );
     notifyListeners();
-    await Future<void>.delayed(Duration(milliseconds: halfDurationMs));
+    await _delay(halfDurationMs);
 
     _animations.remove('${from.row},${from.col}');
     _animations.remove('${to.row},${to.col}');
@@ -244,7 +276,7 @@ class BoardAnimator extends ChangeNotifier {
 
   /// Animate matched cells being destroyed (pop + fade out).
   Future<void> animateDestroy(List<Position> positions,
-      {int durationMs = 200}) async {
+      {int durationMs = 170}) async {
     for (final p in positions) {
       _animations['${p.row},${p.col}'] = CellAnimation(
         type: AnimType.destroy,
@@ -253,7 +285,7 @@ class BoardAnimator extends ChangeNotifier {
       );
     }
     notifyListeners();
-    await Future<void>.delayed(Duration(milliseconds: durationMs));
+    await _delay(durationMs);
     for (final p in positions) {
       _animations.remove('${p.row},${p.col}');
     }
@@ -272,7 +304,7 @@ class BoardAnimator extends ChangeNotifier {
     List<FallMove> moves,
     double cellSize,
     double gap, {
-    int durationMs = 250,
+    int durationMs = 200,
   }) async {
     if (moves.isEmpty) return;
 
@@ -290,7 +322,7 @@ class BoardAnimator extends ChangeNotifier {
       );
     }
     notifyListeners();
-    await Future<void>.delayed(Duration(milliseconds: durationMs));
+    await _delay(durationMs);
     for (final move in moves) {
       _animations.remove('${move.to.row},${move.to.col}');
     }
@@ -306,7 +338,7 @@ class BoardAnimator extends ChangeNotifier {
     List<Position> positions,
     double cellSize,
     double gap, {
-    int durationMs = 250,
+    int durationMs = 200,
   }) async {
     if (positions.isEmpty) return;
 
@@ -322,7 +354,7 @@ class BoardAnimator extends ChangeNotifier {
       );
     }
     notifyListeners();
-    await Future<void>.delayed(Duration(milliseconds: durationMs));
+    await _delay(durationMs);
     for (final p in positions) {
       _animations.remove('${p.row},${p.col}');
     }
@@ -346,7 +378,7 @@ class BoardAnimator extends ChangeNotifier {
       );
     }
     notifyListeners();
-    await Future<void>.delayed(Duration(milliseconds: durationMs));
+    await _delay(durationMs);
     for (final p in positions) {
       _animations.remove('${p.row},${p.col}');
     }
@@ -356,6 +388,26 @@ class BoardAnimator extends ChangeNotifier {
   // ──────────────────────────────────────────────────────────────────
   // Special activation flash animation
   // ──────────────────────────────────────────────────────────────────
+
+  /// Brief golden glow on tiles RIGHT BEFORE they get destroyed — gives the
+  /// player a beat of "yes, this matched!" anticipation. ~120ms.
+  Future<void> animatePreMatchGlow(List<Position> positions,
+      {int durationMs = 130}) async {
+    if (positions.isEmpty) return;
+    for (final p in positions) {
+      _animations['${p.row},${p.col}'] = CellAnimation(
+        type: AnimType.flash,
+        durationMs: durationMs,
+        curve: Curves.easeOutQuad,
+      );
+    }
+    notifyListeners();
+    await _delay(durationMs);
+    for (final p in positions) {
+      _animations.remove('${p.row},${p.col}');
+    }
+    notifyListeners();
+  }
 
   /// Animate a flash/glow effect on all positions affected by a special
   /// activation (rocket line, bomb area, rainbow targets, etc.) before
@@ -372,7 +424,7 @@ class BoardAnimator extends ChangeNotifier {
       );
     }
     notifyListeners();
-    await Future<void>.delayed(Duration(milliseconds: durationMs));
+    await _delay(durationMs);
     for (final p in positions) {
       _animations.remove('${p.row},${p.col}');
     }
@@ -390,7 +442,7 @@ class BoardAnimator extends ChangeNotifier {
   Future<void> playSpecialEffect(SpecialEffect effect) async {
     _activeSpecialEffect = effect;
     notifyListeners();
-    await Future<void>.delayed(Duration(milliseconds: effect.durationMs));
+    await _delay(effect.durationMs);
     _activeSpecialEffect = null;
     notifyListeners();
   }
