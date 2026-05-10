@@ -42,10 +42,16 @@ workflows:
           NEXT_BUILD=$((LATEST_BUILD_NUMBER + 1))
           echo "Bumping to build number $NEXT_BUILD"
           agvtool new-version -all "$NEXT_BUILD"
-      - name: Build IPA (release)
+      - name: Build IPA (release) via Codemagic xcode-project
         script: |
-          flutter build ipa --release \
-            --export-options-plist=/Users/builder/export_options.plist
+          # First build the iOS app without code signing via Flutter, then
+          # archive + sign via Codemagic's xcode-project CLI which picks up
+          # the certificates/profile installed by `keychain add-certificates`
+          # + `xcode-project use-profiles` in the auto-signing step.
+          flutter build ios --release --no-codesign
+          xcode-project build-ipa \
+            --workspace ios/Runner.xcworkspace \
+            --scheme Runner
     artifacts:
       - build/ios/ipa/*.ipa
       - /tmp/xcodebuild_logs/*.log
