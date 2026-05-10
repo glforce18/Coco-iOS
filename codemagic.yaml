@@ -26,6 +26,8 @@ workflows:
           xcode-project use-profiles
       - name: Flutter packages get
         script: flutter packages pub get
+      - name: Precache iOS artifacts (generates Flutter/Generated.xcconfig)
+        script: flutter precache --ios
       - name: Pod install
         script: |
           cd ios
