@@ -7,22 +7,16 @@ workflows:
       flutter: 3.6.0
       xcode: latest
       cocoapods: default
-      ios_signing:
-        provisioning_profiles:
-          - coco_appstore
-        certificates:
-          - coco_distribution
       groups:
         - app_store_credentials
       vars:
         BUNDLE_ID: "com.patpat.patpatGame"
-        APP_STORE_APPLE_ID: 6768066404
     cache:
       cache_paths:
         - $HOME/Library/Caches/CocoaPods
         - $HOME/.pub-cache
     scripts:
-      - name: Set up keychain + signing
+      - name: Set up keychain + auto-signing via ASC API
         script: |
           keychain initialize
           app-store-connect fetch-signing-files "$BUNDLE_ID" \
@@ -30,7 +24,7 @@ workflows:
             --create
           keychain add-certificates
           xcode-project use-profiles
-      - name: flutter packages get
+      - name: Flutter packages get
         script: flutter packages pub get
       - name: Pod install
         script: |
@@ -39,8 +33,10 @@ workflows:
       - name: Bump iOS build number
         script: |
           cd ios
-          LATEST_BUILD_NUMBER=$(app-store-connect get-latest-app-store-build-number "$APP_STORE_APPLE_ID" || echo 0)
-          agvtool new-version -all $(($LATEST_BUILD_NUMBER + 1))
+          LATEST_BUILD_NUMBER=$(app-store-connect get-latest-app-store-build-number "$APP_STORE_APPLE_ID" || echo 49)
+          NEXT_BUILD=$((LATEST_BUILD_NUMBER + 1))
+          echo "Bumping to build number $NEXT_BUILD"
+          agvtool new-version -all "$NEXT_BUILD"
       - name: Build IPA (release)
         script: |
           flutter build ipa --release \
@@ -48,9 +44,10 @@ workflows:
     artifacts:
       - build/ios/ipa/*.ipa
       - /tmp/xcodebuild_logs/*.log
-      - flutter_drive.log
     publishing:
       app_store_connect:
-        auth: integration
+        api_key: $APP_STORE_CONNECT_PRIVATE_KEY
+        key_id: $APP_STORE_CONNECT_KEY_IDENTIFIER
+        issuer_id: $APP_STORE_CONNECT_ISSUER_ID
         submit_to_testflight: false
         submit_to_app_store: false
