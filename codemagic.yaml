@@ -24,12 +24,15 @@ workflows:
             --create
           keychain add-certificates
           xcode-project use-profiles
-      - name: Flutter packages get
-        script: flutter packages pub get
-      - name: Precache iOS artifacts (generates Flutter/Generated.xcconfig)
+      - name: Flutter pub get
+        script: flutter pub get
+      - name: Precache iOS artifacts
         script: flutter precache --ios
-      - name: Pod install
+      - name: Generate iOS config + run pod install
         script: |
+          # Run flutter build ios --config-only first so Generated.xcconfig
+          # is created, then run pod install.
+          flutter build ios --config-only --release --no-codesign
           cd ios
           pod install
       - name: Bump iOS build number
