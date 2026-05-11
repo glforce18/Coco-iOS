@@ -430,9 +430,9 @@ class _LoginDialogState extends ConsumerState<_LoginDialog> {
     return Material(
       color: Colors.transparent,
       child: Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 28),
+        padding: const EdgeInsets.symmetric(horizontal: 20),
         child: IslandPanel(
-          padding: const EdgeInsets.all(22),
+          padding: const EdgeInsets.all(20),
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
@@ -456,9 +456,11 @@ class _LoginDialogState extends ConsumerState<_LoginDialog> {
               ),
               const SizedBox(height: 4),
               Text(
-                'İlerlemeni kaydet, cihazlar arası senkronla',
+                'İlerlemeni kaydet, cihazlar arası senkronize et',
                 textAlign: TextAlign.center,
-                style: TT.bodySmall,
+                softWrap: true,
+                maxLines: 2,
+                style: TT.bodySmall.copyWith(height: 1.3),
               ),
               const SizedBox(height: 22),
               if (!firebaseReady)
