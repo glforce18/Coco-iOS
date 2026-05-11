@@ -166,7 +166,7 @@ class ProfileScreen extends ConsumerWidget {
                   color: IslandButtonColor.bamboo,
                   size: IslandButtonSize.large,
                   fullWidth: true,
-                  onPressed: () => context.push('/event'),
+                  onPressed: () => context.push('/events'),
                 ),
                 const SizedBox(height: 16),
                 const Center(child: CocoBannerAd()),

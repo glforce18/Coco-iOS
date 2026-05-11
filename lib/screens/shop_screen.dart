@@ -487,11 +487,17 @@ class _PremiumCard extends StatelessWidget {
     required this.onBuy,
   });
 
+  static const Map<String, String> _fallbackPrices = {
+    BillingManager.removeAdsId: '\$3.99',
+    BillingManager.starterBundleId: '\$4.99',
+    BillingManager.vipMonthlyId: '\$4.99 / ay',
+  };
+
   @override
   Widget build(BuildContext context) {
     final billing = BillingManager.instance;
     final ProductDetails? product = billing.productById(productId);
-    final price = product?.price ?? '—';
+    final price = product?.price ?? _fallbackPrices[productId] ?? '—';
     return Container(
       padding: const EdgeInsets.all(2.5),
       decoration: BoxDecoration(
