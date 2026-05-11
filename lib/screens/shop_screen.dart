@@ -442,6 +442,7 @@ class _CoinCard extends StatelessWidget {
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
+              mainAxisSize: MainAxisSize.min,
               children: [
                 Row(
                   children: [
@@ -451,16 +452,17 @@ class _CoinCard extends StatelessWidget {
                     ),
                     const SizedBox(width: 4),
                     const Icon(Icons.monetization_on_rounded, color: TT.gold, size: 22),
-                    if (badge != null) ...[
-                      const SizedBox(width: 6),
-                      IslandRibbon(text: badge!),
-                    ],
                   ],
                 ),
                 Text(subtitle, style: TT.bodySmall),
+                if (badge != null) ...[
+                  const SizedBox(height: 4),
+                  IslandRibbon(text: badge!),
+                ],
               ],
             ),
           ),
+          const SizedBox(width: 8),
           IslandButton(
             text: price,
             color: IslandButtonColor.palm,
