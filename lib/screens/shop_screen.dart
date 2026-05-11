@@ -414,11 +414,17 @@ class _CoinCard extends StatelessWidget {
     required this.onBuy,
   });
 
+  static const Map<String, String> _fallbackPrices = {
+    BillingManager.coinsSmallId: '\$0.99',
+    BillingManager.coinsMediumId: '\$2.99',
+    BillingManager.coinsLargeId: '\$9.99',
+  };
+
   @override
   Widget build(BuildContext context) {
     final billing = BillingManager.instance;
     final ProductDetails? product = billing.productById(productId);
-    final price = product?.price ?? '—';
+    final price = product?.price ?? _fallbackPrices[productId] ?? '—';
     return IslandSurface(
       padding: const EdgeInsets.all(12),
       child: Row(
