@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:url_launcher/url_launcher.dart';
 
 import 'package:patpat_game/billing/billing_manager.dart';
 import 'package:patpat_game/theme/tropical_theme.dart';
@@ -49,6 +50,14 @@ class _PremiumPromoBody extends StatelessWidget {
   void _gotoProduct(BuildContext context, String productId) {
     _close(context);
     context.push('/shop');
+  }
+
+  /// Returns the localized StoreKit price string for [productId], falling
+  /// back to USD when the product hasn't loaded yet. Apple Guideline 3.1.2
+  /// requires the price to be visible anywhere a subscription is offered.
+  String _priceFor(String productId, String fallback) {
+    final p = BillingManager.instance.productById(productId);
+    return p?.price ?? fallback;
   }
 
   @override
@@ -167,7 +176,9 @@ class _PremiumPromoBody extends StatelessWidget {
                   icon: Icons.block_rounded,
                   iconColor: TT.coral,
                   title: 'Reklamları Kaldır',
-                  subtitle: 'Tek seferlik. Tüm reklamlar kapanır.',
+                  subtitle: 'Tek seferlik satın alma. Tüm reklamlar kapanır.',
+                  price: _priceFor(BillingManager.removeAdsId, '\$3.99'),
+                  period: 'Tek seferlik',
                   badge: 'EN POPÜLER',
                   onTap: () => _gotoProduct(context, BillingManager.removeAdsId),
                 ),
@@ -177,6 +188,8 @@ class _PremiumPromoBody extends StatelessWidget {
                   iconColor: TT.palm,
                   title: 'Başlangıç Paketi',
                   subtitle: '5 Çekiç + 5 Renk + 5 Hamle + 1000 altın',
+                  price: _priceFor(BillingManager.starterBundleId, '\$4.99'),
+                  period: 'Tek seferlik',
                   badge: 'BÜYÜK İNDİRİM',
                   onTap: () => _gotoProduct(context, BillingManager.starterBundleId),
                 ),
@@ -185,11 +198,16 @@ class _PremiumPromoBody extends StatelessWidget {
                   icon: Icons.diamond_rounded,
                   iconColor: TT.lagoon,
                   title: 'VIP Üyelik',
-                  subtitle: 'Sınırsız can + 2x altın + reklamsız',
+                  subtitle: 'Sınırsız can + 2x altın + reklamsız. Otomatik yenilenir, istediğin zaman iptal edebilirsin.',
+                  price: _priceFor(BillingManager.vipMonthlyId, '\$4.99'),
+                  period: 'Aylık abonelik',
                   badge: 'AYLIK',
                   onTap: () => _gotoProduct(context, BillingManager.vipMonthlyId),
                 ),
-                const SizedBox(height: 14),
+                const SizedBox(height: 10),
+                // Apple Guideline 3.1.2 — Subscription terms + ToS/Privacy links
+                _SubscriptionFooter(),
+                const SizedBox(height: 12),
                 Row(
                   children: [
                     Expanded(
@@ -230,6 +248,8 @@ class _PromoTile extends StatelessWidget {
   final Color iconColor;
   final String title;
   final String subtitle;
+  final String price;
+  final String period;
   final String badge;
   final VoidCallback onTap;
 
@@ -238,6 +258,8 @@ class _PromoTile extends StatelessWidget {
     required this.iconColor,
     required this.title,
     required this.subtitle,
+    required this.price,
+    required this.period,
     required this.badge,
     required this.onTap,
   });
@@ -326,9 +348,107 @@ class _PromoTile extends StatelessWidget {
                 ],
               ),
             ),
-            const Icon(Icons.chevron_right_rounded, color: TT.driftWoodDark, size: 22),
+            const SizedBox(width: 8),
+            // Price + period stack — Apple 3.1.2 requires both to be visible
+            // anywhere the subscription/IAP is offered.
+            Column(
+              crossAxisAlignment: CrossAxisAlignment.end,
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Text(
+                  price,
+                  style: TT.titleSmall.copyWith(
+                    color: TT.goldDeep,
+                    fontWeight: FontWeight.w900,
+                    fontSize: 14,
+                  ),
+                ),
+                Text(
+                  period,
+                  style: TT.bodySmall.copyWith(
+                    color: TT.driftWoodDark.withAlpha(180),
+                    fontSize: 10,
+                    fontWeight: FontWeight.w700,
+                  ),
+                ),
+              ],
+            ),
           ],
         ),
+      ),
+    );
+  }
+}
+
+/// Apple Guideline 3.1.2 subscription footer — discloses auto-renewal,
+/// links to Terms of Use + Privacy Policy. Apple rejects subscription UI
+/// without these on every screen that offers the subscription.
+class _SubscriptionFooter extends StatelessWidget {
+  Future<void> _open(String url) async {
+    final uri = Uri.parse(url);
+    try {
+      await launchUrl(uri, mode: LaunchMode.externalApplication);
+    } catch (_) {}
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+      decoration: BoxDecoration(
+        borderRadius: BorderRadius.circular(10),
+        color: TT.sandLight.withAlpha(180),
+        border: Border.all(color: TT.bamboo.withAlpha(160), width: 1),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            'Abonelikler otomatik olarak yenilenir; mevcut dönem bitmeden 24 saat önce iptal etmezsen aynı tutar tahsil edilir. Hesap ayarlarından istediğin zaman iptal edebilirsin.',
+            style: TT.bodySmall.copyWith(
+              color: TT.driftWoodDark,
+              fontSize: 9.5,
+              height: 1.3,
+            ),
+          ),
+          const SizedBox(height: 6),
+          Row(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              GestureDetector(
+                onTap: () => _open('https://dosto.tr/coco/kullanim-sartlari'),
+                child: Text(
+                  'Kullanım Şartları',
+                  style: TT.bodySmall.copyWith(
+                    color: TT.lagoonDark,
+                    fontSize: 10,
+                    fontWeight: FontWeight.w900,
+                    decoration: TextDecoration.underline,
+                  ),
+                ),
+              ),
+              Text(
+                '  ·  ',
+                style: TT.bodySmall.copyWith(
+                  color: TT.driftWoodDark.withAlpha(180),
+                  fontSize: 10,
+                ),
+              ),
+              GestureDetector(
+                onTap: () => _open('https://dosto.tr/coco/gizlilik'),
+                child: Text(
+                  'Gizlilik Politikası',
+                  style: TT.bodySmall.copyWith(
+                    color: TT.lagoonDark,
+                    fontSize: 10,
+                    fontWeight: FontWeight.w900,
+                    decoration: TextDecoration.underline,
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ],
       ),
     );
   }
