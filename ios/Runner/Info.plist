@@ -67,7 +67,7 @@
 		<key>GADApplicationIdentifier</key>
 		<string>ca-app-pub-3086183300445644~7212678166</string>
 		<key>NSUserTrackingUsageDescription</key>
-		<string>Reklamların sana daha uygun hale gelmesi ve oyunun ücretsiz kalması için kullanılır.</string>
+		<string>İlginç bulabileceğin reklamları görmen için reklam kimliğine erişiriz. İzin vermesen de uygulamanın tüm özellikleri çalışmaya devam eder.</string>
 		<!-- AdMob mediation networks for iOS 14+ install attribution.
 		     Source: https://developers.google.com/admob/ios/ios14
 		     Update this list when integrating new ad networks. -->

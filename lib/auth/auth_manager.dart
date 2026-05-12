@@ -1,6 +1,20 @@
+import 'dart:convert';
+import 'dart:math';
+
+import 'package:crypto/crypto.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:google_sign_in/google_sign_in.dart';
 import 'package:sign_in_with_apple/sign_in_with_apple.dart';
+
+/// Cryptographically secure random nonce — Firebase requires this on
+/// Apple Sign In to verify the ID token wasn't replayed.
+String _generateNonce([int length = 32]) {
+  const charset = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz-._';
+  final random = Random.secure();
+  return List.generate(length, (_) => charset[random.nextInt(charset.length)]).join();
+}
+
+String _sha256(String input) => sha256.convert(utf8.encode(input)).toString();
 
 class AuthManager {
   static final AuthManager _instance = AuthManager._();
@@ -64,15 +78,23 @@ class AuthManager {
     }
 
     try {
+      // Firebase requires a nonce to verify the Apple ID token. We pass the
+      // SHA-256 hash to Apple, and the raw value to Firebase, which compares
+      // it against the nonce claim inside the signed identity token.
+      final rawNonce = _generateNonce();
+      final hashedNonce = _sha256(rawNonce);
+
       final appleCredential = await SignInWithApple.getAppleIDCredential(
         scopes: [
           AppleIDAuthorizationScopes.email,
           AppleIDAuthorizationScopes.fullName,
         ],
+        nonce: hashedNonce,
       );
 
       final oauthCredential = OAuthProvider('apple.com').credential(
         idToken: appleCredential.identityToken,
+        rawNonce: rawNonce,
         accessToken: appleCredential.authorizationCode,
       );
 
