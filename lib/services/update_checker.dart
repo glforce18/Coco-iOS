@@ -52,7 +52,24 @@ class UpdateChecker {
       final notes = (json['notes'] as String?) ?? '';
       final storeUrl = Platform.isIOS ? iosUrl : androidUrl;
 
-      if (_compareVersions(current, minSupported) < 0) {
+      // Defensive guards: a misconfigured manifest must NEVER block the app
+      // (Apple Review previously hit a force-update modal because the JSON
+      // still pointed at the legacy Android version). We require:
+      //   1. A non-trivial `minSupported` (anything > 0.0.0)
+      //   2. A real platform store URL (non-empty, not the id000...0 placeholder)
+      //   3. Latest >= minSupported (manifest internally consistent)
+      // Any failure degrades the check to upToDate — soft banners still
+      // require a valid storeUrl since the "Güncelle" button would dead-end.
+      final hasSensibleMin =
+          minSupported.isNotEmpty && _compareVersions(minSupported, '0.0.1') >= 0;
+      final hasValidStoreUrl =
+          storeUrl.isNotEmpty && !storeUrl.contains('id0000000000');
+      final manifestConsistent = _compareVersions(latest, minSupported) >= 0;
+
+      if (hasSensibleMin &&
+          hasValidStoreUrl &&
+          manifestConsistent &&
+          _compareVersions(current, minSupported) < 0) {
         return UpdateCheckResult(
           kind: UpdateKind.forceUpdate,
           currentVersion: current,
@@ -61,7 +78,7 @@ class UpdateChecker {
           storeUrl: storeUrl,
         );
       }
-      if (_compareVersions(current, latest) < 0) {
+      if (hasValidStoreUrl && _compareVersions(current, latest) < 0) {
         return UpdateCheckResult(
           kind: UpdateKind.softUpdate,
           currentVersion: current,
