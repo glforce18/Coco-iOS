@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
-import 'package:url_launcher/url_launcher.dart';
 
 import 'package:patpat_game/billing/billing_manager.dart';
 import 'package:patpat_game/theme/tropical_theme.dart';
@@ -356,76 +355,4 @@ class _PromoTile extends StatelessWidget {
   }
 }
 
-/// Apple Guideline 3.1.2 subscription footer — discloses auto-renewal,
-/// links to Terms of Use + Privacy Policy. Apple rejects subscription UI
-/// without these on every screen that offers the subscription.
-class _SubscriptionFooter extends StatelessWidget {
-  Future<void> _open(String url) async {
-    final uri = Uri.parse(url);
-    try {
-      await launchUrl(uri, mode: LaunchMode.externalApplication);
-    } catch (_) {}
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
-      decoration: BoxDecoration(
-        borderRadius: BorderRadius.circular(10),
-        color: TT.sandLight.withAlpha(180),
-        border: Border.all(color: TT.bamboo.withAlpha(160), width: 1),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text(
-            'Abonelikler otomatik olarak yenilenir; mevcut dönem bitmeden 24 saat önce iptal etmezsen aynı tutar tahsil edilir. Hesap ayarlarından istediğin zaman iptal edebilirsin.',
-            style: TT.bodySmall.copyWith(
-              color: TT.driftWoodDark,
-              fontSize: 9.5,
-              height: 1.3,
-            ),
-          ),
-          const SizedBox(height: 6),
-          Row(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              GestureDetector(
-                onTap: () => _open('https://dosto.tr/coco/kullanim-sartlari'),
-                child: Text(
-                  'Kullanım Şartları',
-                  style: TT.bodySmall.copyWith(
-                    color: TT.lagoonDark,
-                    fontSize: 10,
-                    fontWeight: FontWeight.w900,
-                    decoration: TextDecoration.underline,
-                  ),
-                ),
-              ),
-              Text(
-                '  ·  ',
-                style: TT.bodySmall.copyWith(
-                  color: TT.driftWoodDark.withAlpha(180),
-                  fontSize: 10,
-                ),
-              ),
-              GestureDetector(
-                onTap: () => _open('https://dosto.tr/coco/gizlilik'),
-                child: Text(
-                  'Gizlilik Politikası',
-                  style: TT.bodySmall.copyWith(
-                    color: TT.lagoonDark,
-                    fontSize: 10,
-                    fontWeight: FontWeight.w900,
-                    decoration: TextDecoration.underline,
-                  ),
-                ),
-              ),
-            ],
-          ),
-        ],
-      ),
-    );
-  }
-}
+// _SubscriptionFooter removed — VIP subscription hidden until v1.1.

@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:in_app_purchase/in_app_purchase.dart';
-import 'package:url_launcher/url_launcher.dart';
 
 import 'package:patpat_game/billing/billing_manager.dart';
 import 'package:patpat_game/models/enums.dart';
@@ -462,9 +461,7 @@ class _PremiumCard extends StatelessWidget {
   });
 
   static const Map<String, String> _fallbackPrices = {
-    BillingManager.removeAdsId: '\$3.99',
     BillingManager.starterBundleId: '\$4.99',
-    BillingManager.vipMonthlyId: '\$4.99 / ay',
   };
 
   @override
@@ -545,15 +542,7 @@ class _PremiumCard extends StatelessWidget {
                           overflow: TextOverflow.ellipsis,
                         ),
                       ),
-                      if (isVip) ...[
-                        const SizedBox(width: 4),
-                        const IslandChip(
-                          text: 'VIP',
-                          icon: Icons.diamond_rounded,
-                          fontSize: 9,
-                          padding: EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-                        ),
-                      ],
+                      // VIP chip removed — subscription hidden until v1.1.
                     ],
                   ),
                   const SizedBox(height: 2),
@@ -597,70 +586,4 @@ class _PremiumCard extends StatelessWidget {
   }
 }
 
-/// Apple Guideline 3.1.2 footer for the Shop screen — subscription terms +
-/// ToS + Privacy Policy links shown beneath the VIP Üyelik card.
-class _ShopSubscriptionFooter extends StatelessWidget {
-  Future<void> _open(String url) async {
-    final uri = Uri.parse(url);
-    try {
-      await launchUrl(uri, mode: LaunchMode.externalApplication);
-    } catch (_) {}
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
-      margin: const EdgeInsets.symmetric(horizontal: 4),
-      decoration: BoxDecoration(
-        borderRadius: BorderRadius.circular(12),
-        color: TT.sandLight.withAlpha(220),
-        border: Border.all(color: TT.bamboo.withAlpha(180), width: 1.2),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text(
-            'VIP Üyelik — Aylık abonelik. Otomatik olarak yenilenir; mevcut dönem bitmeden 24 saat önce iptal etmezsen aynı tutar tahsil edilir. iCloud → Apple ID → Abonelikler menüsünden istediğin zaman iptal edebilirsin.',
-            style: TT.bodySmall.copyWith(
-              color: TT.driftWoodDark,
-              fontSize: 11,
-              height: 1.4,
-            ),
-          ),
-          const SizedBox(height: 8),
-          Row(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              GestureDetector(
-                onTap: () => _open('https://dosto.tr/coco/kullanim-sartlari'),
-                child: Text(
-                  'Kullanım Şartları',
-                  style: TT.bodySmall.copyWith(
-                    color: TT.lagoonDark,
-                    fontSize: 11,
-                    fontWeight: FontWeight.w900,
-                    decoration: TextDecoration.underline,
-                  ),
-                ),
-              ),
-              Text('  ·  ', style: TT.bodySmall.copyWith(color: TT.driftWoodDark, fontSize: 11)),
-              GestureDetector(
-                onTap: () => _open('https://dosto.tr/coco/gizlilik'),
-                child: Text(
-                  'Gizlilik Politikası',
-                  style: TT.bodySmall.copyWith(
-                    color: TT.lagoonDark,
-                    fontSize: 11,
-                    fontWeight: FontWeight.w900,
-                    decoration: TextDecoration.underline,
-                  ),
-                ),
-              ),
-            ],
-          ),
-        ],
-      ),
-    );
-  }
-}
+// _ShopSubscriptionFooter removed — VIP subscription hidden until v1.1.

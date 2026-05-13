@@ -338,7 +338,7 @@ class TA {
   static const String shopCoins5000 = 'assets/tropical/rewards/shop_coins_5000.png';
   static const String shopStarter = 'assets/tropical/rewards/shop_starter_bundle.png';
   static const String shopRemoveAds = 'assets/tropical/rewards/shop_remove_ads.png';
-  static const String shopVip = 'assets/tropical/rewards/shop_vip_monthly.png';
+  // shopVip asset reference removed — VIP subscription hidden until v1.1.
   static const String shopBoostersX3 = 'assets/tropical/rewards/shop_boosters_x3.png';
   static const String shopLives = 'assets/tropical/rewards/shop_lives_pack.png';
 

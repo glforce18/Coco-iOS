@@ -16,20 +16,16 @@ class BillingManager {
   StreamSubscription<List<PurchaseDetails>>? _subscription;
 
   // ── Product IDs ──────────────────────────────────────────────────────
-  static const removeAdsId = 'remove_ads';
   static const starterBundleId = 'starter_bundle';
   static const coinsSmallId = 'coins_small'; // 500 coins
   static const coinsMediumId = 'coins_medium'; // 1500 coins
   static const coinsLargeId = 'coins_large'; // 5000 coins
-  static const vipMonthlyId = 'vip_monthly';
 
   static const _allProductIds = {
-    removeAdsId,
     starterBundleId,
     coinsSmallId,
     coinsMediumId,
     coinsLargeId,
-    vipMonthlyId,
   };
 
   bool get isAvailable => _available;
@@ -93,10 +89,8 @@ class BillingManager {
     if (!_available) return false;
     final purchaseParam = PurchaseParam(productDetails: product);
 
-    // Non-consumables: remove_ads, starter_bundle, vip_monthly
-    if (product.id == vipMonthlyId ||
-        product.id == removeAdsId ||
-        product.id == starterBundleId) {
+    // Non-consumables: starter_bundle (the only non-consumable in v1.0).
+    if (product.id == starterBundleId) {
       return _iap.buyNonConsumable(purchaseParam: purchaseParam);
     }
     // Consumables: coin packs

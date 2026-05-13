@@ -335,14 +335,10 @@ class PlayerProgressNotifier extends StateNotifier<PlayerProgress> {
         state.coins += 1500;
       case BillingManager.coinsLargeId:
         state.coins += 5000;
-      case BillingManager.removeAdsId:
-        state.removeAdsPurchased = true;
       case BillingManager.starterBundleId:
         state.coins += 500;
         state.lives = 5;
         state.starterBundleClaimed = true;
-      case BillingManager.vipMonthlyId:
-        state.vipActive = true;
     }
     state = _copyState();
     await ProgressStorage.save(state);
