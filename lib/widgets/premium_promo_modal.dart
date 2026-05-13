@@ -182,20 +182,7 @@ class _PremiumPromoBody extends StatelessWidget {
                   badge: 'BÜYÜK İNDİRİM',
                   onTap: () => _gotoProduct(context, BillingManager.starterBundleId),
                 ),
-                const SizedBox(height: 8),
-                _PromoTile(
-                  icon: Icons.diamond_rounded,
-                  iconColor: TT.lagoon,
-                  title: 'VIP Üyelik',
-                  subtitle: 'Sınırsız can + 2x altın + günlük bonus ödüller. Otomatik yenilenir, istediğin zaman iptal edebilirsin.',
-                  price: _priceFor(BillingManager.vipMonthlyId, '\$4.99'),
-                  period: 'Aylık abonelik',
-                  badge: 'AYLIK',
-                  onTap: () => _gotoProduct(context, BillingManager.vipMonthlyId),
-                ),
-                const SizedBox(height: 10),
-                // Apple Guideline 3.1.2 — Subscription terms + ToS/Privacy links
-                _SubscriptionFooter(),
+                // VIP Üyelik subscription temporarily hidden — see shop_screen.
                 const SizedBox(height: 12),
                 Row(
                   children: [

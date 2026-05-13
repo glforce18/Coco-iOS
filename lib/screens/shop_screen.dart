@@ -212,19 +212,9 @@ class _ShopScreenState extends ConsumerState<ShopScreen> {
                   isPurchased: false,
                   onBuy: () => _buyIAP(BillingManager.starterBundleId),
                 ),
-                const SizedBox(height: 8),
-                _PremiumCard(
-                  productId: BillingManager.vipMonthlyId,
-                  asset: TA.shopVip,
-                  title: 'VIP Üyelik',
-                  desc: 'Sınırsız can + 2x altın + günlük bonus (aylık otomatik yenilenir)',
-                  isPurchased: progress.vipActive,
-                  isVip: true,
-                  onBuy: () => _buyIAP(BillingManager.vipMonthlyId),
-                ),
-                const SizedBox(height: 10),
-                // Apple Guideline 3.1.2 — subscription disclosure + links
-                _ShopSubscriptionFooter(),
+                // VIP Üyelik subscription is temporarily hidden — ASC has it
+                // in MISSING_METADATA which causes Apple Review 2.1(b) reject.
+                // Will be restored in v1.1 once the metadata gap is closed.
                 const SizedBox(height: 16),
                 const Center(child: CocoBannerAd()),
               ],
