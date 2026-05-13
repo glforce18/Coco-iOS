@@ -8,12 +8,18 @@ class AuthState {
   final String? photoUrl;
   final bool isLoading;
 
+  /// Most recent provider-level error from a failed sign-in attempt. Cleared
+  /// at the start of each new attempt. Used by main_menu to surface the
+  /// real Apple/Firebase error code (instead of a generic "Giriş başarısız").
+  final String? lastError;
+
   const AuthState({
     this.isLoggedIn = false,
     this.userName,
     this.userEmail,
     this.photoUrl,
     this.isLoading = false,
+    this.lastError,
   });
 
   AuthState copyWith({
@@ -22,6 +28,7 @@ class AuthState {
     String? userEmail,
     String? photoUrl,
     bool? isLoading,
+    String? lastError,
   }) =>
       AuthState(
         isLoggedIn: isLoggedIn ?? this.isLoggedIn,
@@ -29,6 +36,7 @@ class AuthState {
         userEmail: userEmail ?? this.userEmail,
         photoUrl: photoUrl ?? this.photoUrl,
         isLoading: isLoading ?? this.isLoading,
+        lastError: lastError,
       );
 }
 
@@ -46,7 +54,7 @@ class AuthNotifier extends StateNotifier<AuthState> {
   }
 
   Future<bool> signInWithGoogle() async {
-    state = state.copyWith(isLoading: true);
+    state = state.copyWith(isLoading: true, lastError: null);
     final result = await AuthManager.instance.signInWithGoogle();
     if (result.success) {
       state = AuthState(
@@ -56,13 +64,13 @@ class AuthNotifier extends StateNotifier<AuthState> {
         photoUrl: result.photoUrl,
       );
     } else {
-      state = state.copyWith(isLoading: false);
+      state = state.copyWith(isLoading: false, lastError: result.error);
     }
     return result.success;
   }
 
   Future<bool> signInWithApple() async {
-    state = state.copyWith(isLoading: true);
+    state = state.copyWith(isLoading: true, lastError: null);
     final result = await AuthManager.instance.signInWithApple();
     if (result.success) {
       state = AuthState(
@@ -71,7 +79,7 @@ class AuthNotifier extends StateNotifier<AuthState> {
         userEmail: result.email,
       );
     } else {
-      state = state.copyWith(isLoading: false);
+      state = state.copyWith(isLoading: false, lastError: result.error);
     }
     return result.success;
   }

@@ -77,13 +77,21 @@ class AuthManager {
       );
     }
 
+    // Diagnostic: stamp each phase so the failing step is visible in the
+    // returned error if anything throws. Apple Review #3 (1.0.0 Build 4)
+    // rejected on a generic "Sign in with Apple error" we couldn't repro;
+    // surfacing the phase + provider error code lets the next reviewer
+    // (or us, from a TestFlight build) pinpoint the actual failure.
+    String phase = 'init';
     try {
       // Firebase requires a nonce to verify the Apple ID token. We pass the
       // SHA-256 hash to Apple, and the raw value to Firebase, which compares
       // it against the nonce claim inside the signed identity token.
+      phase = 'nonce';
       final rawNonce = _generateNonce();
       final hashedNonce = _sha256(rawNonce);
 
+      phase = 'apple-ui';
       final appleCredential = await SignInWithApple.getAppleIDCredential(
         scopes: [
           AppleIDAuthorizationScopes.email,
@@ -92,17 +100,27 @@ class AuthManager {
         nonce: hashedNonce,
       );
 
+      if (appleCredential.identityToken == null) {
+        return const AuthResult(
+          success: false,
+          error: 'Apple identityToken null — provisioning profile capability eksik olabilir',
+        );
+      }
+
+      phase = 'firebase-credential';
       final oauthCredential = OAuthProvider('apple.com').credential(
         idToken: appleCredential.identityToken,
         rawNonce: rawNonce,
         accessToken: appleCredential.authorizationCode,
       );
 
+      phase = 'firebase-signin';
       final userCredential = await _auth.signInWithCredential(oauthCredential);
       final user = userCredential.user;
 
       // Apple only gives name on first sign-in
       if (appleCredential.givenName != null) {
+        phase = 'update-displayName';
         await user?.updateDisplayName(
           '${appleCredential.givenName} ${appleCredential.familyName}'.trim(),
         );
@@ -114,8 +132,23 @@ class AuthManager {
         email: user?.email ?? appleCredential.email,
         accountId: user?.uid,
       );
+    } on SignInWithAppleAuthorizationException catch (e) {
+      // Native Apple UI level error — user-canceled, not-handled, invalid-response, etc.
+      return AuthResult(
+        success: false,
+        error: 'Apple[$phase] ${e.code.name}: ${e.message}',
+      );
+    } on FirebaseAuthException catch (e) {
+      // Firebase rejected the credential — wrong provider config, audience mismatch, etc.
+      return AuthResult(
+        success: false,
+        error: 'Firebase[$phase] ${e.code}: ${e.message ?? "?"}',
+      );
     } catch (e) {
-      return AuthResult(success: false, error: e.toString());
+      return AuthResult(
+        success: false,
+        error: '[$phase] ${e.runtimeType}: $e',
+      );
     }
   }
 

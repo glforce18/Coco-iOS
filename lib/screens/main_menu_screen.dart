@@ -399,9 +399,15 @@ class _LoginDialogState extends ConsumerState<_LoginDialog> {
       Navigator.of(context).pop();
       _runBackgroundCloudSync();
     } else if (mounted) {
+      // Surface the real provider error so Apple Review (and us, on TestFlight)
+      // can see the failing phase + code. authProvider.lastError holds the
+      // last AuthResult.error string, e.g.
+      //   "Apple[apple-ui] canceled: User canceled the sign-in"
+      //   "Firebase[firebase-signin] invalid-credential: ..."
+      final providerErr = ref.read(authProvider).lastError;
       setState(() {
         _isLoading = false;
-        _err = 'Giriş başarısız oldu';
+        _err = providerErr ?? 'Giriş başarısız oldu';
       });
     }
   }
@@ -494,7 +500,14 @@ class _LoginDialogState extends ConsumerState<_LoginDialog> {
                 ],
                 if (_err != null) ...[
                   const SizedBox(height: 10),
-                  Text(_err!, style: TT.bodySmall.copyWith(color: TT.danger)),
+                  // Show the full diagnostic — multi-line + selectable so
+                  // App Review (and we, from TestFlight) can read / copy the
+                  // failing phase + provider code.
+                  SelectableText(
+                    _err!,
+                    textAlign: TextAlign.center,
+                    style: TT.bodySmall.copyWith(color: TT.danger, fontSize: 11),
+                  ),
                 ],
               ],
             ],

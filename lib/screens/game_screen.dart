@@ -101,17 +101,6 @@ class _GameScreenState extends ConsumerState<GameScreen>
 
   void _onChange() {
     if (!mounted) return;
-    if (!_tutorial.isCompleted && widget.level <= 3) {
-      final step = _tutorial.currentStep;
-      if (step != null) {
-        if (step == TutorialStep.teachSwap && _controller.state == GameState.matching) {
-          _tutorial.advance();
-        }
-        if (step == TutorialStep.teachMatch && _controller.state == GameState.destroying) {
-          _tutorial.advance();
-        }
-      }
-    }
     // Trigger combo shake + show combo banner when comboCount climbs.
     if (_controller.comboCount >= 2 && _controller.comboCount != _lastComboCount) {
       _shake.forward(from: 0);
@@ -429,28 +418,25 @@ class _GameScreenState extends ConsumerState<GameScreen>
                       );
                     },
                   ),
-                if (_tutorial.isVisible &&
-                    _tutorial.currentStep != null &&
-                    widget.level <= 3 &&
-                    _controller.state == GameState.idle)
+                if (_tutorial.shouldShowForLevel(widget.level))
                   TutorialOverlay(
                     step: _tutorial.currentStep!,
                     onContinue: () {
                       setState(() {
-                        if (_tutorial.isWaitingForAction) {
-                          _tutorial.hideOverlay();
-                        } else {
-                          _tutorial.advance();
-                          if (_tutorial.isCompleted) {
-                            ref.read(playerProgressProvider.notifier).completeTutorial();
-                          }
+                        _tutorial.advance();
+                        if (_tutorial.isCompleted) {
+                          ref
+                              .read(playerProgressProvider.notifier)
+                              .completeTutorial();
                         }
                       });
                     },
                     onSkip: () {
                       setState(() {
                         _tutorial.skip();
-                        ref.read(playerProgressProvider.notifier).completeTutorial();
+                        ref
+                            .read(playerProgressProvider.notifier)
+                            .completeTutorial();
                       });
                     },
                   ),

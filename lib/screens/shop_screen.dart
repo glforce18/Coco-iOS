@@ -204,19 +204,6 @@ class _ShopScreenState extends ConsumerState<ShopScreen> {
                 // ─── Specials ───
                 _SectionHeader(icon: Icons.workspace_premium_rounded, title: 'Özel Teklifler'),
                 const SizedBox(height: 8),
-                // Remove Ads — top of the specials section so it's the
-                // first thing players see when ads start to feel intrusive.
-                if (!progress.removeAdsPurchased) ...[
-                  _PremiumCard(
-                    productId: BillingManager.removeAdsId,
-                    asset: TA.shopRemoveAds,
-                    title: 'Reklamları Kaldır',
-                    desc: 'Tek seferlik. Tüm banner + ara reklamlar kapanır. Ödüllü reklam (bonus için) seçimlik kalır.',
-                    isPurchased: progress.removeAdsPurchased,
-                    onBuy: () => _buyIAP(BillingManager.removeAdsId),
-                  ),
-                  const SizedBox(height: 8),
-                ],
                 _PremiumCard(
                   productId: BillingManager.starterBundleId,
                   asset: TA.shopStarter,
@@ -225,23 +212,12 @@ class _ShopScreenState extends ConsumerState<ShopScreen> {
                   isPurchased: false,
                   onBuy: () => _buyIAP(BillingManager.starterBundleId),
                 ),
-                if (progress.removeAdsPurchased) ...[
-                  const SizedBox(height: 8),
-                  _PremiumCard(
-                    productId: BillingManager.removeAdsId,
-                    asset: TA.shopRemoveAds,
-                    title: 'Reklamları Kaldır',
-                    desc: 'Satın alındı — teşekkürler!',
-                    isPurchased: true,
-                    onBuy: () {},
-                  ),
-                ],
                 const SizedBox(height: 8),
                 _PremiumCard(
                   productId: BillingManager.vipMonthlyId,
                   asset: TA.shopVip,
                   title: 'VIP Üyelik',
-                  desc: 'Sınırsız can + 2x altın + reklamsız (aylık otomatik yenilenir)',
+                  desc: 'Sınırsız can + 2x altın + günlük bonus (aylık otomatik yenilenir)',
                   isPurchased: progress.vipActive,
                   isVip: true,
                   onBuy: () => _buyIAP(BillingManager.vipMonthlyId),
