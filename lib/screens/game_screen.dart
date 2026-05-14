@@ -101,6 +101,13 @@ class _GameScreenState extends ConsumerState<GameScreen>
 
   void _onChange() {
     if (!mounted) return;
+    // First-time entry into gameOver consumes a life (life is no longer
+    // burned on level start). Idempotent against repeated _onChange calls
+    // because we gate on _lastState != gameOver.
+    if (_controller.state == GameState.gameOver &&
+        _lastState != GameState.gameOver) {
+      ref.read(playerProgressProvider.notifier).loseLevel();
+    }
     // Trigger combo shake + show combo banner when comboCount climbs.
     if (_controller.comboCount >= 2 && _controller.comboCount != _lastComboCount) {
       _shake.forward(from: 0);

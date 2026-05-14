@@ -356,7 +356,9 @@ class _MapScreenState extends ConsumerState<MapScreen>
                 if (progress.lives <= 0) {
                   setState(() => _showNoLivesPopup = true);
                 } else {
-                  ref.read(playerProgressProvider.notifier).useLife();
+                  // Lives are now consumed on level *result* (loss or
+                  // 15-win streak), not on level start, so a skilled
+                  // player can grind through 15 levels in one sitting.
                   context.go('/game/$lvl');
                 }
               },

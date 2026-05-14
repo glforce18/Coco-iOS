@@ -1,3 +1,5 @@
+import 'package:patpat_game/services/cloud_time_sync.dart';
+
 /// One incubating egg slot. Cracks and opens at preset level milestones
 /// (see EggSlot.crackLevels / openLevels), not based on accumulated heat.
 class EggSlot {
@@ -23,7 +25,11 @@ class PlayerProgress {
   Map<int, int> highScores; // level -> best score
   int totalScore;
   int lives;
-  int lastLifeLostTime; // milliseconds epoch
+  int lastLifeLostTime; // milliseconds epoch (server-anchored via CloudTimeSync)
+  /// Consecutive level wins since the last forced wipe. Once this reaches
+  /// 15 the player's lives are zeroed out so even a perfect run still
+  /// hits the paywall — kaybedince + her 15 levelde sert duvar.
+  int winStreak;
   int coins;
   int hammerCount;
   int colorBlastCount;
@@ -93,6 +99,7 @@ class PlayerProgress {
     this.totalScore = 0,
     this.lives = 5,
     this.lastLifeLostTime = 0,
+    this.winStreak = 0,
     this.coins = 500,
     this.hammerCount = 3,
     this.colorBlastCount = 2,
@@ -153,7 +160,10 @@ class PlayerProgress {
     return starsForLevel(level - 1) > 0;
   }
 
-  void completeLevel(int level, int newStars, int score, int coinsEarned) {
+  /// Called after a successful level. Bumps streak; every 15th win wipes
+  /// lives to zero so a skilled player still hits the paywall.
+  /// Returns true if the streak triggered the wipe (so the UI can react).
+  bool completeLevel(int level, int newStars, int score, int coinsEarned) {
     final prevStars = stars[level] ?? 0;
     if (newStars > prevStars) stars[level] = newStars;
     final prevScore = highScores[level] ?? 0;
@@ -161,13 +171,45 @@ class PlayerProgress {
     if (level >= currentLevel) currentLevel = level + 1;
     totalScore += score;
     coins += coinsEarned;
+
+    winStreak++;
+    if (winStreak >= 15) {
+      winStreak = 0;
+      _drainLives();
+      return true;
+    }
+    return false;
+  }
+
+  /// Called when the player loses a level (game over). One life, reset streak.
+  void loseLevel() {
+    winStreak = 0;
+    _useLifeInternal();
+  }
+
+  /// Drains all lives to zero (15-win cap). Sets lastLifeLostTime so the
+  /// regen countdown starts the same instant the wipe happens.
+  void _drainLives() {
+    if (lives == 0) return;
+    lives = 0;
+    lastLifeLostTime = CloudTimeSync.trustedNowMs;
+  }
+
+  void _useLifeInternal() {
+    if (lives > 0) {
+      lives--;
+      if (lastLifeLostTime == 0) {
+        lastLifeLostTime = CloudTimeSync.trustedNowMs;
+      }
+    }
   }
 
   // Life regeneration: 1 life every 30 minutes (20 for VIP), max 5
   void regenerateLives() {
     if (lives >= 5 || lastLifeLostTime == 0) return;
-    final now = DateTime.now().millisecondsSinceEpoch;
+    final now = CloudTimeSync.trustedNowMs;
     final elapsed = now - lastLifeLostTime;
+    if (elapsed < 0) return; // server-time hasn't caught up yet
     final regenInterval = vipActive ? 20 * 60 * 1000 : 30 * 60 * 1000;
     final regenerated = elapsed ~/ regenInterval;
     if (regenerated > 0) {
@@ -180,12 +222,7 @@ class PlayerProgress {
     }
   }
 
-  void useLife() {
-    if (lives > 0) {
-      lives--;
-      if (lastLifeLostTime == 0) {
-        lastLifeLostTime = DateTime.now().millisecondsSinceEpoch;
-      }
-    }
-  }
+  /// Legacy alias kept for any callers that still expect the simple "lose
+  /// a life on level start" semantics (rewarded-ad refills, debug tooling).
+  void useLife() => _useLifeInternal();
 }

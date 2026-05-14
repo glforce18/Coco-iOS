@@ -20,12 +20,14 @@ class BillingManager {
   static const coinsSmallId = 'coins_small'; // 500 coins
   static const coinsMediumId = 'coins_medium'; // 1500 coins
   static const coinsLargeId = 'coins_large'; // 5000 coins
+  static const vipMonthlyId = 'vip_monthly';
 
   static const _allProductIds = {
     starterBundleId,
     coinsSmallId,
     coinsMediumId,
     coinsLargeId,
+    vipMonthlyId,
   };
 
   bool get isAvailable => _available;
@@ -89,8 +91,9 @@ class BillingManager {
     if (!_available) return false;
     final purchaseParam = PurchaseParam(productDetails: product);
 
-    // Non-consumables: starter_bundle (the only non-consumable in v1.0).
-    if (product.id == starterBundleId) {
+    // Non-consumable + auto-renewable subscription both go through
+    // buyNonConsumable on the in_app_purchase plugin.
+    if (product.id == starterBundleId || product.id == vipMonthlyId) {
       return _iap.buyNonConsumable(purchaseParam: purchaseParam);
     }
     // Consumables: coin packs

@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -9,6 +11,7 @@ import 'package:patpat_game/notifications/notification_manager.dart';
 import 'package:patpat_game/notifications/fcm_manager.dart';
 import 'package:patpat_game/router.dart';
 import 'package:patpat_game/providers/game_providers.dart';
+import 'package:patpat_game/services/cloud_time_sync.dart';
 import 'package:patpat_game/widgets/achievement_unlock_toast.dart';
 import 'package:patpat_game/widgets/update_banner.dart';
 import 'dart:io' show Platform;
@@ -29,6 +32,17 @@ void main() async {
   } catch (_) {
     // Firebase not configured yet — auth features will be disabled
     AuthManager.instance.firebaseReady = false;
+  }
+
+  // Pull the cached server-time offset before any time-sensitive code
+  // (life regen, daily reward, spin wheel cooldown) reads the clock.
+  // Refresh in the background once Firebase is up — the await is on
+  // loadCached so we don't block startup waiting for network.
+  await CloudTimeSync.loadCached();
+  if (AuthManager.instance.firebaseReady) {
+    // Fire-and-forget — first life-regen tick will use cached offset,
+    // subsequent reads pick up the fresh one once Firestore responds.
+    unawaited(CloudTimeSync.sync());
   }
 
   // Local notification scheduler — independent of Firebase, safe to init.

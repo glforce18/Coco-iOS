@@ -12,6 +12,7 @@ import 'package:patpat_game/theme/tropical_theme.dart';
 import 'package:patpat_game/widgets/tropical/island_bottom_nav.dart';
 import 'package:patpat_game/widgets/tropical/island_button.dart';
 import 'package:patpat_game/widgets/tropical/island_panel.dart';
+import 'package:patpat_game/widgets/coco_banner_ad.dart';
 import 'package:patpat_game/widgets/tropical/island_top_bar.dart';
 import 'package:patpat_game/widgets/tropical/mascot_view.dart';
 
@@ -212,6 +213,12 @@ class _MainMenuScreenState extends ConsumerState<MainMenuScreen>
                 ),
 
                 const Spacer(flex: 1),
+
+                // Always-visible main menu banner (v1.1 monetization push).
+                // CocoBannerAd self-disposes the underlying BannerAd and
+                // collapses to a SizedBox when ads are disabled / unavailable.
+                if (!(progress.removeAdsPurchased || progress.vipActive))
+                  const Center(child: CocoBannerAd()),
 
                 // Bottom nav
                 IslandBottomNav(

@@ -22,7 +22,7 @@ class AdManager {
   RewardedAd? _rewardedAd;
   InterstitialAd? _interstitialAd;
   int _levelsSinceAd = 0;
-  int _adThreshold = 3; // Show interstitial every 3-5 levels.
+  int _adThreshold = 2; // Show interstitial every 2-3 levels (v1.1 aggressive monetization).
 
   bool get isInitialized => _initialized;
   bool get isRewardedAdReady => _rewardedAd != null;
@@ -127,7 +127,7 @@ class AdManager {
     final ad = _interstitialAd!;
     _interstitialAd = null;
     _levelsSinceAd = 0;
-    _adThreshold = 3 + (DateTime.now().millisecond % 3); // 3-5
+    _adThreshold = 2 + (DateTime.now().millisecond % 2); // 2-3 (v1.1)
 
     ad.fullScreenContentCallback = FullScreenContentCallback(
       onAdDismissedFullScreenContent: (ad) {

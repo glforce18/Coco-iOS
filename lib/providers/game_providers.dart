@@ -116,6 +116,7 @@ class PlayerProgressNotifier extends StateNotifier<PlayerProgress> {
       totalScore: state.totalScore,
       lives: state.lives,
       lastLifeLostTime: state.lastLifeLostTime,
+      winStreak: state.winStreak,
       coins: state.coins,
       hammerCount: state.hammerCount,
       colorBlastCount: state.colorBlastCount,
@@ -217,6 +218,15 @@ class PlayerProgressNotifier extends StateNotifier<PlayerProgress> {
     await _syncNotifications();
   }
 
+  /// Called when the player loses a level (game over). Drops one life and
+  /// resets the win streak.
+  Future<void> loseLevel() async {
+    state.loseLevel();
+    state = _copyState();
+    await ProgressStorage.save(state);
+    await _syncNotifications();
+  }
+
   /// Merge cloud progress with local. Keep whichever is more advanced.
   /// After merge, save locally and push merged result to cloud.
   Future<void> mergeWithCloud(PlayerProgress cloudProgress) async {
@@ -232,6 +242,7 @@ class PlayerProgressNotifier extends StateNotifier<PlayerProgress> {
         totalScore: cloudProgress.totalScore,
         lives: cloudProgress.lives,
         lastLifeLostTime: cloudProgress.lastLifeLostTime,
+        winStreak: cloudProgress.winStreak,
         coins: cloudProgress.coins,
         hammerCount: cloudProgress.hammerCount,
         colorBlastCount: cloudProgress.colorBlastCount,
@@ -339,6 +350,8 @@ class PlayerProgressNotifier extends StateNotifier<PlayerProgress> {
         state.coins += 500;
         state.lives = 5;
         state.starterBundleClaimed = true;
+      case BillingManager.vipMonthlyId:
+        state.vipActive = true;
     }
     state = _copyState();
     await ProgressStorage.save(state);
