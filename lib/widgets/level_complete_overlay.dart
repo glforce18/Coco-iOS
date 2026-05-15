@@ -164,22 +164,39 @@ class _LevelCompleteOverlayState extends State<LevelCompleteOverlay>
               // CENTER, stat panel BELOW with 3 rows + DEVAM button. The
               // panel container holds only the bottom block; mascot+stars
               // float above it for the "hero pose" feel.
-              Padding(
-                padding: const EdgeInsets.only(top: 175, bottom: 24),
-                child: Column(
+              //
+              // Responsive: the fixed metrics below were tuned for tall
+              // modern phones (iPhone 14 = 844pt). On short 16:9 devices
+              // (iPhone 7/8 Plus = 736pt, SE = 667pt) the column overflowed
+              // and the bottom DEVAM button was clipped off-screen. We now
+              // shrink the top offset + mascot on short screens and wrap
+              // everything in a scroll view so the button can never be lost.
+              LayoutBuilder(
+                builder: (context, constraints) {
+                  final availH = constraints.maxHeight;
+                  final isShort = availH < 780; // 7/8 Plus, SE, mini
+                  final topPad = isShort ? 56.0 : 175.0;
+                  final mascotH = isShort ? 116.0 : 180.0;
+                  final starsBoxH = isShort ? 66.0 : 90.0;
+                  return SingleChildScrollView(
+                    child: ConstrainedBox(
+                      constraints: BoxConstraints(minHeight: availH),
+                      child: Padding(
+                        padding: EdgeInsets.only(top: topPad, bottom: 24),
+                        child: Column(
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
                     // 3 stars in an arc above mascot.
                     Opacity(
                       opacity: starsT > 0 ? 1.0 : 0.0,
                       child: SizedBox(
-                        height: 90,
+                        height: starsBoxH,
                         child: _StarsArea(stars: widget.stars, trigger: starsT > 0),
                       ),
                     ),
                     const SizedBox(height: 4),
                     // Big Coco mascot center — slides in with halo bloom.
-                    _MascotSlide(progress: mascotT),
+                    _MascotSlide(progress: mascotT, height: mascotH),
                     const SizedBox(height: 12),
                     // Stat panel + DEVAM button. Panel scales in with master.
                     Transform.scale(
@@ -240,9 +257,14 @@ class _LevelCompleteOverlayState extends State<LevelCompleteOverlay>
                         ),
                       ),
                     ),
-                  ],
-                ),
-              ),
+                          ],
+                        ),
+                      ),
+                    ),
+                  )
+                ;
+              },
+            ),
             ],
           ),
         );
@@ -329,7 +351,8 @@ class _TitleBanner extends StatelessWidget {
 
 class _MascotSlide extends StatelessWidget {
   final double progress;
-  const _MascotSlide({required this.progress});
+  final double height;
+  const _MascotSlide({required this.progress, this.height = 180});
 
   @override
   Widget build(BuildContext context) {
@@ -340,9 +363,9 @@ class _MascotSlide extends StatelessWidget {
       opacity: t.clamp(0.0, 1.0).toDouble(),
       child: Transform.translate(
         offset: Offset(dx, 0),
-        child: const MascotView(
+        child: MascotView(
           pose: MascotPose.vip,
-          height: 180,
+          height: height,
           showHalo: true,
         ),
       ),
